@@ -52,4 +52,5 @@ proc authSalt*(filename: string): Future[BinData] {.async.} =
         var connection = await newConnection("149.154.167.40", 443, Abridged) 
         var data = await generateAuthKey(connection)
         await createBin(data[0], data[1], filename)
-        return BinData(authKey: data[0], salt: data[1], connectionOpened: true, connection: connection)
+        connection.close()
+        return BinData(authKey: data[0], salt: data[1], connectionOpened: false)

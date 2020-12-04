@@ -12,8 +12,11 @@ import rpc/static
 import nimcrypto
 import math
 import times
-
-
+import tables
+import typetraits
+type Response = ref object
+    event: AsyncEvent
+    body: TLObject
 
 type Session* = ref object 
     authKey: seq[uint8]
@@ -24,13 +27,26 @@ type Session* = ref object
     activeReceiver: bool
     sessionID: seq[uint8] 
     seqNo: int 
+    acks: seq[int64]
+    responses: Table[int64, Response]
+    maxMessageID: uint64
     connection: TcpNetwork
 
-proc messageID(): uint64 = uint64(now().toTime().toUnix()*2 ^ 32)
+#proc messageID(): uint64 = uint64(now().toTime().toUnixFloat()*2 ^ 32)
 
+proc messageID(self: Session): uint64 =
+    result = uint64(now().toTime().toUnix()*2 ^ 32)
+    assert result mod 4 == 0, "message id is not divisible by 4, consider syncing your time."
+
+    if result <= self.maxMessageID:
+        result = self.maxMessageID + 4
+    self.maxMessageID = result
+
+        
 
 proc initSession*(connection: TcpNetwork, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], sessionFile: string): Session =
     result = new Session
+    result.acks = newSeq[int64](0)
     result.connection = connection
     result.dcID = dcID
     result.authKey = authKey
@@ -40,15 +56,17 @@ proc initSession*(connection: TcpNetwork, dcID: int, authKey: seq[uint8], server
     result.seqNo = 5
     result.sessionID = urandom(4) & uint32(now().toTime().toUnix()).TLEncode()
 
+type EncryptedResult = object
+    encryptedData: seq[uint8]
+    messageID: uint64
 
-
-proc encrypt*(self: Session, obj: seq[uint8], typeof: TL): seq[uint8] =
+proc encrypt*(self: Session, obj: seq[uint8], typeof: TL): EncryptedResult =
 
     var data = obj
-    #var seqNumber = 0
     var seqNumber = seqNo(typeof, self.seqNo)
     self.seqNo = seqNumber
-    var mesageeID = messageID()
+    var mesageeID = self.messageID()
+    result.messageID = mesageeID
     var payload = self.serverSalt &  self.sessionID &  mesageeID.TLEncode() & uint32(seqNumber).TLEncode() & uint32(len(data)).TLEncode() & data
     payload.add(urandom((len(payload) + 12) mod 16 + 12) )
     while true:
@@ -62,7 +80,7 @@ proc encrypt*(self: Session, obj: seq[uint8], typeof: TL): seq[uint8] =
     var aesKey = a[0..7] & b[8..23] & a[24..31]
     var aesIV = b[0..7] & a[8..23] & b[24..31]
     var aeslib = initAesIGE(aesKey, aesIV)
-    return self.authKeyID & messageKey & aeslib.encrypt(payload)
+    result.encryptedData = self.authKeyID & messageKey & aeslib.encrypt(payload)
 
 
 proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
@@ -87,16 +105,107 @@ proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
     result = new CoreMessage
     splaintext.TLDecode(result)
 
-proc send*(self: Session, function: TLFunction): Future[CoreMessage] {.async.} =
-    var data = self.encrypt(function.TLEncodeGeneric(), function)
-    await self.connection.write(data)
-    var mdata = await self.connection.receive()
-    if len(mdata) == 4:
-        raise newException(Exception, "invalid response: " & $(cast[int32](fromBytes(uint32, mdata))) )
-    var ok = self.decrypt(mdata)
-    if ok.body of bad_server_salt:
-        var badServerSalt = cast[bad_server_salt](ok.body)
-        self.serverSalt = badServerSalt.new_server_salt.TLEncode()
-        await createBin(self.authKey, badServerSalt.new_server_salt.TLEncode(), self.sessionFile)
-        return await self.send(function)
-    return ok
+proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TLObject] {.async.} 
+
+proc startHandler*(self: Session) {.async.} = 
+    while not self.connection.isClosed():
+        var mdata = await self.connection.receive()
+        if len(mdata) == 4:
+            raise newException(Exception, "invalid response: " & $(cast[int32](fromBytes(uint32, mdata))))
+        var coreMessageDecrypted = self.decrypt(mdata)
+
+        var messages: seq[CoreMessage]
+
+        if coreMessageDecrypted.body of MessageContainer:
+            messages = coreMessageDecrypted.body.MessageContainer.messages
+        else:
+            messages = @[coreMessageDecrypted]
+        for message in messages:
+            var body = message.body
+            #var objName = type(message.body).name
+            if not message.seqNo mod 2 == 0:
+                if self.acks.contains(message.msgID.int64):
+                    continue
+                else:
+                    self.acks.add(message.msgID.int64)
+            
+            var msgID = int64(0)
+
+            if message.body of msg_detailed_info:
+                self.acks.add(body.msg_detailed_info.answer_msg_id)
+                continue
+            if message.body of msg_new_detailed_info:
+                self.acks.add(body.msg_new_detailed_info.answer_msg_id)
+                continue
+
+            if message.body of new_session_created:
+                continue
+
+            if message.body of bad_msg_notification:
+                msgID = body.bad_msg_notification.bad_msg_id
+
+            if message.body of bad_server_salt:
+                msgID = body.bad_server_salt.bad_msg_id
+
+            if message.body of FutureSalts:
+                msgID = body.FutureSalts.reqMsgID.int64
+            
+            if message.body of rpc_result:
+                msgID = body.rpc_result.req_msg_id
+                body = body.rpc_result.result
+            
+            if body of GZipPacked:
+                var bodytemp: TLObject
+                var sdata = newScalingSeq(body.GZipPacked.data)
+                sdata.TLDecode(bodytemp)
+                body = bodytemp
+
+            if message.body of pong:
+                msgID = body.pong.msgID
+            
+            if self.responses.contains(msgID):
+                self.responses[msgID].body = body.TLObject
+                self.responses[msgID].event.trigger()
+            
+            #TODO: Handle updates
+
+            if len(self.acks) >= 8:
+                discard await self.send(msgs_ack(msg_ids: self.acks), false)
+                self.acks.setLen(0)
+
+            
+            
+
+proc waitEvent(ev: AsyncEvent): Future[void] =
+   var fut = newFuture[void]("waitEvent")
+   proc cb(fd: AsyncFD): bool = fut.complete(); return true
+   addEvent(ev, cb)
+   return fut
+
+
+
+proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TLObject] {.async.} =
+    var data: EncryptedResult
+
+    if tl of TLFunction:
+        data = self.encrypt(tl.TLFunction.TLEncodeGeneric(), tl)
+    elif tl of TLObject:
+        data = self.encrypt(tl.TLObject.TLEncode(), tl)
+    else:
+        raise newException(Exception, "Type not supported")
+    
+    await self.connection.write(data.encryptedData)
+    if waitResponse:
+        self.responses[data.messageID.int64] = Response(event: newAsyncEvent())
+
+        await waitEvent(self.responses[data.messageID.int64].event)
+        var response = self.responses[data.messageID.int64].body
+        if response of bad_server_salt:
+            var badServerSalt = response.bad_server_salt
+            self.serverSalt = badServerSalt.new_server_salt.TLEncode()
+            await createBin(self.authKey, badServerSalt.new_server_salt.TLEncode(), self.sessionFile)
+            return await self.send(tl)
+        if response of rpc_error:
+            raise newException(CatchableError, response.rpc_error.error_message, RPCException(errorCode: response.rpc_error.error_code, errorMessage: response.rpc_error.error_message))
+
+        return response

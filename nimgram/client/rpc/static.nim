@@ -8,7 +8,7 @@ type
         validSince*: int32
         validUntil*: int32
         salt*: uint64
-    FutureSalts* = ref object
+    FutureSalts* = ref object of TL
         reqMsgID*: uint64
         now*: int32
         salts*: seq[FutureSalt]
@@ -23,6 +23,10 @@ type
         messages*: seq[CoreMessage]
 
 
+
+type RPCException* = ref object of CatchableError
+  errorCode* : int32
+  errorMessage*: string
 
 proc TLDecode*(self: var ScalingSeq[uint8], fsalt: FutureSalt) =
     self.TLDecode(addr fsalt.validSince) 
