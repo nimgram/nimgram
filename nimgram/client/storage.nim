@@ -44,12 +44,12 @@ proc createBin*(authKey: seq[uint8], salt: seq[uint8], filename: string) {.async
     
 
 
-proc authSalt*(filename: string): Future[BinData] {.async.} =
+proc authSalt*(filename: string, address: string, port: uint16, netType: TcpNetworkTypes): Future[BinData] {.async.} =
     if fileExists(filename):
         return await loadBin(filename)
     else:
         #TODO: Load from configuration
-        var connection = await newConnection("149.154.167.40", 443, Abridged) 
+        var connection = await newConnection(address, port, netType) 
         var data = await generateAuthKey(connection)
         await createBin(data[0], data[1], filename)
         connection.close()

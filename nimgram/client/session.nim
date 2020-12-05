@@ -5,15 +5,16 @@ import rpc/api
 import rpc/decoding
 import rpc/encoding
 import asyncdispatch
-import storage
 import crypto/aes
 import stew/endians2
 import rpc/static
 import nimcrypto
 import math
+import updates
+import storage
 import times
+import json
 import tables
-import typetraits
 type Response = ref object
     event: AsyncEvent
     body: TLObject
@@ -27,6 +28,7 @@ type Session* = ref object
     activeReceiver: bool
     sessionID: seq[uint8] 
     seqNo: int 
+    callbackUpdates: UpdatesCallback
     acks: seq[int64]
     responses: Table[int64, Response]
     maxMessageID: uint64
@@ -42,7 +44,8 @@ proc messageID(self: Session): uint64 =
         result = self.maxMessageID + 4
     self.maxMessageID = result
 
-        
+proc setCallback*(self: Session, callback: proc(updates: UpdatesI): Future[void] {.async.}) =
+    self.callbackUpdates.setCallback(callback)
 
 proc initSession*(connection: TcpNetwork, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], sessionFile: string): Session =
     result = new Session
@@ -53,6 +56,7 @@ proc initSession*(connection: TcpNetwork, dcID: int, authKey: seq[uint8], server
     result.authKeyID = sha1.digest(authKey).data[12..19]
     result.sessionFile = sessionFile
     result.serverSalt = serverSalt
+    result.callbackUpdates = UpdatesCallback()
     result.seqNo = 5
     result.sessionID = urandom(4) & uint32(now().toTime().toUnix()).TLEncode()
 
@@ -130,7 +134,7 @@ proc startHandler*(self: Session) {.async.} =
                     self.acks.add(message.msgID.int64)
             
             var msgID = int64(0)
-
+            self.seqNo = seqNo(body, self.seqNo)
             if message.body of msg_detailed_info:
                 self.acks.add(body.msg_detailed_info.answer_msg_id)
                 continue
@@ -167,7 +171,9 @@ proc startHandler*(self: Session) {.async.} =
                 self.responses[msgID].body = body.TLObject
                 self.responses[msgID].event.trigger()
             
-            #TODO: Handle updates
+            if body of updatesTooLong or body of updateShortMessage or body of updateShortChatMessage or body of updateShort or body of updatesCombined or body of api.updates:
+                asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI)
+                
 
             if len(self.acks) >= 8:
                 discard await self.send(msgs_ack(msg_ids: self.acks), false)
@@ -207,5 +213,8 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TLObject] {
             return await self.send(tl)
         if response of rpc_error:
             raise newException(CatchableError, response.rpc_error.error_message, RPCException(errorCode: response.rpc_error.error_code, errorMessage: response.rpc_error.error_message))
+
+
+        #TODO: InvokeWithoutUpdates and InvokeWithTakeout support
 
         return response

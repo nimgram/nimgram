@@ -2,19 +2,17 @@ import stint
 import tables
 import bitops
 import strutils
-import stew/endians2
 import options
 import api
 import decoding
-import zippy
-
 import encoding
+import zippy
 #Do not regenerate this file using the TL Parser, it is meant to be static
 type
-#    TL* = ref object of RootObj
-
-#    TLObject* = ref object of TL
-
+#[    TL* = ref object of RootObj
+    TLObject* = ref object of TL
+        originalName*: string
+]#
     ResPQI* = ref object of TLObject
 
     P_Q_inner_dataI* = ref object of TLObject
@@ -177,11 +175,14 @@ type
         bytes*: int32
         status*: int32
 
+    
     GZipPacked* = ref object of TLObject
         data*: seq[uint8]
 
 
-proc TLDecode*(self: var        ScalingSeq[uint8], obj: dh_gen_ok)
+
+
+proc TLDecode*(self: var ScalingSeq[uint8], obj: dh_gen_ok)
 
 proc TLEncodeType*(obj: dh_gen_ok): seq[uint8]
 
@@ -563,7 +564,7 @@ proc TLEncode*(obj: TLObject): seq[uint8] =
     if obj of MsgResendReqI:
         return cast[MsgResendReqI](obj).TLEncode()
     if obj of RpcResultI:
-        return cast[RpcResultI](obj).TLEncode()  
+        return cast[RpcResultI](obj).TLEncode()
     if obj of Server_DH_inner_dataI:
         return cast[Server_DH_inner_dataI](obj).TLEncode()
     if obj of RpcErrorI:
@@ -579,7 +580,6 @@ proc TLEncode*(obj: TLObject): seq[uint8] =
     if obj of GZipPacked:
         return cast[GZipPacked](obj).TLEncodeType()
     return TLEncodeApi(obj)
-
 
 proc TLEncode*(obj: seq[TLObject]): seq[uint8] =
     result = TLEncode(int32(481674261))
@@ -610,7 +610,7 @@ proc TLEncode*(obj: seq[TLObject]): seq[uint8] =
         if objs of MsgResendReqI:
             result = result & cast[MsgResendReqI](objs).TLEncode()
         if objs of RpcResultI:
-            result = result & cast[RpcResultI](objs).TLEncode()        
+            result = result & cast[RpcResultI](objs).TLEncode()
         if objs of Server_DH_inner_dataI:
             result = result & cast[Server_DH_inner_dataI](objs).TLEncode()
         if objs of RpcErrorI:
@@ -623,7 +623,6 @@ proc TLEncode*(obj: seq[TLObject]): seq[uint8] =
             result = result & cast[BadMsgNotificationI](objs).TLEncode()
         if objs of MsgsAllInfoI:
             result = result & cast[MsgsAllInfoI](objs).TLEncode()
-        result = result & TLEncode(objs)
 
 
 
@@ -723,11 +722,13 @@ proc TLEncodeType*(obj: dh_gen_fail): seq[uint8] =
 
     result = result & TLEncode(obj.new_nonce_hash3)
 
+
 proc TLEncodeType*(obj: rpc_result): seq[uint8] = 
     result = result & TLEncode(int32(-212046591))
     result = result & TLEncode(obj.req_msg_id)
 
     result = result & TLEncode(obj.result)
+
 
 proc TLEncodeType*(obj: rpc_error): seq[uint8] = 
     result = result & TLEncode(int32(558156313))
@@ -785,6 +786,7 @@ proc TLEncodeType*(obj: msgs_ack): seq[uint8] =
 proc TLEncodeType*(obj: bad_msg_notification): seq[uint8] = 
     result = result & TLEncode(int32(-1477445615))
     result = result & TLEncode(obj.bad_msg_id)
+
     result = result & TLEncode(obj.bad_msg_seqno)
 
     result = result & TLEncode(obj.error_code)
@@ -846,11 +848,9 @@ proc TLEncodeType*(obj: msg_new_detailed_info): seq[uint8] =
 
 proc TLEncodeGeneric*(obj: TLFunction): seq[uint8]
 
-
 proc TLEncodeType*(unpackedData: GZipPacked): seq[uint8] =
     result = TLEncode(uint32(0x3072CFA1))
     result = TLEncode(compress(unpackedData.data))
-
 
 #[const FromID* = {1: "default",
 85337187: "resPQ",
@@ -891,16 +891,19 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var Set_client_DH_params_answer
             var tempObject = new(dh_gen_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_ok"
             return
         of "dh_gen_retry":
             var tempObject = new(dh_gen_retry)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_retry"
             return
         of "dh_gen_fail":
             var tempObject = new(dh_gen_fail)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_fail"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var DestroySessionResI) =  
         var id: int32
@@ -910,11 +913,13 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var DestroySessionResI) =
             var tempObject = new(destroy_session_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "destroy_session_ok"
             return
         of "destroy_session_none":
             var tempObject = new(destroy_session_none)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "destroy_session_none"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsStateReqI) =  
         var id: int32
@@ -924,6 +929,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsStateReqI) =
             var tempObject = new(msgs_state_req)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_state_req"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var PongI) =  
         var id: int32
@@ -933,6 +939,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var PongI) =
             var tempObject = new(pong)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "pong"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var Server_DH_ParamsI) =  
         var id: int32
@@ -942,11 +949,13 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var Server_DH_ParamsI) =
             var tempObject = new(server_DH_params_fail)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_params_fail"
             return
         of "server_DH_params_ok":
             var tempObject = new(server_DH_params_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_params_ok"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsStateInfoI) =  
         var id: int32
@@ -956,6 +965,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsStateInfoI) =
             var tempObject = new(msgs_state_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_state_info"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgDetailedInfoI) =  
         var id: int32
@@ -965,11 +975,13 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgDetailedInfoI) =
             var tempObject = new(msg_detailed_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_detailed_info"
             return
         of "msg_new_detailed_info":
             var tempObject = new(msg_new_detailed_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_new_detailed_info"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsAckI) =  
         var id: int32
@@ -979,6 +991,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsAckI) =
             var tempObject = new(msgs_ack)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_ack"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var Client_DH_Inner_DataI) =  
         var id: int32
@@ -988,6 +1001,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var Client_DH_Inner_DataI) =
             var tempObject = new(client_DH_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "client_DH_inner_data"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var P_Q_inner_dataI) =  
         var id: int32
@@ -997,6 +1011,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var P_Q_inner_dataI) =
             var tempObject = new(p_q_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "p_q_inner_data"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcDropAnswerI) =  
         var id: int32
@@ -1006,16 +1021,19 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcDropAnswerI) =
             var tempObject = new(rpc_answer_unknown)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_unknown"
             return
         of "rpc_answer_dropped_running":
             var tempObject = new(rpc_answer_dropped_running)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_dropped_running"
             return
         of "rpc_answer_dropped":
             var tempObject = new(rpc_answer_dropped)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_dropped"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgResendReqI) =  
         var id: int32
@@ -1025,6 +1043,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgResendReqI) =
             var tempObject = new(msg_resend_req)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_resend_req"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcResultI) =  
         var id: int32
@@ -1034,6 +1053,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcResultI) =
             var tempObject = new(rpc_result)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_result"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var Server_DH_inner_dataI) =  
         var id: int32
@@ -1043,6 +1063,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var Server_DH_inner_dataI) =
             var tempObject = new(server_DH_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_inner_data"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcErrorI) =  
         var id: int32
@@ -1052,6 +1073,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var RpcErrorI) =
             var tempObject = new(rpc_error)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_error"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var ResPQI) =  
         var id: int32
@@ -1061,6 +1083,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var ResPQI) =
             var tempObject = new(resPQ)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "resPQ"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var NewSessionI) =  
         var id: int32
@@ -1070,6 +1093,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var NewSessionI) =
             var tempObject = new(new_session_created)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "new_session_created"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var BadMsgNotificationI) =  
         var id: int32
@@ -1079,11 +1103,13 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var BadMsgNotificationI) =
             var tempObject = new(bad_msg_notification)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "bad_msg_notification"
             return
         of "bad_server_salt":
             var tempObject = new(bad_server_salt)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "bad_server_salt"
             return
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsAllInfoI) =  
         var id: int32
@@ -1093,6 +1119,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var MsgsAllInfoI) =
             var tempObject = new(msgs_all_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_all_info"
             return
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Set_client_DH_params_answerI]) =
@@ -1108,14 +1135,17 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Set_client_DH_params_an
         if FromID.toTable[id] == "dh_gen_ok":
             var tempObject = new(dh_gen_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_ok"
             obj.add(tempObject)
         if FromID.toTable[id] == "dh_gen_retry":
             var tempObject = new(dh_gen_retry)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_retry"
             obj.add(tempObject)
         if FromID.toTable[id] == "dh_gen_fail":
             var tempObject = new(dh_gen_fail)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_fail"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[DestroySessionResI]) =
@@ -1131,10 +1161,12 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[DestroySessionResI]) =
         if FromID.toTable[id] == "destroy_session_ok":
             var tempObject = new(destroy_session_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "destroy_session_ok"
             obj.add(tempObject)
         if FromID.toTable[id] == "destroy_session_none":
             var tempObject = new(destroy_session_none)
             self.TlDecode(tempObject)
+            tempObject.originalName = "destroy_session_none"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsStateReqI]) =
@@ -1150,6 +1182,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsStateReqI]) =
         if FromID.toTable[id] == "msgs_state_req":
             var tempObject = new(msgs_state_req)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_state_req"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[PongI]) =
@@ -1165,6 +1198,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[PongI]) =
         if FromID.toTable[id] == "pong":
             var tempObject = new(pong)
             self.TlDecode(tempObject)
+            tempObject.originalName = "pong"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Server_DH_ParamsI]) =
@@ -1180,10 +1214,12 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Server_DH_ParamsI]) =
         if FromID.toTable[id] == "server_DH_params_fail":
             var tempObject = new(server_DH_params_fail)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_params_fail"
             obj.add(tempObject)
         if FromID.toTable[id] == "server_DH_params_ok":
             var tempObject = new(server_DH_params_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_params_ok"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsStateInfoI]) =
@@ -1199,6 +1235,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsStateInfoI]) =
         if FromID.toTable[id] == "msgs_state_info":
             var tempObject = new(msgs_state_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_state_info"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgDetailedInfoI]) =
@@ -1214,10 +1251,12 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgDetailedInfoI]) =
         if FromID.toTable[id] == "msg_detailed_info":
             var tempObject = new(msg_detailed_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_detailed_info"
             obj.add(tempObject)
         if FromID.toTable[id] == "msg_new_detailed_info":
             var tempObject = new(msg_new_detailed_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_new_detailed_info"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsAckI]) =
@@ -1233,6 +1272,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsAckI]) =
         if FromID.toTable[id] == "msgs_ack":
             var tempObject = new(msgs_ack)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_ack"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Client_DH_Inner_DataI]) =
@@ -1248,6 +1288,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Client_DH_Inner_DataI])
         if FromID.toTable[id] == "client_DH_inner_data":
             var tempObject = new(client_DH_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "client_DH_inner_data"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[P_Q_inner_dataI]) =
@@ -1263,6 +1304,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[P_Q_inner_dataI]) =
         if FromID.toTable[id] == "p_q_inner_data":
             var tempObject = new(p_q_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "p_q_inner_data"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcDropAnswerI]) =
@@ -1278,14 +1320,17 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcDropAnswerI]) =
         if FromID.toTable[id] == "rpc_answer_unknown":
             var tempObject = new(rpc_answer_unknown)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_unknown"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_answer_dropped_running":
             var tempObject = new(rpc_answer_dropped_running)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_dropped_running"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_answer_dropped":
             var tempObject = new(rpc_answer_dropped)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_dropped"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgResendReqI]) =
@@ -1301,7 +1346,9 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgResendReqI]) =
         if FromID.toTable[id] == "msg_resend_req":
             var tempObject = new(msg_resend_req)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_resend_req"
             obj.add(tempObject)
+
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcResultI]) =
     var id: int32
     self.TLDecode(addr id)
@@ -1315,6 +1362,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcResultI]) =
         if FromID.toTable[id] == "rpc_result":
             var tempObject = new(rpc_result)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_result"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Server_DH_inner_dataI]) =
@@ -1330,6 +1378,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[Server_DH_inner_dataI])
         if FromID.toTable[id] == "server_DH_inner_data":
             var tempObject = new(server_DH_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_inner_data"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcErrorI]) =
@@ -1345,6 +1394,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[RpcErrorI]) =
         if FromID.toTable[id] == "rpc_error":
             var tempObject = new(rpc_error)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_error"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[ResPQI]) =
@@ -1360,6 +1410,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[ResPQI]) =
         if FromID.toTable[id] == "resPQ":
             var tempObject = new(resPQ)
             self.TlDecode(tempObject)
+            tempObject.originalName = "resPQ"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[NewSessionI]) =
@@ -1375,6 +1426,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[NewSessionI]) =
         if FromID.toTable[id] == "new_session_created":
             var tempObject = new(new_session_created)
             self.TlDecode(tempObject)
+            tempObject.originalName = "new_session_created"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[BadMsgNotificationI]) =
@@ -1390,10 +1442,12 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[BadMsgNotificationI]) =
         if FromID.toTable[id] == "bad_msg_notification":
             var tempObject = new(bad_msg_notification)
             self.TlDecode(tempObject)
+            tempObject.originalName = "bad_msg_notification"
             obj.add(tempObject)
         if FromID.toTable[id] == "bad_server_salt":
             var tempObject = new(bad_server_salt)
             self.TlDecode(tempObject)
+            tempObject.originalName = "bad_server_salt"
             obj.add(tempObject)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsAllInfoI]) =
@@ -1409,9 +1463,8 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[MsgsAllInfoI]) =
         if FromID.toTable[id] == "msgs_all_info":
             var tempObject = new(msgs_all_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_all_info"
             obj.add(tempObject)
-
-
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var TLObject) =  
         var id: int32
         self.TLDecode(addr id)
@@ -1420,148 +1473,178 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var TLObject) =
             var tempObject = new(dh_gen_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_ok"
             return
         of "dh_gen_retry":
             var tempObject = new(dh_gen_retry)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_retry"
             return
         of "dh_gen_fail":
             var tempObject = new(dh_gen_fail)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "dh_gen_fail"
             return
         of "destroy_session_ok":
             var tempObject = new(destroy_session_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "destroy_session_ok"
             return
         of "destroy_session_none":
             var tempObject = new(destroy_session_none)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "destroy_session_none"
             return
         of "msgs_state_req":
             var tempObject = new(msgs_state_req)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_state_req"
             return
         of "pong":
             var tempObject = new(pong)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "pong"
             return
         of "server_DH_params_fail":
             var tempObject = new(server_DH_params_fail)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_params_fail"
             return
         of "server_DH_params_ok":
             var tempObject = new(server_DH_params_ok)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_params_ok"
             return
         of "msgs_state_info":
             var tempObject = new(msgs_state_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_state_info"
             return
         of "msg_detailed_info":
             var tempObject = new(msg_detailed_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_detailed_info"
             return
         of "msg_new_detailed_info":
             var tempObject = new(msg_new_detailed_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_new_detailed_info"
             return
         of "msgs_ack":
             var tempObject = new(msgs_ack)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_ack"
             return
         of "client_DH_inner_data":
             var tempObject = new(client_DH_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "client_DH_inner_data"
             return
         of "p_q_inner_data":
             var tempObject = new(p_q_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "p_q_inner_data"
             return
         of "rpc_answer_unknown":
             var tempObject = new(rpc_answer_unknown)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_unknown"
             return
         of "rpc_answer_dropped_running":
             var tempObject = new(rpc_answer_dropped_running)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_dropped_running"
             return
         of "rpc_answer_dropped":
             var tempObject = new(rpc_answer_dropped)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_answer_dropped"
             return
         of "msg_resend_req":
             var tempObject = new(msg_resend_req)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msg_resend_req"
             return
         of "rpc_result":
             var tempObject = new(rpc_result)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_result"
             return
         of "server_DH_inner_data":
             var tempObject = new(server_DH_inner_data)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "server_DH_inner_data"
             return
         of "rpc_error":
             var tempObject = new(rpc_error)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "rpc_error"
             return
         of "resPQ":
             var tempObject = new(resPQ)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "resPQ"
             return
         of "new_session_created":
             var tempObject = new(new_session_created)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "new_session_created"
             return
         of "bad_msg_notification":
             var tempObject = new(bad_msg_notification)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "bad_msg_notification"
             return
         of "bad_server_salt":
             var tempObject = new(bad_server_salt)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "bad_server_salt"
             return
         of "msgs_all_info":
             var tempObject = new(msgs_all_info)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "msgs_all_info"
             return
         of "gzip_packed":
             var tempObject = new(GZipPacked)
             self.TlDecode(tempObject)
             obj = tempObject
+            obj.originalName = "gzip_packed"
             return
         else:
             self.goBack(4)
             self.TLDecodeApi(obj)
 
+
 proc TLDecode*(self: var ScalingSeq[uint8], unpackedData: GZipPacked) =
     unpackedData.data = uncompress(self.TLDecode())
+
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[TLObject]) =
     var id: int32
@@ -1576,124 +1659,154 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[TLObject]) =
         if FromID.toTable[id] == "dh_gen_ok":
             var tempObject = new(dh_gen_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_ok"
             obj.add(tempObject)
         if FromID.toTable[id] == "dh_gen_retry":
             var tempObject = new(dh_gen_retry)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_retry"
             obj.add(tempObject)
         if FromID.toTable[id] == "dh_gen_fail":
             var tempObject = new(dh_gen_fail)
             self.TlDecode(tempObject)
+            tempObject.originalName = "dh_gen_fail"
             obj.add(tempObject)
         if FromID.toTable[id] == "destroy_session_ok":
             var tempObject = new(destroy_session_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "destroy_session_ok"
             obj.add(tempObject)
         if FromID.toTable[id] == "destroy_session_none":
             var tempObject = new(destroy_session_none)
             self.TlDecode(tempObject)
+            tempObject.originalName = "destroy_session_none"
             obj.add(tempObject)
         if FromID.toTable[id] == "msgs_state_req":
             var tempObject = new(msgs_state_req)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_state_req"
             obj.add(tempObject)
         if FromID.toTable[id] == "pong":
             var tempObject = new(pong)
             self.TlDecode(tempObject)
+            tempObject.originalName = "pong"
             obj.add(tempObject)
         if FromID.toTable[id] == "server_DH_params_fail":
             var tempObject = new(server_DH_params_fail)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_params_fail"
             obj.add(tempObject)
         if FromID.toTable[id] == "server_DH_params_ok":
             var tempObject = new(server_DH_params_ok)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_params_ok"
             obj.add(tempObject)
         if FromID.toTable[id] == "msgs_state_info":
             var tempObject = new(msgs_state_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_state_info"
             obj.add(tempObject)
         if FromID.toTable[id] == "msg_detailed_info":
             var tempObject = new(msg_detailed_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_detailed_info"
             obj.add(tempObject)
         if FromID.toTable[id] == "msg_new_detailed_info":
             var tempObject = new(msg_new_detailed_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_new_detailed_info"
             obj.add(tempObject)
         if FromID.toTable[id] == "msgs_ack":
             var tempObject = new(msgs_ack)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_ack"
             obj.add(tempObject)
         if FromID.toTable[id] == "client_DH_inner_data":
             var tempObject = new(client_DH_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "client_DH_inner_data"
             obj.add(tempObject)
         if FromID.toTable[id] == "p_q_inner_data":
             var tempObject = new(p_q_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "p_q_inner_data"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_answer_unknown":
             var tempObject = new(rpc_answer_unknown)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_unknown"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_answer_dropped_running":
             var tempObject = new(rpc_answer_dropped_running)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_dropped_running"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_answer_dropped":
             var tempObject = new(rpc_answer_dropped)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_answer_dropped"
             obj.add(tempObject)
         if FromID.toTable[id] == "msg_resend_req":
             var tempObject = new(msg_resend_req)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msg_resend_req"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_result":
             var tempObject = new(rpc_result)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_result"
             obj.add(tempObject)
         if FromID.toTable[id] == "server_DH_inner_data":
             var tempObject = new(server_DH_inner_data)
             self.TlDecode(tempObject)
+            tempObject.originalName = "server_DH_inner_data"
             obj.add(tempObject)
         if FromID.toTable[id] == "rpc_error":
             var tempObject = new(rpc_error)
             self.TlDecode(tempObject)
+            tempObject.originalName = "rpc_error"
             obj.add(tempObject)
         if FromID.toTable[id] == "resPQ":
             var tempObject = new(resPQ)
             self.TlDecode(tempObject)
+            tempObject.originalName = "resPQ"
             obj.add(tempObject)
         if FromID.toTable[id] == "new_session_created":
             var tempObject = new(new_session_created)
             self.TlDecode(tempObject)
+            tempObject.originalName = "new_session_created"
             obj.add(tempObject)
         if FromID.toTable[id] == "bad_msg_notification":
             var tempObject = new(bad_msg_notification)
             self.TlDecode(tempObject)
+            tempObject.originalName = "bad_msg_notification"
             obj.add(tempObject)
         if FromID.toTable[id] == "bad_server_salt":
             var tempObject = new(bad_server_salt)
             self.TlDecode(tempObject)
+            tempObject.originalName = "bad_server_salt"
             obj.add(tempObject)
         if FromID.toTable[id] == "msgs_all_info":
             var tempObject = new(msgs_all_info)
             self.TlDecode(tempObject)
+            tempObject.originalName = "msgs_all_info"
             obj.add(tempObject)
         self.goBack(4)
         var tempObject: TLObject
         self.TLDecodeApi(tempObject)
         obj.add(tempObject)
 
-
 proc TLDecode*(self: var ScalingSeq[uint8], obj: resPQ) = 
+    obj.originalName = "resPQ"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     obj.pq = self.TLDecode()
     self.TLDecode(obj.server_public_key_fingerprints)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: p_q_inner_data) = 
+    obj.originalName = "p_q_inner_data"
+
     obj.pq = self.TLDecode()
     obj.p = self.TLDecode()
     obj.q = self.TLDecode()
@@ -1702,16 +1815,22 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: p_q_inner_data) =
     self.TLDecode(addr obj.new_nonce)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: server_DH_params_fail) = 
+    obj.originalName = "server_DH_params_fail"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.new_nonce_hash)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: server_DH_params_ok) = 
+    obj.originalName = "server_DH_params_ok"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     obj.encrypted_answer = self.TLDecode()
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: server_DH_inner_data) = 
+    obj.originalName = "server_DH_inner_data"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.g)
@@ -1720,101 +1839,144 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: server_DH_inner_data) =
     self.TLDecode(addr obj.server_time)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: client_DH_inner_data) = 
+    obj.originalName = "client_DH_inner_data"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.retry_id)
     obj.g_b = self.TLDecode()
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: dh_gen_ok) = 
+    obj.originalName = "dh_gen_ok"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.new_nonce_hash1)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: dh_gen_retry) = 
+    obj.originalName = "dh_gen_retry"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.new_nonce_hash2)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: dh_gen_fail) = 
+    obj.originalName = "dh_gen_fail"
+
     self.TLDecode(addr obj.nonce)
     self.TLDecode(addr obj.server_nonce)
     self.TLDecode(addr obj.new_nonce_hash3)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_result) = 
+    obj.originalName = "rpc_result"
+
     self.TLDecode(addr obj.req_msg_id)
     self.TLDecode(obj.result)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_error) = 
+    obj.originalName = "rpc_error"
+
     self.TLDecode(addr obj.error_code)
     obj.error_message = cast[string](self.TLDecode())
 
-proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_answer_unknown) = discard
+proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_answer_unknown) = 
+    obj.originalName = "rpc_answer_unknown"
+discard
 
-proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_answer_dropped_running) = discard
+proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_answer_dropped_running) = 
+    obj.originalName = "rpc_answer_dropped_running"
+discard
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: rpc_answer_dropped) = 
+    obj.originalName = "rpc_answer_dropped"
+
     self.TLDecode(addr obj.msg_id)
     self.TLDecode(addr obj.seq_no)
     self.TLDecode(addr obj.bytes)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: pong) = 
+    obj.originalName = "pong"
+
     self.TLDecode(addr obj.msg_id)
     self.TLDecode(addr obj.ping_id)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: destroy_session_ok) = 
+    obj.originalName = "destroy_session_ok"
+
     self.TLDecode(addr obj.session_id)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: destroy_session_none) = 
+    obj.originalName = "destroy_session_none"
+
     self.TLDecode(addr obj.session_id)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: new_session_created) = 
+    obj.originalName = "new_session_created"
+
     self.TLDecode(addr obj.first_msg_id)
     self.TLDecode(addr obj.unique_id)
     self.TLDecode(addr obj.server_salt)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msgs_ack) = 
+    obj.originalName = "msgs_ack"
+
     self.TLDecode(obj.msg_ids)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: bad_msg_notification) = 
+    obj.originalName = "bad_msg_notification"
 
     self.TLDecode(addr obj.bad_msg_id)
     self.TLDecode(addr obj.bad_msg_seqno)
     self.TLDecode(addr obj.error_code)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: bad_server_salt) = 
+    obj.originalName = "bad_server_salt"
+
     self.TLDecode(addr obj.bad_msg_id)
     self.TLDecode(addr obj.bad_msg_seqno)
     self.TLDecode(addr obj.error_code)
     self.TLDecode(addr obj.new_server_salt)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msg_resend_req) = 
+    obj.originalName = "msg_resend_req"
+
     self.TLDecode(obj.msg_ids)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msgs_state_req) = 
+    obj.originalName = "msgs_state_req"
+
     self.TLDecode(obj.msg_ids)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msgs_state_info) = 
+    obj.originalName = "msgs_state_info"
+
     self.TLDecode(addr obj.req_msg_id)
     obj.info = self.TLDecode()
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msgs_all_info) = 
+    obj.originalName = "msgs_all_info"
+
     self.TLDecode(obj.msg_ids)
     obj.info = self.TLDecode()
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msg_detailed_info) = 
+    obj.originalName = "msg_detailed_info"
+
     self.TLDecode(addr obj.msg_id)
     self.TLDecode(addr obj.answer_msg_id)
     self.TLDecode(addr obj.bytes)
     self.TLDecode(addr obj.status)
 
 proc TLDecode*(self: var ScalingSeq[uint8], obj: msg_new_detailed_info) = 
+    obj.originalName = "msg_new_detailed_info"
+
     self.TLDecode(addr obj.answer_msg_id)
     self.TLDecode(addr obj.bytes)
     self.TLDecode(addr obj.status)
 
 
 type
- #   TLFunction* = ref object of TL
+#    TLFunction* = ref object of TL
 
     req_pq* = ref object of TLFunction
         nonce*: Int128
@@ -1855,6 +2017,10 @@ type
         max_delay*: int32
         wait_after*: int32
         max_wait*: int32
+
+
+
+#proc TLEncodeGeneric*(obj: TLFunction): seq[uint8]
 
 proc TLEncodeFunction*(obj: req_pq): seq[uint8] = 
     result = result & TLEncode(int32(1615239032))
@@ -1926,6 +2092,8 @@ proc TLEncodeFunction*(obj: http_wait): seq[uint8] =
     result = result & TLEncode(obj.max_wait)
 
 
+
+
 proc TLEncodeGeneric*(obj: TLFunction): seq[uint8] = 
     if obj of req_pq:
         return cast[req_pq](obj).TLEncodeFunction()
@@ -1934,11 +2102,11 @@ proc TLEncodeGeneric*(obj: TLFunction): seq[uint8] =
     if obj of req_DH_params:
         return cast[req_DH_params](obj).TLEncodeFunction()
     if obj of set_client_DH_params:
-        return  cast[set_client_DH_params](obj).TLEncodeFunction()
+        return cast[set_client_DH_params](obj).TLEncodeFunction()
     if obj of rpc_drop_answer:
-        return  cast[rpc_drop_answer](obj).TLEncodeFunction()
+        return cast[rpc_drop_answer](obj).TLEncodeFunction()
     if obj of get_future_salts:
-        return  cast[get_future_salts](obj).TLEncodeFunction()
+        return cast[get_future_salts](obj).TLEncodeFunction()
     if obj of ping:
         return cast[ping](obj).TLEncodeFunction()
     if obj of ping_delay_disconnect:
