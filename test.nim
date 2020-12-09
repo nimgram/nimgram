@@ -1,7 +1,6 @@
 import json
 import  nimgram/client/rpc/decoding
-import nimgram/client/rpc/api
-import nimgram/client/rpc/mtproto
+import nimgram/client/rpc/raw
 import random
 import nimgram/client/network/transports
 import nimgram/mtproto as mainclient
@@ -11,25 +10,25 @@ import typetraits
 var mtprotoClient: NimgramClient
 
 proc handleUpdate(updts: UpdatesI): Future[void] {.async.} =
-    if updts of api.updates:
-        var updatess = updts.updates
+    if updts of raw.Updates:
+        var updatess = updts.Updates
         for udpd in updatess.updates:
-            if udpd of updateNewMessage:
-                var unm = udpd.updateNewMessage
-                if unm.message of api.message:
-                    var textMessage = unm.message.message
+            if udpd of UpdateNewMessage:
+                var unm = udpd.UpdateNewMessage
+                if unm.message of raw.Message:
+                    var textMessage = unm.message.Message
                     var chatID: InputPeerI
 
-                    if textMessage.peer_id of peerUser:
-                        chatID = inputPeerUser(user_id: textMessage.peer_id.peerUser.user_id, access_hash: 0)
+                    if textMessage.peer_id of PeerUser:
+                        chatID = InputPeerUser(user_id: textMessage.peer_id.PeerUser.user_id, access_hash: 0)
 
-                    if textMessage.peer_id of peerChat:
-                        chatID = inputPeerChat(chat_id: textMessage.peer_id.peerChat.chat_id)    
+                    if textMessage.peer_id of PeerChat:
+                        chatID = InputPeerChat(chat_id: textMessage.peer_id.PeerChat.chat_id)    
 
-                    if textMessage.peer_id of peerChannel:
-                        chatID = inputPeerChannel(channel_id: textMessage.peer_id.peerChannel.channel_id, access_hash: 0)    
+                    if textMessage.peer_id of PeerChannel:
+                        chatID = InputPeerChannel(channel_id: textMessage.peer_id.PeerChannel.channel_id, access_hash: 0)    
                     randomize()
-                    discard await mtprotoClient.send(messages_sendMessage(
+                    discard await mtprotoClient.send(MessagesSendMessage(
                             no_webpage: true,
                             silent: false,
                             background: false,
@@ -56,16 +55,17 @@ proc runClient*(): Future[void] {.async.} =
     langCode: "en"))
 
     try:
-        discard await mtprotoClient.send(help_getUserInfo(user_id: inputUserSelf()))
+        discard await mtprotoClient.send(UsersGetFullUser(id: InputUserSelf()))
     except:
+        echo getCurrentExceptionMsg()
         echo "logging in..."
-        discard await mtprotoClient.send(auth_importBotAuthorization(
+        discard await mtprotoClient.send(AuthImportBotAuthorization(
               api_id: 0,
             api_hash: "0",
             bot_auth_token: "0:0"
         ))
     
-    echo %*await mtprotoClient.send(updates_getState())
+    echo %*await mtprotoClient.send(UpdatesGetState())
     
     mtprotoClient.setCallback(handleUpdate)
 

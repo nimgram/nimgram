@@ -1,10 +1,8 @@
 import ../network/transports
 
-import ../rpc/api
-
 import ../rpc/encoding
 import ../rpc/decoding
-import ../rpc/mtproto
+import ../rpc/raw
 import ../crypto/prime
 import ../network/transports
 import ../crypto/rsa
@@ -33,15 +31,15 @@ proc messageID(): int64 = int64(pow(float64(now().toTime().toUnix()*2),float64(3
 
 
 
-proc send(self: TcpNetwork, data: TLFunction): Future[TLObject] {.async.} =
-    var bytes = data.TLEncodeGeneric()
+proc send(self: TcpNetwork, data: TLFunction): Future[TL] {.async.} =
+    var bytes = data.TLEncode()
     bytes = TLEncode(int64(0)) & TLEncode(messageID())  & TLEncode(int32(len(bytes))) & bytes
     await self.write(bytes)
     var data = await self.receive()
     if data.len == 4:
         raise newException(Exception, "Unexpected result: " & $int32(fromBytes(uint32, data, littleEndian)))
     var sdata = newScalingSeq(data[20..(data.len-1)])
-    sdata.TLDecode(result)
+    result.TLDecode(sdata)
 
 
 proc norm(data: seq[uint32]): seq[uint32] = 
@@ -77,11 +75,11 @@ proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] 
 
     
     #step 1
-    var reqa = req_pq_multi(nonce: generateNonce())
+    var reqa = Req_pq_multi(nonce: generateNonce())
     var response = await connection.send(reqa)
 
-    if response of resPQ:
-        var resPQs = cast[resPQ](response)
+    if response of ResPQ:
+        var resPQs = cast[ResPQ](response)
 
         var pq = fromBytes(uint64, resPQs.pq, bigEndian)  
 
@@ -101,19 +99,19 @@ proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] 
         var factors = factors(pq.stint(128))
         
         #init inner data
-        var innerDataObj = new p_q_inner_data
+        var innerDataObj = new P_q_inner_data
         innerDataObj.pq = resPQs.pq
         innerDataObj.p = factors[0].truncate(uint32).TLEncode(bigEndian)
         innerDataObj.q = factors[1].truncate(uint32).TLEncode(bigEndian)
         innerDataObj.nonce = reqa.nonce
         innerDataObj.server_nonce = resPQs.server_nonce
         innerDataObj.new_nonce = generateNonce256()
-        var innerData = innerDataObj.TLEncodeType()
+        var innerData = innerDataObj.TLEncode()
 
         var innerDataEncrypted = sha1.digest(innerData).data[0..19] & innerData & urandom(255 - 20 - len(innerData))
         var mrsa = initRSA(keyFingerprint)
         var encryptedData = mrsa.encrypt(innerDataEncrypted)
-        var reqDHParams = new req_DH_params
+        var reqDHParams = new Req_DH_params
         reqDHParams.nonce = reqa.nonce
         reqDHParams.server_nonce = resPQs.server_nonce
         reqDHParams.p = factors[0].truncate(uint32).TLEncode(bigEndian)
@@ -123,9 +121,9 @@ proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] 
         response = await connection.send(reqDHParams)
 
         #step 2
-        if not (response of server_DH_params_ok):
+        if not (response of Server_DH_params_ok):
             raise newException(Exception, "Wrong response from server")
-        var serverDHParmasOk = cast[server_DH_params_ok](response)
+        var serverDHParmasOk = cast[Server_DH_params_ok](response)
 
         assert serverDHParmasOk.nonce == reqa.nonce 
         assert serverDHParmasOk.server_nonce == resPQs.server_nonce
@@ -138,12 +136,17 @@ proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] 
         var aes = initAesIGE(tempAesKey, tempAesIV)
         var decrypted = aes.decrypt(serverDHParmasOk.encrypted_answer)
         var sbytes = newScalingSeq(decrypted[20..(decrypted.len-1)])
-        var id: int32
+        var tmp = new TL
+        tmp.TLDecode(sbytes)
+        if not(tmp of Server_DH_inner_data):
+            raise newException(Exception, "Wrong response type: " & tmp.getTypeName())
+        var serverDHInnerData = tmp.Server_DH_inner_data
+        #[var id: int32
         sbytes.TLDecode(addr id)
         if FromID.toTable[id] != "server_DH_inner_data":
             raise newException(Exception, "Wrong response from decrypted data: " & FromID.toTable[id])
         var serverDHInnerData = new server_DH_inner_data
-        sbytes.TLDecode(serverDHInnerData)
+        sbytes.TLDecode(serverDHInnerData)]#
         assert serverDHInnerData.nonce == reqa.nonce 
         assert serverDHInnerData.server_nonce == resPQs.server_nonce
         var dhPrime = fromBytes(StUint[2048], serverDHInnerData.dh_prime, bigEndian)
@@ -152,23 +155,23 @@ proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] 
 
         #TODO: Find an alternative, this is really slow
         var gB = powmod(stuint(serverDHInnerData.g, 2048), b, dhPrime)
-        var data = client_DH_inner_data(
+        var data = Client_DH_inner_data(
             nonce: reqa.nonce,
             server_nonce: resPQs.server_nonce,
             retry_id: 0,
-            g_b: gB.toBytes(bigEndian)[0..255]).TLEncodeType()
+            g_b: gB.toBytes(bigEndian)[0..255]).TLEncode()
         data = sha1.digest(data).data[0..19] & data
         while len(data) mod 16 != 0:
             data = data & urandom(1)
         data = aes.encrypt(data)
-        response = await connection.send(set_client_DH_params(
+        response = await connection.send(Set_client_DH_params(
             nonce: reqa.nonce,
             server_nonce: resPQs.server_nonce,
             encrypted_data: data
         ))
 
         #step 3
-        if not (response of dh_gen_ok):
+        if not (response of Dh_gen_ok):
             raise newException(Exception, "Wrong response from server")
 
         #TODO: Find an alternative, this is really slow

@@ -1,5 +1,4 @@
-import client/rpc/mtproto
-import client/rpc/api
+import client/rpc/raw
 import client/storage
 import client/network/transports
 import asyncdispatch
@@ -51,13 +50,13 @@ proc initNimgram*(databinFile: string, config: NimgramConfig): Future[NimgramCli
         result.mainSession = initSession(connection, 2, autsalt.authKey, autsalt.salt, databinFile)
     asyncCheck result.mainSession.startHandler()
     let pingID = int64(rand(9999))
-    var ponger = await result.mainSession.send(ping(ping_id: pingID))
-    if not(ponger of pong):
-        raise newException(Exception, "Ping failed with type " & ponger.originalName)
-    assert ponger.pong.ping_id == pingID
+    var ponger = await result.mainSession.send(Ping(ping_id: pingID))
+    if not(ponger of Pong):
+        raise newException(Exception, "Ping failed with type " & ponger.getTypeName())
+    assert ponger.Pong.ping_id == pingID
 
     #TODO: Use help_getConfig properly
-    discard await result.mainSession.send(invokeWithLayer(layer: 120, query: initConnection(
+    discard await result.mainSession.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(
         api_id: config.apiID,
         device_model: config.deviceModel,
         system_version: config.systemVersion,
@@ -65,10 +64,10 @@ proc initNimgram*(databinFile: string, config: NimgramConfig): Future[NimgramCli
         system_lang_code: config.systemLangCode,
         lang_pack: config.langPack,
         lang_code: config.langCode,
-        query: help_getConfig())), false)
+        query: HelpGetConfig())), false)
 
     
-proc send*(self: NimgramClient, function: TLFunction): Future[TLObject] {.async.} =
+proc send*(self: NimgramClient, function: TLFunction): Future[TL] {.async.} =
     result = await self.mainSession.send(function)
 
 proc setCallback*(self: NimgramClient, callback: proc(updates: UpdatesI): Future[void] {.async.}) =

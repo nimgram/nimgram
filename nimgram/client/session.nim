@@ -1,13 +1,11 @@
 import network/transports
 import random/urandom
-import rpc/mtproto
-import rpc/api
+import rpc/raw
 import rpc/decoding
 import rpc/encoding
 import asyncdispatch
 import crypto/aes
 import stew/endians2
-import rpc/static
 import nimcrypto
 import math
 import updates
@@ -17,7 +15,7 @@ import json
 import tables
 type Response = ref object
     event: AsyncEvent
-    body: TLObject
+    body: TL
 
 type Session* = ref object 
     authKey: seq[uint8]
@@ -107,9 +105,9 @@ proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
     discard splaintext.readN(8)
     var responseSessionID = splaintext.readN(8)
     result = new CoreMessage
-    splaintext.TLDecode(result)
+    result.TLDecode(splaintext)
 
-proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TLObject] {.async.} 
+proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TL] {.async.} 
 
 proc startHandler*(self: Session) {.async.} = 
     while not self.connection.isClosed():
@@ -135,48 +133,45 @@ proc startHandler*(self: Session) {.async.} =
             
             var msgID = int64(0)
             self.seqNo = seqNo(body, self.seqNo)
-            if message.body of msg_detailed_info:
-                self.acks.add(body.msg_detailed_info.answer_msg_id)
+            if message.body of Msg_detailed_info:
+                self.acks.add(body.Msg_detailed_info.answer_msg_id)
                 continue
-            if message.body of msg_new_detailed_info:
-                self.acks.add(body.msg_new_detailed_info.answer_msg_id)
-                continue
-
-            if message.body of new_session_created:
+            if message.body of Msg_new_detailed_info:
+                self.acks.add(body.Msg_new_detailed_info.answer_msg_id)
                 continue
 
-            if message.body of bad_msg_notification:
-                msgID = body.bad_msg_notification.bad_msg_id
+            if message.body of New_session_created:
+                continue
 
-            if message.body of bad_server_salt:
-                msgID = body.bad_server_salt.bad_msg_id
+            if message.body of Bad_msg_notification:
+                msgID = body.Bad_msg_notification.bad_msg_id
+
+            if message.body of Bad_server_salt:
+                msgID = body.Bad_server_salt.bad_msg_id
 
             if message.body of FutureSalts:
                 msgID = body.FutureSalts.reqMsgID.int64
             
-            if message.body of rpc_result:
-                msgID = body.rpc_result.req_msg_id
-                body = body.rpc_result.result
+            if message.body of Rpc_result:
+                msgID = body.Rpc_result.req_msg_id
+                body = body.Rpc_result.result
             
             if body of GZipPacked:
-                var bodytemp: TLObject
-                var sdata = newScalingSeq(body.GZipPacked.data)
-                sdata.TLDecode(bodytemp)
-                body = bodytemp
+                body = body.GZipPacked.body
 
-            if message.body of pong:
-                msgID = body.pong.msgID
+            if message.body of Pong:
+                msgID = body.Pong.msgID
             
             if self.responses.contains(msgID):
-                self.responses[msgID].body = body.TLObject
+                self.responses[msgID].body = body
                 self.responses[msgID].event.trigger()
             
-            if body of updatesTooLong or body of updateShortMessage or body of updateShortChatMessage or body of updateShort or body of updatesCombined or body of api.updates:
+            if body of UpdatesTooLong or body of UpdateShortMessage or body of UpdateShortChatMessage or body of UpdateShort or body of UpdatesCombined or body of raw.Updates:
                 asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI)
                 
 
             if len(self.acks) >= 8:
-                discard await self.send(msgs_ack(msg_ids: self.acks), false)
+                discard await self.send(Msgs_ack(msg_ids: self.acks), false)
                 self.acks.setLen(0)
 
             
@@ -190,29 +185,21 @@ proc waitEvent(ev: AsyncEvent): Future[void] =
 
 
 
-proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TLObject] {.async.} =
-    var data: EncryptedResult
-
-    if tl of TLFunction:
-        data = self.encrypt(tl.TLFunction.TLEncodeGeneric(), tl)
-    elif tl of TLObject:
-        data = self.encrypt(tl.TLObject.TLEncode(), tl)
-    else:
-        raise newException(Exception, "Type not supported")
-    
+proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TL] {.async.} =
+    var data = self.encrypt(tl.TLEncode(), tl)
     await self.connection.write(data.encryptedData)
     if waitResponse:
         self.responses[data.messageID.int64] = Response(event: newAsyncEvent())
 
         await waitEvent(self.responses[data.messageID.int64].event)
         var response = self.responses[data.messageID.int64].body
-        if response of bad_server_salt:
-            var badServerSalt = response.bad_server_salt
+        if response of Bad_server_salt:
+            var badServerSalt = response.Bad_server_salt
             self.serverSalt = badServerSalt.new_server_salt.TLEncode()
             await createBin(self.authKey, badServerSalt.new_server_salt.TLEncode(), self.sessionFile)
             return await self.send(tl)
-        if response of rpc_error:
-            raise newException(CatchableError, response.rpc_error.error_message, RPCException(errorCode: response.rpc_error.error_code, errorMessage: response.rpc_error.error_message))
+        if response of Rpc_error:
+            raise newException(CatchableError, response.Rpc_error.error_message, RPCException(errorCode: response.Rpc_error.error_code, errorMessage: response.Rpc_error.error_message))
 
 
         #TODO: InvokeWithoutUpdates and InvokeWithTakeout support

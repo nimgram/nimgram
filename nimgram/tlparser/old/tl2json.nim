@@ -22,7 +22,6 @@ type TLMethod* = object
      returnType: string
 
 type TlSchema* = object
-     layer: int64
      constructors: seq[TlConstructor]
      methods: seq[TLMethod]
 proc getID(line: string): int32 =
@@ -63,15 +62,10 @@ proc getReturnType(line: string): string =
 
 
 
-proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
+proc parseTL(lines: seq[string], debug: bool): JsonNode =
     var methodMode = false
     var schema = TlSchema()
-    schema.layer = layerVersion
     for line in lines:
-        if line.startsWith("// LAYER") and schema.layer == -1:
-            schema.layer = line.replace("// LAYER", "").replace(" ", "").parseBiggestInt()
-            echo "Using layer version ", schema.layer
-
         if line.isEmptyOrWhitespace() or ($line[0] == "/" and $line[1] == "/"):
             continue
         if line == "---types---":
@@ -97,14 +91,11 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
     result = %* schema
 
 
-proc TL2Json*(filename: string, debug: bool, findLayer: bool, layerVersion: int64 = -1): JsonNode =
+proc TL2Json*(filename: string, debug: bool): JsonNode =
     # Parses a jsonified TL schema
 
     try:
         let TLData = split(readFile(filename), "\n")
-        result = parseTL(TLData, debug, layerVersion)
-        if result["layer"].getInt() == -1 and findLayer:
-            result = nil
-            echo "Failed to get the layer version, please specify it using --layer=<layer>"
+        result = parseTL(TLData, debug)
     except IOError as ioError:
-        echo &"An error occurred while attempting to read '{filename}' -> {ioError.msg}"
+        echo &"TLParser (error): An error occurred while attempting to read '{filename}' -> {ioError.msg}"

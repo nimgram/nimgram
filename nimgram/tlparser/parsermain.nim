@@ -1,59 +1,59 @@
-import tl2json
-import os
-import parser
-import parseOpt
-import openssl
-import ../shared
+import docopt
 import strformat
+import tl2json
+import strutils
+import tables
+import json
+import parser
+let doc = """
+Nimgram TLParser
 
-proc main(filename: string, debug: bool, output: string) =
-    echo &"Nimgram {NIMGRAM_VERSION} TL Parser\n"
-    if debug:
-        echo "Main (debug): Parsing TL schema"
-    if debug:
-        echo "- Converting to json"
-    var jsonified = TL2Json(filename, debug)
-    let result = parseTL(jsonified, debug)
-    if result == "":
-        echo &"Main (error): Parsing of '{filename}' has failed"
-    else:
-        try:
-            writeFile(output, result)
-        except IOError as error:
-            echo &"Main (error): An error has occurred while attempting to dump parsing output to '{output}' -> {error.msg}"
-            quit()
-        echo &"Main (info): Parsing complete, result has been dumped to '{output}'"
+Usage:
+  ./parsermain parse <mtprotoschema> <apischema> [--layer=<layer>] [--onlyjson]
+  ./parsermain (-h | --help)
+  ./parsermain --version
 
+Options:
+  -h --help     Show this screen.
+  --version     Show version.
+  --layer=<layer>  Set the layer version [default: Parsed from schema].
+  --onlyjson     Only convert the schema to json.
+"""
+
+
+proc parse(args:Table[system.string, docopt.Value]) =
+        echo args
+        var mtprotoschema = args["<mtprotoschema>"]
+        echo &"Parsing {mtprotoschema} to json..."     
+        var mtprotojsonschema = TL2Json($mtprotoschema, false, false)
+        if mtprotojsonschema == nil:
+          return
+        if args["--onlyjson"]:
+          writeFile($mtprotoschema&".json", $mtprotojsonschema)
+
+        var apischema = args["<apischema>"]
+        echo &"Parsing {apischema} to json..."  
+        var apijsonschema: JsonNode
+        if args.contains("--layer") and $args["--layer"] != "Parsed from schema":
+          echo "Using layer version ", $args["--layer"]
+          apijsonschema = TL2Json($apischema, false, true, parseBiggestInt($args["--layer"]))
+        else:
+          apijsonschema = TL2Json($apischema, false, true, -1)
+        if apijsonschema == nil:
+          return
+        if args["--onlyjson"]:
+          writeFile($apischema&".json", $apijsonschema)
+        if not args["--onlyjson"]:
+          echo "Generating nim files..."
+          echo "Generating core..."
+          parser.parse(mtprotojsonschema, true)
+          echo "Generating api..."
+
+          parser.parse(apijsonschema, false)
+          generateRawFile(mtprotojsonschema, apijsonschema)
 
 when isMainModule:
-    var optParser = initOptParser(commandLineParams())
-    var schemaFile: string = ""
-    var outputFile: string = ""
-    var debug: bool = false
-    if paramCount() > 0:
-        if paramCount() notin 1..<4:
-            echo "Usage: ./main <schema.tl> <output.nim> [--debug]"
-            quit()
-    else:
-        echo "Usage: ./main <schema.tl> <output.nim> [--debug]"
-        quit()
-    for kind, key, value in optParser.getopt():
-        case kind:
-            of cmdArgument:
-                if schemaFile == "":
-                    schemaFile = key
-                else:
-                    outputFile = key
-            of cmdLongOption:
-                if key == "debug":
-                    debug = true
-                else:
-                    echo &"Error -> Unkown option '{key}'"
-                    quit()
-            else:
-                echo "Usage: ./main <schema.tl> <output.nim> [--debug]"
-                quit()
-    if outputFile == "":
-        echo "Usage: ./main <schema.tl> <output.nim> [--debug]"
-        quit()
-    main(schemaFile, debug, outputFile)
+    let args = docopt(doc, version = &"Nimgram TLParser (Built on {CompileDate} at {CompileTime} - {hostCPU}/{hostOS})")
+
+    if args["parse"]:
+      parse(args)
