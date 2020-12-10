@@ -210,7 +210,7 @@ method getTypeName*(self: MessagesMessageViews): string = "MessagesMessageViews"
 method getTypeName*(self: MessagesDiscussionMessage): string = "MessagesDiscussionMessage"
 
 method TLEncode*(self: MessagesDialogs): seq[uint8] =
-    result = TLEncode(uint32(364538944))
+    result = TLEncode(uint32(0x15ba6c40))
     result = result & TLEncode(cast[seq[TL]](self.dialogs))
     result = result & TLEncode(cast[seq[TL]](self.messages))
     result = result & TLEncode(cast[seq[TL]](self.chats))
@@ -230,7 +230,7 @@ method TLDecode*(self: MessagesDialogs, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesDialogsSlice): seq[uint8] =
-    result = TLEncode(uint32(1910543603))
+    result = TLEncode(uint32(0x71e094f3))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.dialogs))
     result = result & TLEncode(cast[seq[TL]](self.messages))
@@ -252,12 +252,12 @@ method TLDecode*(self: MessagesDialogsSlice, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesDialogsNotModified): seq[uint8] =
-    result = TLEncode(uint32(4041467286))
+    result = TLEncode(uint32(0xf0e3e596))
     result = result & TLEncode(self.count)
 method TLDecode*(self: MessagesDialogsNotModified, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.count)
 method TLEncode*(self: MessagesMessages): seq[uint8] =
-    result = TLEncode(uint32(2356252295))
+    result = TLEncode(uint32(0x8c718e87))
     result = result & TLEncode(cast[seq[TL]](self.messages))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -273,7 +273,7 @@ method TLDecode*(self: MessagesMessages, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesMessagesSlice): seq[uint8] =
-    result = TLEncode(uint32(978610270))
+    result = TLEncode(uint32(0x3a54685e))
     if self.inexact:
         self.flags = self.flags or 1 shl 1
     if self.next_rate.isSome():
@@ -313,7 +313,7 @@ method TLDecode*(self: MessagesMessagesSlice, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesChannelMessages): seq[uint8] =
-    result = TLEncode(uint32(1682413576))
+    result = TLEncode(uint32(0x64479808))
     if self.inexact:
         self.flags = self.flags or 1 shl 1
     if self.offset_id_offset.isSome():
@@ -347,12 +347,12 @@ method TLDecode*(self: MessagesChannelMessages, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesMessagesNotModified): seq[uint8] =
-    result = TLEncode(uint32(1951620897))
+    result = TLEncode(uint32(0x74535f21))
     result = result & TLEncode(self.count)
 method TLDecode*(self: MessagesMessagesNotModified, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.count)
 method TLEncode*(self: MessagesChats): seq[uint8] =
-    result = TLEncode(uint32(1694474197))
+    result = TLEncode(uint32(0x64ff9fd5))
     result = result & TLEncode(cast[seq[TL]](self.chats))
 method TLDecode*(self: MessagesChats, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -360,7 +360,7 @@ method TLDecode*(self: MessagesChats, bytes: var ScalingSeq[uint8]) =
     self.chats = cast[seq[ChatI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesChatsSlice): seq[uint8] =
-    result = TLEncode(uint32(2631405892))
+    result = TLEncode(uint32(0x9cd81144))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.chats))
 method TLDecode*(self: MessagesChatsSlice, bytes: var ScalingSeq[uint8]) = 
@@ -370,7 +370,7 @@ method TLDecode*(self: MessagesChatsSlice, bytes: var ScalingSeq[uint8]) =
     self.chats = cast[seq[ChatI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesChatFull): seq[uint8] =
-    result = TLEncode(uint32(3856126364))
+    result = TLEncode(uint32(0xe5d7d19c))
     result = result & TLEncode(self.full_chat)
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -386,7 +386,7 @@ method TLDecode*(self: MessagesChatFull, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesAffectedHistory): seq[uint8] =
-    result = TLEncode(uint32(3025955281))
+    result = TLEncode(uint32(0xb45c69d1))
     result = result & TLEncode(self.pts)
     result = result & TLEncode(self.pts_count)
     result = result & TLEncode(self.offset)
@@ -395,12 +395,12 @@ method TLDecode*(self: MessagesAffectedHistory, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.pts_count)
     bytes.TLDecode(addr self.offset)
 method TLEncode*(self: MessagesDhConfigNotModified): seq[uint8] =
-    result = TLEncode(uint32(3236054581))
+    result = TLEncode(uint32(0xc0e24635))
     result = result & TLEncode(self.random)
 method TLDecode*(self: MessagesDhConfigNotModified, bytes: var ScalingSeq[uint8]) = 
     self.random = bytes.TLDecode()
 method TLEncode*(self: MessagesDhConfig): seq[uint8] =
-    result = TLEncode(uint32(740433629))
+    result = TLEncode(uint32(0x2c221edd))
     result = result & TLEncode(self.g)
     result = result & TLEncode(self.p)
     result = result & TLEncode(self.version)
@@ -411,12 +411,12 @@ method TLDecode*(self: MessagesDhConfig, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.version)
     self.random = bytes.TLDecode()
 method TLEncode*(self: MessagesSentEncryptedMessage): seq[uint8] =
-    result = TLEncode(uint32(1443858741))
+    result = TLEncode(uint32(0x560f8935))
     result = result & TLEncode(self.date)
 method TLDecode*(self: MessagesSentEncryptedMessage, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.date)
 method TLEncode*(self: MessagesSentEncryptedFile): seq[uint8] =
-    result = TLEncode(uint32(2492727090))
+    result = TLEncode(uint32(0x9493ff32))
     result = result & TLEncode(self.date)
     result = result & TLEncode(self.file)
 method TLDecode*(self: MessagesSentEncryptedFile, bytes: var ScalingSeq[uint8]) = 
@@ -425,11 +425,11 @@ method TLDecode*(self: MessagesSentEncryptedFile, bytes: var ScalingSeq[uint8]) 
     tempObj.TLDecode(bytes)
     self.file = cast[EncryptedFileI](tempObj)
 method TLEncode*(self: MessagesStickersNotModified): seq[uint8] =
-    result = TLEncode(uint32(4050950690))
+    result = TLEncode(uint32(0xf1749a22))
 method TLDecode*(self: MessagesStickersNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesStickers): seq[uint8] =
-    result = TLEncode(uint32(3831077821))
+    result = TLEncode(uint32(0xe4599bbd))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.stickers))
 method TLDecode*(self: MessagesStickers, bytes: var ScalingSeq[uint8]) = 
@@ -439,11 +439,11 @@ method TLDecode*(self: MessagesStickers, bytes: var ScalingSeq[uint8]) =
     self.stickers = cast[seq[DocumentI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesAllStickersNotModified): seq[uint8] =
-    result = TLEncode(uint32(3898999491))
+    result = TLEncode(uint32(0xe86602c3))
 method TLDecode*(self: MessagesAllStickersNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesAllStickers): seq[uint8] =
-    result = TLEncode(uint32(3992797279))
+    result = TLEncode(uint32(0xedfd405f))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.sets))
 method TLDecode*(self: MessagesAllStickers, bytes: var ScalingSeq[uint8]) = 
@@ -453,14 +453,14 @@ method TLDecode*(self: MessagesAllStickers, bytes: var ScalingSeq[uint8]) =
     self.sets = cast[seq[StickerSetI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesAffectedMessages): seq[uint8] =
-    result = TLEncode(uint32(2228326789))
+    result = TLEncode(uint32(0x84d19185))
     result = result & TLEncode(self.pts)
     result = result & TLEncode(self.pts_count)
 method TLDecode*(self: MessagesAffectedMessages, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.pts)
     bytes.TLDecode(addr self.pts_count)
 method TLEncode*(self: MessagesStickerSet): seq[uint8] =
-    result = TLEncode(uint32(3054118054))
+    result = TLEncode(uint32(0xb60a24a6))
     result = result & TLEncode(self.set)
     result = result & TLEncode(cast[seq[TL]](self.packs))
     result = result & TLEncode(cast[seq[TL]](self.documents))
@@ -476,11 +476,11 @@ method TLDecode*(self: MessagesStickerSet, bytes: var ScalingSeq[uint8]) =
     self.documents = cast[seq[DocumentI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesSavedGifsNotModified): seq[uint8] =
-    result = TLEncode(uint32(3892468898))
+    result = TLEncode(uint32(0xe8025ca2))
 method TLDecode*(self: MessagesSavedGifsNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesSavedGifs): seq[uint8] =
-    result = TLEncode(uint32(772213157))
+    result = TLEncode(uint32(0x2e0709a5))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.gifs))
 method TLDecode*(self: MessagesSavedGifs, bytes: var ScalingSeq[uint8]) = 
@@ -490,7 +490,7 @@ method TLDecode*(self: MessagesSavedGifs, bytes: var ScalingSeq[uint8]) =
     self.gifs = cast[seq[DocumentI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesBotResults): seq[uint8] =
-    result = TLEncode(uint32(2491197512))
+    result = TLEncode(uint32(0x947ca848))
     if self.gallery:
         self.flags = self.flags or 1 shl 0
     if self.next_offset.isSome():
@@ -526,7 +526,7 @@ method TLDecode*(self: MessagesBotResults, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesBotCallbackAnswer): seq[uint8] =
-    result = TLEncode(uint32(911761060))
+    result = TLEncode(uint32(0x36585ea4))
     if self.alert:
         self.flags = self.flags or 1 shl 1
     if self.has_url:
@@ -557,7 +557,7 @@ method TLDecode*(self: MessagesBotCallbackAnswer, bytes: var ScalingSeq[uint8]) 
         self.url = some(cast[string](bytes.TLDecode()))
     bytes.TLDecode(addr self.cache_time)
 method TLEncode*(self: MessagesMessageEditData): seq[uint8] =
-    result = TLEncode(uint32(649453030))
+    result = TLEncode(uint32(0x26b5dde6))
     if self.caption:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -566,7 +566,7 @@ method TLDecode*(self: MessagesMessageEditData, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 0)) != 0:
         self.caption = true
 method TLEncode*(self: MessagesPeerDialogs): seq[uint8] =
-    result = TLEncode(uint32(863093588))
+    result = TLEncode(uint32(0x3371c354))
     result = result & TLEncode(cast[seq[TL]](self.dialogs))
     result = result & TLEncode(cast[seq[TL]](self.messages))
     result = result & TLEncode(cast[seq[TL]](self.chats))
@@ -590,12 +590,12 @@ method TLDecode*(self: MessagesPeerDialogs, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.state = cast[UpdatesStateI](tempObj)
 method TLEncode*(self: MessagesFeaturedStickersNotModified): seq[uint8] =
-    result = TLEncode(uint32(3336309862))
+    result = TLEncode(uint32(0xc6dc0c66))
     result = result & TLEncode(self.count)
 method TLDecode*(self: MessagesFeaturedStickersNotModified, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.count)
 method TLEncode*(self: MessagesFeaturedStickers): seq[uint8] =
-    result = TLEncode(uint32(3064709953))
+    result = TLEncode(uint32(0xb6abc341))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.sets))
@@ -609,11 +609,11 @@ method TLDecode*(self: MessagesFeaturedStickers, bytes: var ScalingSeq[uint8]) =
     tempVector.setLen(0)
     bytes.TLDecode(self.unread)
 method TLEncode*(self: MessagesRecentStickersNotModified): seq[uint8] =
-    result = TLEncode(uint32(2977925376))
+    result = TLEncode(uint32(0xb17f890))
 method TLDecode*(self: MessagesRecentStickersNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesRecentStickers): seq[uint8] =
-    result = TLEncode(uint32(586395571))
+    result = TLEncode(uint32(0x22f3afb3))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.packs))
     result = result & TLEncode(cast[seq[TL]](self.stickers))
@@ -629,7 +629,7 @@ method TLDecode*(self: MessagesRecentStickers, bytes: var ScalingSeq[uint8]) =
     tempVector.setLen(0)
     bytes.TLDecode(self.dates)
 method TLEncode*(self: MessagesArchivedStickers): seq[uint8] =
-    result = TLEncode(uint32(1338747336))
+    result = TLEncode(uint32(0x4fcba9c8))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.sets))
 method TLDecode*(self: MessagesArchivedStickers, bytes: var ScalingSeq[uint8]) = 
@@ -639,11 +639,11 @@ method TLDecode*(self: MessagesArchivedStickers, bytes: var ScalingSeq[uint8]) =
     self.sets = cast[seq[StickerSetCoveredI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesStickerSetInstallResultSuccess): seq[uint8] =
-    result = TLEncode(uint32(946083368))
+    result = TLEncode(uint32(0x38641628))
 method TLDecode*(self: MessagesStickerSetInstallResultSuccess, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesStickerSetInstallResultArchive): seq[uint8] =
-    result = TLEncode(uint32(904138920))
+    result = TLEncode(uint32(0x35e410a8))
     result = result & TLEncode(cast[seq[TL]](self.sets))
 method TLDecode*(self: MessagesStickerSetInstallResultArchive, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -651,7 +651,7 @@ method TLDecode*(self: MessagesStickerSetInstallResultArchive, bytes: var Scalin
     self.sets = cast[seq[StickerSetCoveredI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesHighScores): seq[uint8] =
-    result = TLEncode(uint32(2587622809))
+    result = TLEncode(uint32(0x9a3bfd99))
     result = result & TLEncode(cast[seq[TL]](self.scores))
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: MessagesHighScores, bytes: var ScalingSeq[uint8]) = 
@@ -663,11 +663,11 @@ method TLDecode*(self: MessagesHighScores, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesFavedStickersNotModified): seq[uint8] =
-    result = TLEncode(uint32(2660214483))
+    result = TLEncode(uint32(0x9e8fa6d3))
 method TLDecode*(self: MessagesFavedStickersNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesFavedStickers): seq[uint8] =
-    result = TLEncode(uint32(4085198614))
+    result = TLEncode(uint32(0xf37f2f16))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.packs))
     result = result & TLEncode(cast[seq[TL]](self.stickers))
@@ -681,11 +681,11 @@ method TLDecode*(self: MessagesFavedStickers, bytes: var ScalingSeq[uint8]) =
     self.stickers = cast[seq[DocumentI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesFoundStickerSetsNotModified): seq[uint8] =
-    result = TLEncode(uint32(3578488272))
+    result = TLEncode(uint32(0xd54b65d))
 method TLDecode*(self: MessagesFoundStickerSetsNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: MessagesFoundStickerSets): seq[uint8] =
-    result = TLEncode(uint32(1359533640))
+    result = TLEncode(uint32(0x5108d648))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.sets))
 method TLDecode*(self: MessagesFoundStickerSets, bytes: var ScalingSeq[uint8]) = 
@@ -695,7 +695,7 @@ method TLDecode*(self: MessagesFoundStickerSets, bytes: var ScalingSeq[uint8]) =
     self.sets = cast[seq[StickerSetCoveredI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesSearchCounter): seq[uint8] =
-    result = TLEncode(uint32(3896830975))
+    result = TLEncode(uint32(0xe844ebff))
     if self.inexact:
         self.flags = self.flags or 1 shl 1
     result = result & TLEncode(self.flags)
@@ -710,7 +710,7 @@ method TLDecode*(self: MessagesSearchCounter, bytes: var ScalingSeq[uint8]) =
     self.filter = cast[MessagesFilterI](tempObj)
     bytes.TLDecode(addr self.count)
 method TLEncode*(self: MessagesInactiveChats): seq[uint8] =
-    result = TLEncode(uint32(2837970629))
+    result = TLEncode(uint32(0xa927fec5))
     result = result & TLEncode(self.dates)
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -724,7 +724,7 @@ method TLDecode*(self: MessagesInactiveChats, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesVotesList): seq[uint8] =
-    result = TLEncode(uint32(2185192592))
+    result = TLEncode(uint32(0x823f649))
     if self.next_offset.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -746,7 +746,7 @@ method TLDecode*(self: MessagesVotesList, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 0)) != 0:
         self.next_offset = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: MessagesMessageViews): seq[uint8] =
-    result = TLEncode(uint32(3066361155))
+    result = TLEncode(uint32(0xb6c4f543))
     result = result & TLEncode(cast[seq[TL]](self.views))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -762,7 +762,7 @@ method TLDecode*(self: MessagesMessageViews, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesDiscussionMessage): seq[uint8] =
-    result = TLEncode(uint32(4124938141))
+    result = TLEncode(uint32(0xf5dd8f9d))
     if self.max_id.isSome():
         self.flags = self.flags or 1 shl 0
     if self.read_inbox_max_id.isSome():

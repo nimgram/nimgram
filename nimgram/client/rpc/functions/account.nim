@@ -260,7 +260,7 @@ method getTypeName*(self: AccountGetGlobalPrivacySettings): string = "AccountGet
 method getTypeName*(self: AccountSetGlobalPrivacySettings): string = "AccountSetGlobalPrivacySettings"
 
 method TLEncode*(self: AccountRegisterDevice): seq[uint8] =
-    result = TLEncode(uint32(1754754159))
+    result = TLEncode(uint32(0x68976c6f))
     if self.no_muted:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -279,7 +279,7 @@ method TLDecode*(self: AccountRegisterDevice, bytes: var ScalingSeq[uint8]) =
     self.secret = bytes.TLDecode()
     bytes.TLDecode(self.other_uids)
 method TLEncode*(self: AccountUnregisterDevice): seq[uint8] =
-    result = TLEncode(uint32(813089983))
+    result = TLEncode(uint32(0x3076c4bf))
     result = result & TLEncode(self.token_type)
     result = result & TLEncode(self.token)
     result = result & TLEncode(self.other_uids)
@@ -288,7 +288,7 @@ method TLDecode*(self: AccountUnregisterDevice, bytes: var ScalingSeq[uint8]) =
     self.token = cast[string](bytes.TLDecode())
     bytes.TLDecode(self.other_uids)
 method TLEncode*(self: AccountUpdateNotifySettings): seq[uint8] =
-    result = TLEncode(uint32(2227067795))
+    result = TLEncode(uint32(0x84be5b93))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountUpdateNotifySettings, bytes: var ScalingSeq[uint8]) = 
@@ -298,18 +298,18 @@ method TLDecode*(self: AccountUpdateNotifySettings, bytes: var ScalingSeq[uint8]
     tempObj.TLDecode(bytes)
     self.settings = cast[InputPeerNotifySettingsI](tempObj)
 method TLEncode*(self: AccountGetNotifySettings): seq[uint8] =
-    result = TLEncode(uint32(313765169))
+    result = TLEncode(uint32(0x12b3ad31))
     result = result & TLEncode(self.peer)
 method TLDecode*(self: AccountGetNotifySettings, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputNotifyPeerI](tempObj)
 method TLEncode*(self: AccountResetNotifySettings): seq[uint8] =
-    result = TLEncode(uint32(3682473799))
+    result = TLEncode(uint32(0xdb7e1747))
 method TLDecode*(self: AccountResetNotifySettings, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountUpdateProfile): seq[uint8] =
-    result = TLEncode(uint32(2018596725))
+    result = TLEncode(uint32(0x78515775))
     if self.first_name.isSome():
         self.flags = self.flags or 1 shl 0
     if self.last_name.isSome():
@@ -332,17 +332,17 @@ method TLDecode*(self: AccountUpdateProfile, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 2)) != 0:
         self.about = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: AccountUpdateStatus): seq[uint8] =
-    result = TLEncode(uint32(1713919532))
+    result = TLEncode(uint32(0x6628562c))
     result = result & TLEncode(self.offline)
 method TLDecode*(self: AccountUpdateStatus, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.offline)
 method TLEncode*(self: AccountGetWallPapers): seq[uint8] =
-    result = TLEncode(uint32(2864387939))
+    result = TLEncode(uint32(0xaabb1763))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: AccountGetWallPapers, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: AccountReportPeer): seq[uint8] =
-    result = TLEncode(uint32(2920848735))
+    result = TLEncode(uint32(0xae189d5f))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.reason)
 method TLDecode*(self: AccountReportPeer, bytes: var ScalingSeq[uint8]) = 
@@ -352,24 +352,24 @@ method TLDecode*(self: AccountReportPeer, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.reason = cast[ReportReasonI](tempObj)
 method TLEncode*(self: AccountCheckUsername): seq[uint8] =
-    result = TLEncode(uint32(655677548))
+    result = TLEncode(uint32(0x2714d86c))
     result = result & TLEncode(self.username)
 method TLDecode*(self: AccountCheckUsername, bytes: var ScalingSeq[uint8]) = 
     self.username = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountUpdateUsername): seq[uint8] =
-    result = TLEncode(uint32(1040964988))
+    result = TLEncode(uint32(0x3e0bdd7c))
     result = result & TLEncode(self.username)
 method TLDecode*(self: AccountUpdateUsername, bytes: var ScalingSeq[uint8]) = 
     self.username = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountGetPrivacy): seq[uint8] =
-    result = TLEncode(uint32(3671837008))
+    result = TLEncode(uint32(0xdadbc950))
     result = result & TLEncode(self.key)
 method TLDecode*(self: AccountGetPrivacy, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.key = cast[InputPrivacyKeyI](tempObj)
 method TLEncode*(self: AccountSetPrivacy): seq[uint8] =
-    result = TLEncode(uint32(3388480744))
+    result = TLEncode(uint32(0xc9f81ce8))
     result = result & TLEncode(self.key)
     result = result & TLEncode(cast[seq[TL]](self.rules))
 method TLDecode*(self: AccountSetPrivacy, bytes: var ScalingSeq[uint8]) = 
@@ -381,23 +381,23 @@ method TLDecode*(self: AccountSetPrivacy, bytes: var ScalingSeq[uint8]) =
     self.rules = cast[seq[InputPrivacyRuleI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountDeleteAccount): seq[uint8] =
-    result = TLEncode(uint32(1099779595))
+    result = TLEncode(uint32(0x418d4e0b))
     result = result & TLEncode(self.reason)
 method TLDecode*(self: AccountDeleteAccount, bytes: var ScalingSeq[uint8]) = 
     self.reason = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountGetAccountTTL): seq[uint8] =
-    result = TLEncode(uint32(2412188112))
+    result = TLEncode(uint32(0x8fc711d))
 method TLDecode*(self: AccountGetAccountTTL, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountSetAccountTTL): seq[uint8] =
-    result = TLEncode(uint32(608323678))
+    result = TLEncode(uint32(0x2442485e))
     result = result & TLEncode(self.ttl)
 method TLDecode*(self: AccountSetAccountTTL, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.ttl = cast[AccountDaysTTLI](tempObj)
 method TLEncode*(self: AccountSendChangePhoneCode): seq[uint8] =
-    result = TLEncode(uint32(2186758885))
+    result = TLEncode(uint32(0x82574ae5))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountSendChangePhoneCode, bytes: var ScalingSeq[uint8]) = 
@@ -406,7 +406,7 @@ method TLDecode*(self: AccountSendChangePhoneCode, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.settings = cast[CodeSettingsI](tempObj)
 method TLEncode*(self: AccountChangePhone): seq[uint8] =
-    result = TLEncode(uint32(1891839707))
+    result = TLEncode(uint32(0x70c32edb))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
     result = result & TLEncode(self.phone_code)
@@ -415,32 +415,32 @@ method TLDecode*(self: AccountChangePhone, bytes: var ScalingSeq[uint8]) =
     self.phone_code_hash = cast[string](bytes.TLDecode())
     self.phone_code = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountUpdateDeviceLocked): seq[uint8] =
-    result = TLEncode(uint32(954152242))
+    result = TLEncode(uint32(0x38df3532))
     result = result & TLEncode(self.period)
 method TLDecode*(self: AccountUpdateDeviceLocked, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.period)
 method TLEncode*(self: AccountGetAuthorizations): seq[uint8] =
-    result = TLEncode(uint32(3810574680))
+    result = TLEncode(uint32(0xe320c158))
 method TLDecode*(self: AccountGetAuthorizations, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountResetAuthorization): seq[uint8] =
-    result = TLEncode(uint32(3749180348))
+    result = TLEncode(uint32(0xdf77f3bc))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: AccountResetAuthorization, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: AccountGetPassword): seq[uint8] =
-    result = TLEncode(uint32(1418342645))
+    result = TLEncode(uint32(0x548a30f5))
 method TLDecode*(self: AccountGetPassword, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetPasswordSettings): seq[uint8] =
-    result = TLEncode(uint32(2631199481))
+    result = TLEncode(uint32(0x9cd4eaf9))
     result = result & TLEncode(self.password)
 method TLDecode*(self: AccountGetPasswordSettings, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.password = cast[InputCheckPasswordSRPI](tempObj)
 method TLEncode*(self: AccountUpdatePasswordSettings): seq[uint8] =
-    result = TLEncode(uint32(2778402863))
+    result = TLEncode(uint32(0xa59b102f))
     result = result & TLEncode(self.password)
     result = result & TLEncode(self.new_settings)
 method TLDecode*(self: AccountUpdatePasswordSettings, bytes: var ScalingSeq[uint8]) = 
@@ -450,7 +450,7 @@ method TLDecode*(self: AccountUpdatePasswordSettings, bytes: var ScalingSeq[uint
     tempObj.TLDecode(bytes)
     self.new_settings = cast[AccountPasswordInputSettingsI](tempObj)
 method TLEncode*(self: AccountSendConfirmPhoneCode): seq[uint8] =
-    result = TLEncode(uint32(457157256))
+    result = TLEncode(uint32(0x1b3faa88))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountSendConfirmPhoneCode, bytes: var ScalingSeq[uint8]) = 
@@ -459,14 +459,14 @@ method TLDecode*(self: AccountSendConfirmPhoneCode, bytes: var ScalingSeq[uint8]
     tempObj.TLDecode(bytes)
     self.settings = cast[CodeSettingsI](tempObj)
 method TLEncode*(self: AccountConfirmPhone): seq[uint8] =
-    result = TLEncode(uint32(1596029123))
+    result = TLEncode(uint32(0x5f2178c3))
     result = result & TLEncode(self.phone_code_hash)
     result = result & TLEncode(self.phone_code)
 method TLDecode*(self: AccountConfirmPhone, bytes: var ScalingSeq[uint8]) = 
     self.phone_code_hash = cast[string](bytes.TLDecode())
     self.phone_code = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountGetTmpPassword): seq[uint8] =
-    result = TLEncode(uint32(1151208273))
+    result = TLEncode(uint32(0x449e0b51))
     result = result & TLEncode(self.password)
     result = result & TLEncode(self.period)
 method TLDecode*(self: AccountGetTmpPassword, bytes: var ScalingSeq[uint8]) = 
@@ -475,24 +475,24 @@ method TLDecode*(self: AccountGetTmpPassword, bytes: var ScalingSeq[uint8]) =
     self.password = cast[InputCheckPasswordSRPI](tempObj)
     bytes.TLDecode(addr self.period)
 method TLEncode*(self: AccountGetWebAuthorizations): seq[uint8] =
-    result = TLEncode(uint32(405695855))
+    result = TLEncode(uint32(0x182e6d6f))
 method TLDecode*(self: AccountGetWebAuthorizations, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountResetWebAuthorization): seq[uint8] =
-    result = TLEncode(uint32(755087855))
+    result = TLEncode(uint32(0x2d01b9ef))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: AccountResetWebAuthorization, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: AccountResetWebAuthorizations): seq[uint8] =
-    result = TLEncode(uint32(1747789204))
+    result = TLEncode(uint32(0x682d2594))
 method TLDecode*(self: AccountResetWebAuthorizations, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetAllSecureValues): seq[uint8] =
-    result = TLEncode(uint32(2995305597))
+    result = TLEncode(uint32(0xb288bc7d))
 method TLDecode*(self: AccountGetAllSecureValues, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetSecureValue): seq[uint8] =
-    result = TLEncode(uint32(1936088002))
+    result = TLEncode(uint32(0x73665bc2))
     result = result & TLEncode(cast[seq[TL]](self.types))
 method TLDecode*(self: AccountGetSecureValue, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -500,7 +500,7 @@ method TLDecode*(self: AccountGetSecureValue, bytes: var ScalingSeq[uint8]) =
     self.types = cast[seq[SecureValueTypeI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountSaveSecureValue): seq[uint8] =
-    result = TLEncode(uint32(2308956957))
+    result = TLEncode(uint32(0x899fe31d))
     result = result & TLEncode(self.value)
     result = result & TLEncode(self.secure_secret_id)
 method TLDecode*(self: AccountSaveSecureValue, bytes: var ScalingSeq[uint8]) = 
@@ -509,7 +509,7 @@ method TLDecode*(self: AccountSaveSecureValue, bytes: var ScalingSeq[uint8]) =
     self.value = cast[InputSecureValueI](tempObj)
     bytes.TLDecode(addr self.secure_secret_id)
 method TLEncode*(self: AccountDeleteSecureValue): seq[uint8] =
-    result = TLEncode(uint32(3095444555))
+    result = TLEncode(uint32(0xb880bc4b))
     result = result & TLEncode(cast[seq[TL]](self.types))
 method TLDecode*(self: AccountDeleteSecureValue, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -517,7 +517,7 @@ method TLDecode*(self: AccountDeleteSecureValue, bytes: var ScalingSeq[uint8]) =
     self.types = cast[seq[SecureValueTypeI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountGetAuthorizationForm): seq[uint8] =
-    result = TLEncode(uint32(3094063329))
+    result = TLEncode(uint32(0xb86ba8e1))
     result = result & TLEncode(self.bot_id)
     result = result & TLEncode(self.scope)
     result = result & TLEncode(self.public_key)
@@ -526,7 +526,7 @@ method TLDecode*(self: AccountGetAuthorizationForm, bytes: var ScalingSeq[uint8]
     self.scope = cast[string](bytes.TLDecode())
     self.public_key = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountAcceptAuthorization): seq[uint8] =
-    result = TLEncode(uint32(3875699860))
+    result = TLEncode(uint32(0xe7027c94))
     result = result & TLEncode(self.bot_id)
     result = result & TLEncode(self.scope)
     result = result & TLEncode(self.public_key)
@@ -544,7 +544,7 @@ method TLDecode*(self: AccountAcceptAuthorization, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.credentials = cast[SecureCredentialsEncryptedI](tempObj)
 method TLEncode*(self: AccountSendVerifyPhoneCode): seq[uint8] =
-    result = TLEncode(uint32(2778945273))
+    result = TLEncode(uint32(0xa5a356f9))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountSendVerifyPhoneCode, bytes: var ScalingSeq[uint8]) = 
@@ -553,7 +553,7 @@ method TLDecode*(self: AccountSendVerifyPhoneCode, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.settings = cast[CodeSettingsI](tempObj)
 method TLEncode*(self: AccountVerifyPhone): seq[uint8] =
-    result = TLEncode(uint32(1305716726))
+    result = TLEncode(uint32(0x4dd3a7f6))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
     result = result & TLEncode(self.phone_code)
@@ -562,19 +562,19 @@ method TLDecode*(self: AccountVerifyPhone, bytes: var ScalingSeq[uint8]) =
     self.phone_code_hash = cast[string](bytes.TLDecode())
     self.phone_code = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountSendVerifyEmailCode): seq[uint8] =
-    result = TLEncode(uint32(1880182943))
+    result = TLEncode(uint32(0x7011509f))
     result = result & TLEncode(self.email)
 method TLDecode*(self: AccountSendVerifyEmailCode, bytes: var ScalingSeq[uint8]) = 
     self.email = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountVerifyEmail): seq[uint8] =
-    result = TLEncode(uint32(3971627483))
+    result = TLEncode(uint32(0xecba39db))
     result = result & TLEncode(self.email)
     result = result & TLEncode(self.code)
 method TLDecode*(self: AccountVerifyEmail, bytes: var ScalingSeq[uint8]) = 
     self.email = cast[string](bytes.TLDecode())
     self.code = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountInitTakeoutSession): seq[uint8] =
-    result = TLEncode(uint32(4032514052))
+    result = TLEncode(uint32(0xf05b4804))
     if self.contacts:
         self.flags = self.flags or 1 shl 0
     if self.message_users:
@@ -611,7 +611,7 @@ method TLDecode*(self: AccountInitTakeoutSession, bytes: var ScalingSeq[uint8]) 
         bytes.TLDecode(addr tempVal)
         self.file_max_size = some(tempVal)
 method TLEncode*(self: AccountFinishTakeoutSession): seq[uint8] =
-    result = TLEncode(uint32(489050862))
+    result = TLEncode(uint32(0x1d2652ee))
     if self.success:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -620,29 +620,29 @@ method TLDecode*(self: AccountFinishTakeoutSession, bytes: var ScalingSeq[uint8]
     if (self.flags and (1 shl 0)) != 0:
         self.success = true
 method TLEncode*(self: AccountConfirmPasswordEmail): seq[uint8] =
-    result = TLEncode(uint32(2413762848))
+    result = TLEncode(uint32(0x8fdf1920))
     result = result & TLEncode(self.code)
 method TLDecode*(self: AccountConfirmPasswordEmail, bytes: var ScalingSeq[uint8]) = 
     self.code = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountResendPasswordEmail): seq[uint8] =
-    result = TLEncode(uint32(2055154197))
+    result = TLEncode(uint32(0x7a7f2a15))
 method TLDecode*(self: AccountResendPasswordEmail, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountCancelPasswordEmail): seq[uint8] =
-    result = TLEncode(uint32(3251361206))
+    result = TLEncode(uint32(0xc1cbd5b6))
 method TLDecode*(self: AccountCancelPasswordEmail, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetContactSignUpNotification): seq[uint8] =
-    result = TLEncode(uint32(2668087080))
+    result = TLEncode(uint32(0x9f07c728))
 method TLDecode*(self: AccountGetContactSignUpNotification, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountSetContactSignUpNotification): seq[uint8] =
-    result = TLEncode(uint32(3488890721))
+    result = TLEncode(uint32(0xcff43f61))
     result = result & TLEncode(self.silent)
 method TLDecode*(self: AccountSetContactSignUpNotification, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.silent)
 method TLEncode*(self: AccountGetNotifyExceptions): seq[uint8] =
-    result = TLEncode(uint32(1398240377))
+    result = TLEncode(uint32(0x53577479))
     if self.compare_sound:
         self.flags = self.flags or 1 shl 1
     if self.peer.isSome():
@@ -659,14 +659,14 @@ method TLDecode*(self: AccountGetNotifyExceptions, bytes: var ScalingSeq[uint8])
         tempVal.TLDecode(bytes)
         self.peer = some(tempVal.InputNotifyPeerI)
 method TLEncode*(self: AccountGetWallPaper): seq[uint8] =
-    result = TLEncode(uint32(4237155306))
+    result = TLEncode(uint32(0xfc8ddbea))
     result = result & TLEncode(self.wallpaper)
 method TLDecode*(self: AccountGetWallPaper, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.wallpaper = cast[InputWallPaperI](tempObj)
 method TLEncode*(self: AccountUploadWallPaper): seq[uint8] =
-    result = TLEncode(uint32(3716494945))
+    result = TLEncode(uint32(0xdd853661))
     result = result & TLEncode(self.file)
     result = result & TLEncode(self.mime_type)
     result = result & TLEncode(self.settings)
@@ -678,7 +678,7 @@ method TLDecode*(self: AccountUploadWallPaper, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.settings = cast[WallPaperSettingsI](tempObj)
 method TLEncode*(self: AccountSaveWallPaper): seq[uint8] =
-    result = TLEncode(uint32(1817860919))
+    result = TLEncode(uint32(0x6c5a5b37))
     result = result & TLEncode(self.wallpaper)
     result = result & TLEncode(self.unsave)
     result = result & TLEncode(self.settings)
@@ -690,7 +690,7 @@ method TLDecode*(self: AccountSaveWallPaper, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.settings = cast[WallPaperSettingsI](tempObj)
 method TLEncode*(self: AccountInstallWallPaper): seq[uint8] =
-    result = TLEncode(uint32(4276967273))
+    result = TLEncode(uint32(0xfeed5769))
     result = result & TLEncode(self.wallpaper)
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountInstallWallPaper, bytes: var ScalingSeq[uint8]) = 
@@ -700,15 +700,15 @@ method TLDecode*(self: AccountInstallWallPaper, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.settings = cast[WallPaperSettingsI](tempObj)
 method TLEncode*(self: AccountResetWallPapers): seq[uint8] =
-    result = TLEncode(uint32(3141244932))
+    result = TLEncode(uint32(0xbb3b9804))
 method TLDecode*(self: AccountResetWallPapers, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetAutoDownloadSettings): seq[uint8] =
-    result = TLEncode(uint32(1457130303))
+    result = TLEncode(uint32(0x56da0b3f))
 method TLDecode*(self: AccountGetAutoDownloadSettings, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountSaveAutoDownloadSettings): seq[uint8] =
-    result = TLEncode(uint32(1995661875))
+    result = TLEncode(uint32(0x76f36233))
     if self.low:
         self.flags = self.flags or 1 shl 0
     if self.high:
@@ -725,7 +725,7 @@ method TLDecode*(self: AccountSaveAutoDownloadSettings, bytes: var ScalingSeq[ui
     tempObj.TLDecode(bytes)
     self.settings = cast[AutoDownloadSettingsI](tempObj)
 method TLEncode*(self: AccountUploadTheme): seq[uint8] =
-    result = TLEncode(uint32(473805619))
+    result = TLEncode(uint32(0x1c3db333))
     if self.thumb.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -746,7 +746,7 @@ method TLDecode*(self: AccountUploadTheme, bytes: var ScalingSeq[uint8]) =
     self.file_name = cast[string](bytes.TLDecode())
     self.mime_type = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountCreateTheme): seq[uint8] =
-    result = TLEncode(uint32(2217919007))
+    result = TLEncode(uint32(0x8432c21f))
     if self.document.isSome():
         self.flags = self.flags or 1 shl 2
     if self.settings.isSome():
@@ -771,7 +771,7 @@ method TLDecode*(self: AccountCreateTheme, bytes: var ScalingSeq[uint8]) =
         tempVal.TLDecode(bytes)
         self.settings = some(tempVal.InputThemeSettingsI)
 method TLEncode*(self: AccountUpdateTheme): seq[uint8] =
-    result = TLEncode(uint32(1555261397))
+    result = TLEncode(uint32(0x5cb367d5))
     if self.slug.isSome():
         self.flags = self.flags or 1 shl 0
     if self.title.isSome():
@@ -810,7 +810,7 @@ method TLDecode*(self: AccountUpdateTheme, bytes: var ScalingSeq[uint8]) =
         tempVal.TLDecode(bytes)
         self.settings = some(tempVal.InputThemeSettingsI)
 method TLEncode*(self: AccountSaveTheme): seq[uint8] =
-    result = TLEncode(uint32(4065792108))
+    result = TLEncode(uint32(0xf257106c))
     result = result & TLEncode(self.theme)
     result = result & TLEncode(self.unsave)
 method TLDecode*(self: AccountSaveTheme, bytes: var ScalingSeq[uint8]) = 
@@ -819,7 +819,7 @@ method TLDecode*(self: AccountSaveTheme, bytes: var ScalingSeq[uint8]) =
     self.theme = cast[InputThemeI](tempObj)
     bytes.TLDecode(self.unsave)
 method TLEncode*(self: AccountInstallTheme): seq[uint8] =
-    result = TLEncode(uint32(2061776695))
+    result = TLEncode(uint32(0x7ae43737))
     if self.dark:
         self.flags = self.flags or 1 shl 0
     if self.format.isSome():
@@ -842,7 +842,7 @@ method TLDecode*(self: AccountInstallTheme, bytes: var ScalingSeq[uint8]) =
         tempVal.TLDecode(bytes)
         self.theme = some(tempVal.InputThemeI)
 method TLEncode*(self: AccountGetTheme): seq[uint8] =
-    result = TLEncode(uint32(2375906347))
+    result = TLEncode(uint32(0x8d9d742b))
     result = result & TLEncode(self.format)
     result = result & TLEncode(self.theme)
     result = result & TLEncode(self.document_id)
@@ -853,14 +853,14 @@ method TLDecode*(self: AccountGetTheme, bytes: var ScalingSeq[uint8]) =
     self.theme = cast[InputThemeI](tempObj)
     bytes.TLDecode(addr self.document_id)
 method TLEncode*(self: AccountGetThemes): seq[uint8] =
-    result = TLEncode(uint32(676939512))
+    result = TLEncode(uint32(0x285946f8))
     result = result & TLEncode(self.format)
     result = result & TLEncode(self.hash)
 method TLDecode*(self: AccountGetThemes, bytes: var ScalingSeq[uint8]) = 
     self.format = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: AccountSetContentSettings): seq[uint8] =
-    result = TLEncode(uint32(3044323691))
+    result = TLEncode(uint32(0xb574b16b))
     if self.sensitive_enabled:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -869,11 +869,11 @@ method TLDecode*(self: AccountSetContentSettings, bytes: var ScalingSeq[uint8]) 
     if (self.flags and (1 shl 0)) != 0:
         self.sensitive_enabled = true
 method TLEncode*(self: AccountGetContentSettings): seq[uint8] =
-    result = TLEncode(uint32(2342210990))
+    result = TLEncode(uint32(0x8b9b4dae))
 method TLDecode*(self: AccountGetContentSettings, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountGetMultiWallPapers): seq[uint8] =
-    result = TLEncode(uint32(1705865692))
+    result = TLEncode(uint32(0x65ad71dc))
     result = result & TLEncode(cast[seq[TL]](self.wallpapers))
 method TLDecode*(self: AccountGetMultiWallPapers, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -881,11 +881,11 @@ method TLDecode*(self: AccountGetMultiWallPapers, bytes: var ScalingSeq[uint8]) 
     self.wallpapers = cast[seq[InputWallPaperI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountGetGlobalPrivacySettings): seq[uint8] =
-    result = TLEncode(uint32(3945483510))
+    result = TLEncode(uint32(0xeb2b4cf6))
 method TLDecode*(self: AccountGetGlobalPrivacySettings, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountSetGlobalPrivacySettings): seq[uint8] =
-    result = TLEncode(uint32(517647042))
+    result = TLEncode(uint32(0x1edaaac2))
     result = result & TLEncode(self.settings)
 method TLDecode*(self: AccountSetGlobalPrivacySettings, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL

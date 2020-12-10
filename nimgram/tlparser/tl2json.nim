@@ -10,13 +10,13 @@ type TlParameter = object
     typeof: string
 
 type TlConstructor* = object
-     id: int32
+     id: string
      predicate: string
      params: seq[TlParameter]
      typeof: string
 
 type TLMethod* = object
-     id: int32
+     id: string
      methodname: string
      params: seq[TlParameter]
      returnType: string
@@ -25,19 +25,15 @@ type TlSchema* = object
      layer: int64
      constructors: seq[TlConstructor]
      methods: seq[TLMethod]
-proc getID(line: string): int32 =
+proc getID(line: string): string =
     var Splitt = split(line, "#", 1)
     if len(Splitt) <= 1:
         raise newException(Exception, "failed splitting")
     var Split = Splitt[Splitt.high]
 
     Split = split(Split, " ", 1)[0]
-    if len(Split) < 8:
-        var l = len(Split)
-        while l < 8:
-            Split = Split & "0"
-            inc(l)
-    return fromHex[int32](Split)
+    echo Split
+    return Split
 
 
 proc getName(line: string): string =
@@ -87,6 +83,7 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
             constructor.params = getParameters(line)
             constructor.typeof = getReturnType(line)
             schema.constructors = schema.constructors & constructor
+            echo %*constructor
         else:
             var meth = TLMethod()
             meth.id = getID(line)
@@ -94,6 +91,7 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
             meth.params = getParameters(line)
             meth.returnType = getReturnType(line)
             schema.methods = schema.methods & meth
+            
     result = %* schema
 
 

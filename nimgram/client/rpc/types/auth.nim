@@ -53,7 +53,7 @@ method getTypeName*(self: AuthLoginTokenMigrateTo): string = "AuthLoginTokenMigr
 method getTypeName*(self: AuthLoginTokenSuccess): string = "AuthLoginTokenSuccess"
 
 method TLEncode*(self: AuthSentCode): seq[uint8] =
-    result = TLEncode(uint32(1577067778))
+    result = TLEncode(uint32(0x5e002502))
     if self.next_type.isSome():
         self.flags = self.flags or 1 shl 1
     if self.timeout.isSome():
@@ -80,7 +80,7 @@ method TLDecode*(self: AuthSentCode, bytes: var ScalingSeq[uint8]) =
         bytes.TLDecode(addr tempVal)
         self.timeout = some(tempVal)
 method TLEncode*(self: AuthAuthorization): seq[uint8] =
-    result = TLEncode(uint32(3439659286))
+    result = TLEncode(uint32(0xcd050916))
     if self.tmp_sessions.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -97,7 +97,7 @@ method TLDecode*(self: AuthAuthorization, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.user = cast[UserI](tempObj)
 method TLEncode*(self: AuthAuthorizationSignUpRequired): seq[uint8] =
-    result = TLEncode(uint32(1148485274))
+    result = TLEncode(uint32(0x44747e9a))
     if self.terms_of_service.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -110,65 +110,65 @@ method TLDecode*(self: AuthAuthorizationSignUpRequired, bytes: var ScalingSeq[ui
         tempVal.TLDecode(bytes)
         self.terms_of_service = some(tempVal.HelpTermsOfServiceI)
 method TLEncode*(self: AuthExportedAuthorization): seq[uint8] =
-    result = TLEncode(uint32(3751189549))
+    result = TLEncode(uint32(0xdf969c2d))
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.bytes)
 method TLDecode*(self: AuthExportedAuthorization, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.id)
     self.bytes = bytes.TLDecode()
 method TLEncode*(self: AuthPasswordRecovery): seq[uint8] =
-    result = TLEncode(uint32(326715557))
+    result = TLEncode(uint32(0x137948a5))
     result = result & TLEncode(self.email_pattern)
 method TLDecode*(self: AuthPasswordRecovery, bytes: var ScalingSeq[uint8]) = 
     self.email_pattern = cast[string](bytes.TLDecode())
 method TLEncode*(self: AuthCodeTypeSms): seq[uint8] =
-    result = TLEncode(uint32(1923290508))
+    result = TLEncode(uint32(0x72a3158c))
 method TLDecode*(self: AuthCodeTypeSms, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AuthCodeTypeCall): seq[uint8] =
-    result = TLEncode(uint32(1948046307))
+    result = TLEncode(uint32(0x741cd3e3))
 method TLDecode*(self: AuthCodeTypeCall, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AuthCodeTypeFlashCall): seq[uint8] =
-    result = TLEncode(uint32(577556219))
+    result = TLEncode(uint32(0x226ccefb))
 method TLDecode*(self: AuthCodeTypeFlashCall, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AuthSentCodeTypeApp): seq[uint8] =
-    result = TLEncode(uint32(1035688326))
+    result = TLEncode(uint32(0x3dbb5986))
     result = result & TLEncode(self.length)
 method TLDecode*(self: AuthSentCodeTypeApp, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.length)
 method TLEncode*(self: AuthSentCodeTypeSms): seq[uint8] =
-    result = TLEncode(uint32(3221273506))
+    result = TLEncode(uint32(0xc000bba2))
     result = result & TLEncode(self.length)
 method TLDecode*(self: AuthSentCodeTypeSms, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.length)
 method TLEncode*(self: AuthSentCodeTypeCall): seq[uint8] =
-    result = TLEncode(uint32(1398007207))
+    result = TLEncode(uint32(0x5353e5a7))
     result = result & TLEncode(self.length)
 method TLDecode*(self: AuthSentCodeTypeCall, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.length)
 method TLEncode*(self: AuthSentCodeTypeFlashCall): seq[uint8] =
-    result = TLEncode(uint32(2869151449))
+    result = TLEncode(uint32(0xab03c6d9))
     result = result & TLEncode(self.pattern)
 method TLDecode*(self: AuthSentCodeTypeFlashCall, bytes: var ScalingSeq[uint8]) = 
     self.pattern = cast[string](bytes.TLDecode())
 method TLEncode*(self: AuthLoginToken): seq[uint8] =
-    result = TLEncode(uint32(1654593920))
+    result = TLEncode(uint32(0x629f1980))
     result = result & TLEncode(self.expires)
     result = result & TLEncode(self.token)
 method TLDecode*(self: AuthLoginToken, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.expires)
     self.token = bytes.TLDecode()
 method TLEncode*(self: AuthLoginTokenMigrateTo): seq[uint8] =
-    result = TLEncode(uint32(1760137568))
+    result = TLEncode(uint32(0x68e9916))
     result = result & TLEncode(self.dc_id)
     result = result & TLEncode(self.token)
 method TLDecode*(self: AuthLoginTokenMigrateTo, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.dc_id)
     self.token = bytes.TLDecode()
 method TLEncode*(self: AuthLoginTokenSuccess): seq[uint8] =
-    result = TLEncode(uint32(957176926))
+    result = TLEncode(uint32(0x390d5c5e))
     result = result & TLEncode(self.authorization)
 method TLDecode*(self: AuthLoginTokenSuccess, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL

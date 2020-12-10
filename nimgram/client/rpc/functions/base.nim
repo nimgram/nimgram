@@ -38,21 +38,21 @@ method getTypeName*(self: InvokeWithMessagesRange): string = "InvokeWithMessages
 method getTypeName*(self: InvokeWithTakeout): string = "InvokeWithTakeout"
 
 method TLEncode*(self: InvokeAfterMsg): seq[uint8] =
-    result = TLEncode(uint32(3416209197))
+    result = TLEncode(uint32(0xcb9f372d))
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeAfterMsg, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.msg_id)
     self.query.TLDecode(bytes)
 method TLEncode*(self: InvokeAfterMsgs): seq[uint8] =
-    result = TLEncode(uint32(1036301552))
+    result = TLEncode(uint32(0x3dc4b4f0))
     result = result & TLEncode(self.msg_ids)
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeAfterMsgs, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.msg_ids)
     self.query.TLDecode(bytes)
 method TLEncode*(self: InitConnection): seq[uint8] =
-    result = TLEncode(uint32(3251461801))
+    result = TLEncode(uint32(0xc1cd5ea9))
     if self.proxy.isSome():
         self.flags = self.flags or 1 shl 0
     if self.params.isSome():
@@ -89,19 +89,19 @@ method TLDecode*(self: InitConnection, bytes: var ScalingSeq[uint8]) =
         self.params = some(tempVal.JSONValueI)
     self.query.TLDecode(bytes)
 method TLEncode*(self: InvokeWithLayer): seq[uint8] =
-    result = TLEncode(uint32(3667594509))
+    result = TLEncode(uint32(0xda9b0d0d))
     result = result & TLEncode(self.layer)
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeWithLayer, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.layer)
     self.query.TLDecode(bytes)
 method TLEncode*(self: InvokeWithoutUpdates): seq[uint8] =
-    result = TLEncode(uint32(3214170551))
+    result = TLEncode(uint32(0xbf9459b7))
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeWithoutUpdates, bytes: var ScalingSeq[uint8]) = 
     self.query.TLDecode(bytes)
 method TLEncode*(self: InvokeWithMessagesRange): seq[uint8] =
-    result = TLEncode(uint32(911373810))
+    result = TLEncode(uint32(0x365275f2))
     result = result & TLEncode(self.range)
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeWithMessagesRange, bytes: var ScalingSeq[uint8]) = 
@@ -110,7 +110,7 @@ method TLDecode*(self: InvokeWithMessagesRange, bytes: var ScalingSeq[uint8]) =
     self.range = cast[MessageRangeI](tempObj)
     self.query.TLDecode(bytes)
 method TLEncode*(self: InvokeWithTakeout): seq[uint8] =
-    result = TLEncode(uint32(2896821550))
+    result = TLEncode(uint32(0xaca9fd2e))
     result = result & TLEncode(self.takeout_id)
     result = result & TLEncode(self.query)
 method TLDecode*(self: InvokeWithTakeout, bytes: var ScalingSeq[uint8]) = 

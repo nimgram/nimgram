@@ -167,7 +167,7 @@ method getTypeName*(self: Msg_detailed_info): string = "Msg_detailed_info"
 method getTypeName*(self: Msg_new_detailed_info): string = "Msg_new_detailed_info"
 
 method TLEncode*(self: ResPQ): seq[uint8] =
-    result = TLEncode(uint32(85337187))
+    result = TLEncode(uint32(0x05162463))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.pq)
@@ -178,7 +178,7 @@ method TLDecode*(self: ResPQ, bytes: var ScalingSeq[uint8]) =
     self.pq = bytes.TLDecode()
     bytes.TLDecode(self.server_public_key_fingerprints)
 method TLEncode*(self: P_q_inner_data): seq[uint8] =
-    result = TLEncode(uint32(2211011308))
+    result = TLEncode(uint32(0x83c95aec))
     result = result & TLEncode(self.pq)
     result = result & TLEncode(self.p)
     result = result & TLEncode(self.q)
@@ -193,7 +193,7 @@ method TLDecode*(self: P_q_inner_data, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     bytes.TLDecode(addr self.new_nonce)
 method TLEncode*(self: Server_DH_params_fail): seq[uint8] =
-    result = TLEncode(uint32(2043348061))
+    result = TLEncode(uint32(0x79cb045d))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.new_nonce_hash)
@@ -202,7 +202,7 @@ method TLDecode*(self: Server_DH_params_fail, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     bytes.TLDecode(addr self.new_nonce_hash)
 method TLEncode*(self: Server_DH_params_ok): seq[uint8] =
-    result = TLEncode(uint32(3504867164))
+    result = TLEncode(uint32(0xd0e8075c))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.encrypted_answer)
@@ -211,7 +211,7 @@ method TLDecode*(self: Server_DH_params_ok, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     self.encrypted_answer = bytes.TLDecode()
 method TLEncode*(self: Server_DH_inner_data): seq[uint8] =
-    result = TLEncode(uint32(3045658042))
+    result = TLEncode(uint32(0xb5890dba))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.g)
@@ -226,7 +226,7 @@ method TLDecode*(self: Server_DH_inner_data, bytes: var ScalingSeq[uint8]) =
     self.g_a = bytes.TLDecode()
     bytes.TLDecode(addr self.server_time)
 method TLEncode*(self: Client_DH_inner_data): seq[uint8] =
-    result = TLEncode(uint32(1715713620))
+    result = TLEncode(uint32(0x6643b654))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.retry_id)
@@ -237,7 +237,7 @@ method TLDecode*(self: Client_DH_inner_data, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.retry_id)
     self.g_b = bytes.TLDecode()
 method TLEncode*(self: Dh_gen_ok): seq[uint8] =
-    result = TLEncode(uint32(1003222836))
+    result = TLEncode(uint32(0x3bcbf734))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.new_nonce_hash1)
@@ -246,7 +246,7 @@ method TLDecode*(self: Dh_gen_ok, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     bytes.TLDecode(addr self.new_nonce_hash1)
 method TLEncode*(self: Dh_gen_retry): seq[uint8] =
-    result = TLEncode(uint32(1188831161))
+    result = TLEncode(uint32(0x46dc1fb9))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.new_nonce_hash2)
@@ -255,7 +255,7 @@ method TLDecode*(self: Dh_gen_retry, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     bytes.TLDecode(addr self.new_nonce_hash2)
 method TLEncode*(self: Dh_gen_fail): seq[uint8] =
-    result = TLEncode(uint32(2795351554))
+    result = TLEncode(uint32(0xa69dae02))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.new_nonce_hash3)
@@ -264,29 +264,29 @@ method TLDecode*(self: Dh_gen_fail, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     bytes.TLDecode(addr self.new_nonce_hash3)
 method TLEncode*(self: Rpc_result): seq[uint8] =
-    result = TLEncode(uint32(4082920705))
+    result = TLEncode(uint32(0xf35c6d01))
     result = result & TLEncode(self.req_msg_id)
     result = result & TLEncode(self.result)
 method TLDecode*(self: Rpc_result, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.req_msg_id)
     self.result.TLDecode(bytes)
 method TLEncode*(self: Rpc_error): seq[uint8] =
-    result = TLEncode(uint32(558156313))
+    result = TLEncode(uint32(0x2144ca19))
     result = result & TLEncode(self.error_code)
     result = result & TLEncode(self.error_message)
 method TLDecode*(self: Rpc_error, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.error_code)
     self.error_message = cast[string](bytes.TLDecode())
 method TLEncode*(self: Rpc_answer_unknown): seq[uint8] =
-    result = TLEncode(uint32(1579864942))
+    result = TLEncode(uint32(0x5e2ad36e))
 method TLDecode*(self: Rpc_answer_unknown, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: Rpc_answer_dropped_running): seq[uint8] =
-    result = TLEncode(uint32(3447252358))
+    result = TLEncode(uint32(0xcd78e586))
 method TLDecode*(self: Rpc_answer_dropped_running, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: Rpc_answer_dropped): seq[uint8] =
-    result = TLEncode(uint32(2755319991))
+    result = TLEncode(uint32(0xa43ad8b7))
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.seq_no)
     result = result & TLEncode(self.bytes)
@@ -295,24 +295,24 @@ method TLDecode*(self: Rpc_answer_dropped, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.seq_no)
     bytes.TLDecode(addr self.bytes)
 method TLEncode*(self: Pong): seq[uint8] =
-    result = TLEncode(uint32(880243653))
+    result = TLEncode(uint32(0x347773c5))
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.ping_id)
 method TLDecode*(self: Pong, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.msg_id)
     bytes.TLDecode(addr self.ping_id)
 method TLEncode*(self: Destroy_session_ok): seq[uint8] =
-    result = TLEncode(uint32(3793765884))
+    result = TLEncode(uint32(0xe22045fc))
     result = result & TLEncode(self.session_id)
 method TLDecode*(self: Destroy_session_ok, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.session_id)
 method TLEncode*(self: Destroy_session_none): seq[uint8] =
-    result = TLEncode(uint32(1658015945))
+    result = TLEncode(uint32(0x62d350c9))
     result = result & TLEncode(self.session_id)
 method TLDecode*(self: Destroy_session_none, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.session_id)
 method TLEncode*(self: New_session_created): seq[uint8] =
-    result = TLEncode(uint32(2663516424))
+    result = TLEncode(uint32(0x9ec20908))
     result = result & TLEncode(self.first_msg_id)
     result = result & TLEncode(self.unique_id)
     result = result & TLEncode(self.server_salt)
@@ -321,12 +321,12 @@ method TLDecode*(self: New_session_created, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.unique_id)
     bytes.TLDecode(addr self.server_salt)
 method TLEncode*(self: Msgs_ack): seq[uint8] =
-    result = TLEncode(uint32(1658238041))
+    result = TLEncode(uint32(0x62d6b459))
     result = result & TLEncode(self.msg_ids)
 method TLDecode*(self: Msgs_ack, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.msg_ids)
 method TLEncode*(self: Bad_msg_notification): seq[uint8] =
-    result = TLEncode(uint32(2817521681))
+    result = TLEncode(uint32(0xa7eff811))
     result = result & TLEncode(self.bad_msg_id)
     result = result & TLEncode(self.bad_msg_seqno)
     result = result & TLEncode(self.error_code)
@@ -335,7 +335,7 @@ method TLDecode*(self: Bad_msg_notification, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.bad_msg_seqno)
     bytes.TLDecode(addr self.error_code)
 method TLEncode*(self: Bad_server_salt): seq[uint8] =
-    result = TLEncode(uint32(3987424379))
+    result = TLEncode(uint32(0xedab447b))
     result = result & TLEncode(self.bad_msg_id)
     result = result & TLEncode(self.bad_msg_seqno)
     result = result & TLEncode(self.error_code)
@@ -346,31 +346,31 @@ method TLDecode*(self: Bad_server_salt, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.error_code)
     bytes.TLDecode(addr self.new_server_salt)
 method TLEncode*(self: Msg_resend_req): seq[uint8] =
-    result = TLEncode(uint32(2105940488))
+    result = TLEncode(uint32(0x7d861a08))
     result = result & TLEncode(self.msg_ids)
 method TLDecode*(self: Msg_resend_req, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.msg_ids)
 method TLEncode*(self: Msgs_state_req): seq[uint8] =
-    result = TLEncode(uint32(3664378706))
+    result = TLEncode(uint32(0xda69fb52))
     result = result & TLEncode(self.msg_ids)
 method TLDecode*(self: Msgs_state_req, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.msg_ids)
 method TLEncode*(self: Msgs_state_info): seq[uint8] =
-    result = TLEncode(uint32(81704317))
+    result = TLEncode(uint32(0x04deb57d))
     result = result & TLEncode(self.req_msg_id)
     result = result & TLEncode(self.info)
 method TLDecode*(self: Msgs_state_info, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.req_msg_id)
     self.info = bytes.TLDecode()
 method TLEncode*(self: Msgs_all_info): seq[uint8] =
-    result = TLEncode(uint32(2361446705))
+    result = TLEncode(uint32(0x8cc0d131))
     result = result & TLEncode(self.msg_ids)
     result = result & TLEncode(self.info)
 method TLDecode*(self: Msgs_all_info, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.msg_ids)
     self.info = bytes.TLDecode()
 method TLEncode*(self: Msg_detailed_info): seq[uint8] =
-    result = TLEncode(uint32(661470918))
+    result = TLEncode(uint32(0x276d3ec6))
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.answer_msg_id)
     result = result & TLEncode(self.bytes)
@@ -381,7 +381,7 @@ method TLDecode*(self: Msg_detailed_info, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.bytes)
     bytes.TLDecode(addr self.status)
 method TLEncode*(self: Msg_new_detailed_info): seq[uint8] =
-    result = TLEncode(uint32(2157819615))
+    result = TLEncode(uint32(0x809db6df))
     result = result & TLEncode(self.answer_msg_id)
     result = result & TLEncode(self.bytes)
     result = result & TLEncode(self.status)

@@ -18,7 +18,7 @@ method getTypeName*(self: PhoneGroupCall): string = "PhoneGroupCall"
 method getTypeName*(self: PhoneGroupParticipants): string = "PhoneGroupParticipants"
 
 method TLEncode*(self: PhonePhoneCall): seq[uint8] =
-    result = TLEncode(uint32(3968000320))
+    result = TLEncode(uint32(0xec82e140))
     result = result & TLEncode(self.phone_call)
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: PhonePhoneCall, bytes: var ScalingSeq[uint8]) = 
@@ -30,7 +30,7 @@ method TLDecode*(self: PhonePhoneCall, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: PhoneGroupCall): seq[uint8] =
-    result = TLEncode(uint32(1722485756))
+    result = TLEncode(uint32(0x66ab0bfc))
     result = result & TLEncode(self.call)
     result = result & TLEncode(cast[seq[TL]](self.participants))
     result = result & TLEncode(self.participants_next_offset)
@@ -48,7 +48,7 @@ method TLDecode*(self: PhoneGroupCall, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: PhoneGroupParticipants): seq[uint8] =
-    result = TLEncode(uint32(2633939245))
+    result = TLEncode(uint32(0x9cfeb92d))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.participants))
     result = result & TLEncode(self.next_offset)

@@ -276,21 +276,21 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     
     var copv = "        var id: uint32\n        bytes.TLDecode(addr id)\n        case id:\n"
     for methods in mtprotoJson["methods"]:
-        var id = methods["id"].getInt().uint32
+        var id = methods["id"].getStr()
         var something = getSomething(methods["methodname"].getStr())
-        copv.add(&"        of uint32({id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        copv.add(&"        of uint32(0x{id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in mtprotoJson["constructors"]:
-        var id = methods["id"].getInt().uint32
+        var id = methods["id"].getStr()
         var something = getSomething(methods["predicate"].getStr())
-        copv.add(&"        of uint32({id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        copv.add(&"        of uint32(0x{id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["methods"]:
-        var id = methods["id"].getInt().uint32
+        var id = methods["id"].getStr()
         var something = getSomething(methods["methodname"].getStr())
-        copv.add(&"        of uint32({id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        copv.add(&"        of uint32(0x{id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["constructors"]:
-        var id = methods["id"].getInt().uint32
+        var id = methods["id"].getStr()
         var something = getSomething(methods["predicate"].getStr())
-        copv.add(&"        of uint32({id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        copv.add(&"        of uint32(0x{id}):\n            var tmp = new {something}\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     copv.add(&"        of uint32(812830625):\n            var tmp = new GZipPacked\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     copv.add(&"        of uint32(1945237724):\n            var tmp = new MessageContainer\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     copv.add(&"        of uint32(2924480661):\n            var tmp = new FutureSalts\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
@@ -302,9 +302,9 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
 
 
 
-proc generateEncode(predicate: string, id: uint32, params: JsonNode): string =
+proc generateEncode(predicate: string, id: string, params: JsonNode): string =
     result = &"method TLEncode*(self: {predicate}): seq[uint8] =\n"
-    result.add(&"    result = TLEncode(uint32({id}))\n")    
+    result.add(&"    result = TLEncode(uint32(0x{id}))\n")    
     var flagsCode = ""
     var encodeBlock = ""
     for param in params:
@@ -353,7 +353,7 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool, genericTyp
     if generateTypes:
         predicategetter = "predicate"
     for obj in jsonData:
-        var id = obj["id"].getInt().uint32
+        var id = obj["id"].getStr()
         var sub = "base"
         var predicate = obj[predicategetter].getStr()
         if predicate.contains("."):

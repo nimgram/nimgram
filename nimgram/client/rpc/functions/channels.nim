@@ -155,7 +155,7 @@ method getTypeName*(self: ChannelsToggleSlowMode): string = "ChannelsToggleSlowM
 method getTypeName*(self: ChannelsGetInactiveChannels): string = "ChannelsGetInactiveChannels"
 
 method TLEncode*(self: ChannelsReadHistory): seq[uint8] =
-    result = TLEncode(uint32(3423619383))
+    result = TLEncode(uint32(0xcc104937))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.max_id)
 method TLDecode*(self: ChannelsReadHistory, bytes: var ScalingSeq[uint8]) = 
@@ -164,7 +164,7 @@ method TLDecode*(self: ChannelsReadHistory, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(addr self.max_id)
 method TLEncode*(self: ChannelsDeleteMessages): seq[uint8] =
-    result = TLEncode(uint32(2227305806))
+    result = TLEncode(uint32(0x84c1fd4e))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.id)
 method TLDecode*(self: ChannelsDeleteMessages, bytes: var ScalingSeq[uint8]) = 
@@ -173,7 +173,7 @@ method TLDecode*(self: ChannelsDeleteMessages, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(self.id)
 method TLEncode*(self: ChannelsDeleteUserHistory): seq[uint8] =
-    result = TLEncode(uint32(3507345179))
+    result = TLEncode(uint32(0xd10dd71b))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
 method TLDecode*(self: ChannelsDeleteUserHistory, bytes: var ScalingSeq[uint8]) = 
@@ -183,7 +183,7 @@ method TLDecode*(self: ChannelsDeleteUserHistory, bytes: var ScalingSeq[uint8]) 
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
 method TLEncode*(self: ChannelsReportSpam): seq[uint8] =
-    result = TLEncode(uint32(4261967888))
+    result = TLEncode(uint32(0xfe087810))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.id)
@@ -195,7 +195,7 @@ method TLDecode*(self: ChannelsReportSpam, bytes: var ScalingSeq[uint8]) =
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(self.id)
 method TLEncode*(self: ChannelsGetMessages): seq[uint8] =
-    result = TLEncode(uint32(2911672867))
+    result = TLEncode(uint32(0xad8c9a23))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(cast[seq[TL]](self.id))
 method TLDecode*(self: ChannelsGetMessages, bytes: var ScalingSeq[uint8]) = 
@@ -207,7 +207,7 @@ method TLDecode*(self: ChannelsGetMessages, bytes: var ScalingSeq[uint8]) =
     self.id = cast[seq[InputMessageI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ChannelsGetParticipants): seq[uint8] =
-    result = TLEncode(uint32(306054633))
+    result = TLEncode(uint32(0x123e05e9))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.filter)
     result = result & TLEncode(self.offset)
@@ -223,7 +223,7 @@ method TLDecode*(self: ChannelsGetParticipants, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: ChannelsGetParticipant): seq[uint8] =
-    result = TLEncode(uint32(1416484774))
+    result = TLEncode(uint32(0x546dd7a6))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
 method TLDecode*(self: ChannelsGetParticipant, bytes: var ScalingSeq[uint8]) = 
@@ -233,7 +233,7 @@ method TLDecode*(self: ChannelsGetParticipant, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
 method TLEncode*(self: ChannelsGetChannels): seq[uint8] =
-    result = TLEncode(uint32(2817964976))
+    result = TLEncode(uint32(0xa7f6bbb))
     result = result & TLEncode(cast[seq[TL]](self.id))
 method TLDecode*(self: ChannelsGetChannels, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -241,14 +241,14 @@ method TLDecode*(self: ChannelsGetChannels, bytes: var ScalingSeq[uint8]) =
     self.id = cast[seq[InputChannelI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ChannelsGetFullChannel): seq[uint8] =
-    result = TLEncode(uint32(2268504208))
+    result = TLEncode(uint32(0x8736a09))
     result = result & TLEncode(self.channel)
 method TLDecode*(self: ChannelsGetFullChannel, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: ChannelsCreateChannel): seq[uint8] =
-    result = TLEncode(uint32(1029681423))
+    result = TLEncode(uint32(0x3d5fb10f))
     if self.broadcast:
         self.flags = self.flags or 1 shl 0
     if self.megagroup:
@@ -279,7 +279,7 @@ method TLDecode*(self: ChannelsCreateChannel, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 2)) != 0:
         self.address = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: ChannelsEditAdmin): seq[uint8] =
-    result = TLEncode(uint32(3543959810))
+    result = TLEncode(uint32(0xd33c8902))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.admin_rights)
@@ -294,7 +294,7 @@ method TLDecode*(self: ChannelsEditAdmin, bytes: var ScalingSeq[uint8]) =
     self.admin_rights = cast[ChatAdminRightsI](tempObj)
     self.rank = cast[string](bytes.TLDecode())
 method TLEncode*(self: ChannelsEditTitle): seq[uint8] =
-    result = TLEncode(uint32(1450044624))
+    result = TLEncode(uint32(0x566decd0))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.title)
 method TLDecode*(self: ChannelsEditTitle, bytes: var ScalingSeq[uint8]) = 
@@ -303,7 +303,7 @@ method TLDecode*(self: ChannelsEditTitle, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     self.title = cast[string](bytes.TLDecode())
 method TLEncode*(self: ChannelsEditPhoto): seq[uint8] =
-    result = TLEncode(uint32(4046346185))
+    result = TLEncode(uint32(0xf12e57c9))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.photo)
 method TLDecode*(self: ChannelsEditPhoto, bytes: var ScalingSeq[uint8]) = 
@@ -313,7 +313,7 @@ method TLDecode*(self: ChannelsEditPhoto, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.photo = cast[InputChatPhotoI](tempObj)
 method TLEncode*(self: ChannelsCheckUsername): seq[uint8] =
-    result = TLEncode(uint32(283557164))
+    result = TLEncode(uint32(0x10e6bd2c))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.username)
 method TLDecode*(self: ChannelsCheckUsername, bytes: var ScalingSeq[uint8]) = 
@@ -322,7 +322,7 @@ method TLDecode*(self: ChannelsCheckUsername, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     self.username = cast[string](bytes.TLDecode())
 method TLEncode*(self: ChannelsUpdateUsername): seq[uint8] =
-    result = TLEncode(uint32(890549214))
+    result = TLEncode(uint32(0x3514b3de))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.username)
 method TLDecode*(self: ChannelsUpdateUsername, bytes: var ScalingSeq[uint8]) = 
@@ -331,21 +331,21 @@ method TLDecode*(self: ChannelsUpdateUsername, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     self.username = cast[string](bytes.TLDecode())
 method TLEncode*(self: ChannelsJoinChannel): seq[uint8] =
-    result = TLEncode(uint32(615851205))
+    result = TLEncode(uint32(0x24b524c5))
     result = result & TLEncode(self.channel)
 method TLDecode*(self: ChannelsJoinChannel, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: ChannelsLeaveChannel): seq[uint8] =
-    result = TLEncode(uint32(4164332181))
+    result = TLEncode(uint32(0xf836aa95))
     result = result & TLEncode(self.channel)
 method TLDecode*(self: ChannelsLeaveChannel, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: ChannelsInviteToChannel): seq[uint8] =
-    result = TLEncode(uint32(429865580))
+    result = TLEncode(uint32(0x199f3a6c))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: ChannelsInviteToChannel, bytes: var ScalingSeq[uint8]) = 
@@ -357,14 +357,14 @@ method TLDecode*(self: ChannelsInviteToChannel, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[InputUserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ChannelsDeleteChannel): seq[uint8] =
-    result = TLEncode(uint32(3222347747))
+    result = TLEncode(uint32(0xc0111fe3))
     result = result & TLEncode(self.channel)
 method TLDecode*(self: ChannelsDeleteChannel, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: ChannelsExportMessageLink): seq[uint8] =
-    result = TLEncode(uint32(3862932971))
+    result = TLEncode(uint32(0xe63fadeb))
     if self.grouped:
         self.flags = self.flags or 1 shl 0
     if self.thread:
@@ -383,7 +383,7 @@ method TLDecode*(self: ChannelsExportMessageLink, bytes: var ScalingSeq[uint8]) 
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(addr self.id)
 method TLEncode*(self: ChannelsToggleSignatures): seq[uint8] =
-    result = TLEncode(uint32(527021574))
+    result = TLEncode(uint32(0x1f69b606))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.enabled)
 method TLDecode*(self: ChannelsToggleSignatures, bytes: var ScalingSeq[uint8]) = 
@@ -392,7 +392,7 @@ method TLDecode*(self: ChannelsToggleSignatures, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(self.enabled)
 method TLEncode*(self: ChannelsGetAdminedPublicChannels): seq[uint8] =
-    result = TLEncode(uint32(4172297903))
+    result = TLEncode(uint32(0xf8b036af))
     if self.by_location:
         self.flags = self.flags or 1 shl 0
     if self.check_limit:
@@ -405,7 +405,7 @@ method TLDecode*(self: ChannelsGetAdminedPublicChannels, bytes: var ScalingSeq[u
     if (self.flags and (1 shl 1)) != 0:
         self.check_limit = true
 method TLEncode*(self: ChannelsEditBanned): seq[uint8] =
-    result = TLEncode(uint32(1920559378))
+    result = TLEncode(uint32(0x72796912))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.banned_rights)
@@ -418,7 +418,7 @@ method TLDecode*(self: ChannelsEditBanned, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.banned_rights = cast[ChatBannedRightsI](tempObj)
 method TLEncode*(self: ChannelsGetAdminLog): seq[uint8] =
-    result = TLEncode(uint32(870184064))
+    result = TLEncode(uint32(0x33ddf480))
     if self.events_filter.isSome():
         self.flags = self.flags or 1 shl 0
     if self.admins.isSome():
@@ -451,7 +451,7 @@ method TLDecode*(self: ChannelsGetAdminLog, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.min_id)
     bytes.TLDecode(addr self.limit)
 method TLEncode*(self: ChannelsSetStickers): seq[uint8] =
-    result = TLEncode(uint32(3935085817))
+    result = TLEncode(uint32(0xea8ca4f9))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.stickerset)
 method TLDecode*(self: ChannelsSetStickers, bytes: var ScalingSeq[uint8]) = 
@@ -461,7 +461,7 @@ method TLDecode*(self: ChannelsSetStickers, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.stickerset = cast[InputStickerSetI](tempObj)
 method TLEncode*(self: ChannelsReadMessageContents): seq[uint8] =
-    result = TLEncode(uint32(3937786936))
+    result = TLEncode(uint32(0xeab5dc38))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.id)
 method TLDecode*(self: ChannelsReadMessageContents, bytes: var ScalingSeq[uint8]) = 
@@ -470,7 +470,7 @@ method TLDecode*(self: ChannelsReadMessageContents, bytes: var ScalingSeq[uint8]
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(self.id)
 method TLEncode*(self: ChannelsDeleteHistory): seq[uint8] =
-    result = TLEncode(uint32(2939592002))
+    result = TLEncode(uint32(0xaf369d42))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.max_id)
 method TLDecode*(self: ChannelsDeleteHistory, bytes: var ScalingSeq[uint8]) = 
@@ -479,7 +479,7 @@ method TLDecode*(self: ChannelsDeleteHistory, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(addr self.max_id)
 method TLEncode*(self: ChannelsTogglePreHistoryHidden): seq[uint8] =
-    result = TLEncode(uint32(3938171212))
+    result = TLEncode(uint32(0xeabbb94c))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.enabled)
 method TLDecode*(self: ChannelsTogglePreHistoryHidden, bytes: var ScalingSeq[uint8]) = 
@@ -488,16 +488,16 @@ method TLDecode*(self: ChannelsTogglePreHistoryHidden, bytes: var ScalingSeq[uin
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(self.enabled)
 method TLEncode*(self: ChannelsGetLeftChannels): seq[uint8] =
-    result = TLEncode(uint32(2202135744))
+    result = TLEncode(uint32(0x8341ecc0))
     result = result & TLEncode(self.offset)
 method TLDecode*(self: ChannelsGetLeftChannels, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.offset)
 method TLEncode*(self: ChannelsGetGroupsForDiscussion): seq[uint8] =
-    result = TLEncode(uint32(4124758904))
+    result = TLEncode(uint32(0xf5dad378))
 method TLDecode*(self: ChannelsGetGroupsForDiscussion, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: ChannelsSetDiscussionGroup): seq[uint8] =
-    result = TLEncode(uint32(1079520178))
+    result = TLEncode(uint32(0x40582bb2))
     result = result & TLEncode(self.broadcast)
     result = result & TLEncode(self.group)
 method TLDecode*(self: ChannelsSetDiscussionGroup, bytes: var ScalingSeq[uint8]) = 
@@ -507,7 +507,7 @@ method TLDecode*(self: ChannelsSetDiscussionGroup, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.group = cast[InputChannelI](tempObj)
 method TLEncode*(self: ChannelsEditCreator): seq[uint8] =
-    result = TLEncode(uint32(2402864415))
+    result = TLEncode(uint32(0x8f38cd1f))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.password)
@@ -520,7 +520,7 @@ method TLDecode*(self: ChannelsEditCreator, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.password = cast[InputCheckPasswordSRPI](tempObj)
 method TLEncode*(self: ChannelsEditLocation): seq[uint8] =
-    result = TLEncode(uint32(1491484525))
+    result = TLEncode(uint32(0x58e63f6d))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.geo_point)
     result = result & TLEncode(self.address)
@@ -532,7 +532,7 @@ method TLDecode*(self: ChannelsEditLocation, bytes: var ScalingSeq[uint8]) =
     self.geo_point = cast[InputGeoPointI](tempObj)
     self.address = cast[string](bytes.TLDecode())
 method TLEncode*(self: ChannelsToggleSlowMode): seq[uint8] =
-    result = TLEncode(uint32(3990134512))
+    result = TLEncode(uint32(0xedd49ef0))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.seconds)
 method TLDecode*(self: ChannelsToggleSlowMode, bytes: var ScalingSeq[uint8]) = 
@@ -541,6 +541,6 @@ method TLDecode*(self: ChannelsToggleSlowMode, bytes: var ScalingSeq[uint8]) =
     self.channel = cast[InputChannelI](tempObj)
     bytes.TLDecode(addr self.seconds)
 method TLEncode*(self: ChannelsGetInactiveChannels): seq[uint8] =
-    result = TLEncode(uint32(300429806))
+    result = TLEncode(uint32(0x11e831ee))
 method TLDecode*(self: ChannelsGetInactiveChannels, bytes: var ScalingSeq[uint8]) = 
     discard

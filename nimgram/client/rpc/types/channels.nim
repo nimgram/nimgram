@@ -17,7 +17,7 @@ method getTypeName*(self: ChannelsChannelParticipant): string = "ChannelsChannel
 method getTypeName*(self: ChannelsAdminLogResults): string = "ChannelsAdminLogResults"
 
 method TLEncode*(self: ChannelsChannelParticipants): seq[uint8] =
-    result = TLEncode(uint32(4117684904))
+    result = TLEncode(uint32(0xf56ee2a8))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.participants))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -31,11 +31,11 @@ method TLDecode*(self: ChannelsChannelParticipants, bytes: var ScalingSeq[uint8]
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ChannelsChannelParticipantsNotModified): seq[uint8] =
-    result = TLEncode(uint32(4028055529))
+    result = TLEncode(uint32(0xf0173fe9))
 method TLDecode*(self: ChannelsChannelParticipantsNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: ChannelsChannelParticipant): seq[uint8] =
-    result = TLEncode(uint32(3503927651))
+    result = TLEncode(uint32(0xd0d9b163))
     result = result & TLEncode(self.participant)
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: ChannelsChannelParticipant, bytes: var ScalingSeq[uint8]) = 
@@ -47,7 +47,7 @@ method TLDecode*(self: ChannelsChannelParticipant, bytes: var ScalingSeq[uint8])
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ChannelsAdminLogResults): seq[uint8] =
-    result = TLEncode(uint32(3985307469))
+    result = TLEncode(uint32(0xed8af74d))
     result = result & TLEncode(cast[seq[TL]](self.events))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))

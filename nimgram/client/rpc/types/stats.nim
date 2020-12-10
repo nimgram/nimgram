@@ -40,7 +40,7 @@ method getTypeName*(self: StatsMegagroupStats): string = "StatsMegagroupStats"
 method getTypeName*(self: StatsMessageStats): string = "StatsMessageStats"
 
 method TLEncode*(self: StatsBroadcastStats): seq[uint8] =
-    result = TLEncode(uint32(3187114900))
+    result = TLEncode(uint32(0xbdf78394))
     result = result & TLEncode(self.period)
     result = result & TLEncode(self.followers)
     result = result & TLEncode(self.views_per_post)
@@ -91,7 +91,7 @@ method TLDecode*(self: StatsBroadcastStats, bytes: var ScalingSeq[uint8]) =
     self.recent_message_interactions = cast[seq[MessageInteractionCountersI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: StatsMegagroupStats): seq[uint8] =
-    result = TLEncode(uint32(4018141462))
+    result = TLEncode(uint32(0xef7ff916))
     result = result & TLEncode(self.period)
     result = result & TLEncode(self.members)
     result = result & TLEncode(self.messages)
@@ -151,7 +151,7 @@ method TLDecode*(self: StatsMegagroupStats, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: StatsMessageStats): seq[uint8] =
-    result = TLEncode(uint32(2308567701))
+    result = TLEncode(uint32(0x8999f295))
     result = result & TLEncode(self.views_graph)
 method TLDecode*(self: StatsMessageStats, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL

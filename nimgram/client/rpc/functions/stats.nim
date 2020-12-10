@@ -30,7 +30,7 @@ method getTypeName*(self: StatsGetMessagePublicForwards): string = "StatsGetMess
 method getTypeName*(self: StatsGetMessageStats): string = "StatsGetMessageStats"
 
 method TLEncode*(self: StatsGetBroadcastStats): seq[uint8] =
-    result = TLEncode(uint32(2873246746))
+    result = TLEncode(uint32(0xab42441a))
     if self.dark:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -43,7 +43,7 @@ method TLDecode*(self: StatsGetBroadcastStats, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: StatsLoadAsyncGraph): seq[uint8] =
-    result = TLEncode(uint32(1646092192))
+    result = TLEncode(uint32(0x621d5fa0))
     if self.x.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -58,7 +58,7 @@ method TLDecode*(self: StatsLoadAsyncGraph, bytes: var ScalingSeq[uint8]) =
         bytes.TLDecode(addr tempVal)
         self.x = some(tempVal)
 method TLEncode*(self: StatsGetMegagroupStats): seq[uint8] =
-    result = TLEncode(uint32(3705636359))
+    result = TLEncode(uint32(0xdcdf8607))
     if self.dark:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -71,7 +71,7 @@ method TLDecode*(self: StatsGetMegagroupStats, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
 method TLEncode*(self: StatsGetMessagePublicForwards): seq[uint8] =
-    result = TLEncode(uint32(1445996571))
+    result = TLEncode(uint32(0x5630281b))
     result = result & TLEncode(self.channel)
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.offset_rate)
@@ -89,7 +89,7 @@ method TLDecode*(self: StatsGetMessagePublicForwards, bytes: var ScalingSeq[uint
     bytes.TLDecode(addr self.offset_id)
     bytes.TLDecode(addr self.limit)
 method TLEncode*(self: StatsGetMessageStats): seq[uint8] =
-    result = TLEncode(uint32(3068175349))
+    result = TLEncode(uint32(0xb6e0a3f5))
     if self.dark:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)

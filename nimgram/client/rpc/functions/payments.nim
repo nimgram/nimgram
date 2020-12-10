@@ -30,17 +30,17 @@ method getTypeName*(self: PaymentsClearSavedInfo): string = "PaymentsClearSavedI
 method getTypeName*(self: PaymentsGetBankCardData): string = "PaymentsGetBankCardData"
 
 method TLEncode*(self: PaymentsGetPaymentForm): seq[uint8] =
-    result = TLEncode(uint32(2582681413))
+    result = TLEncode(uint32(0x99f09745))
     result = result & TLEncode(self.msg_id)
 method TLDecode*(self: PaymentsGetPaymentForm, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.msg_id)
 method TLEncode*(self: PaymentsGetPaymentReceipt): seq[uint8] =
-    result = TLEncode(uint32(2693966208))
+    result = TLEncode(uint32(0xa092a980))
     result = result & TLEncode(self.msg_id)
 method TLDecode*(self: PaymentsGetPaymentReceipt, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.msg_id)
 method TLEncode*(self: PaymentsValidateRequestedInfo): seq[uint8] =
-    result = TLEncode(uint32(1997180532))
+    result = TLEncode(uint32(0x770a8e74))
     if self.save:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -55,7 +55,7 @@ method TLDecode*(self: PaymentsValidateRequestedInfo, bytes: var ScalingSeq[uint
     tempObj.TLDecode(bytes)
     self.info = cast[PaymentRequestedInfoI](tempObj)
 method TLEncode*(self: PaymentsSendPaymentForm): seq[uint8] =
-    result = TLEncode(uint32(730364339))
+    result = TLEncode(uint32(0x2b8879b3))
     if self.requested_info_id.isSome():
         self.flags = self.flags or 1 shl 0
     if self.shipping_option_id.isSome():
@@ -78,11 +78,11 @@ method TLDecode*(self: PaymentsSendPaymentForm, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.credentials = cast[InputPaymentCredentialsI](tempObj)
 method TLEncode*(self: PaymentsGetSavedInfo): seq[uint8] =
-    result = TLEncode(uint32(578650699))
+    result = TLEncode(uint32(0x227d824b))
 method TLDecode*(self: PaymentsGetSavedInfo, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: PaymentsClearSavedInfo): seq[uint8] =
-    result = TLEncode(uint32(3627905217))
+    result = TLEncode(uint32(0xd83d70c1))
     if self.credentials:
         self.flags = self.flags or 1 shl 0
     if self.info:
@@ -95,7 +95,7 @@ method TLDecode*(self: PaymentsClearSavedInfo, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 1)) != 0:
         self.info = true
 method TLEncode*(self: PaymentsGetBankCardData): seq[uint8] =
-    result = TLEncode(uint32(779736953))
+    result = TLEncode(uint32(0x2e79d779))
     result = result & TLEncode(self.number)
 method TLDecode*(self: PaymentsGetBankCardData, bytes: var ScalingSeq[uint8]) = 
     self.number = cast[string](bytes.TLDecode())

@@ -98,7 +98,7 @@ method getTypeName*(self: HelpCountriesListNotModified): string = "HelpCountries
 method getTypeName*(self: HelpCountriesList): string = "HelpCountriesList"
 
 method TLEncode*(self: HelpAppUpdate): seq[uint8] =
-    result = TLEncode(uint32(497489295))
+    result = TLEncode(uint32(0x1da7158f))
     if self.can_not_skip:
         self.flags = self.flags or 1 shl 0
     if self.document.isSome():
@@ -132,16 +132,16 @@ method TLDecode*(self: HelpAppUpdate, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 2)) != 0:
         self.url = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: HelpNoAppUpdate): seq[uint8] =
-    result = TLEncode(uint32(3294258486))
+    result = TLEncode(uint32(0xc45a6536))
 method TLDecode*(self: HelpNoAppUpdate, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpInviteText): seq[uint8] =
-    result = TLEncode(uint32(415997816))
+    result = TLEncode(uint32(0x18cb9f78))
     result = result & TLEncode(self.message)
 method TLDecode*(self: HelpInviteText, bytes: var ScalingSeq[uint8]) = 
     self.message = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpSupport): seq[uint8] =
-    result = TLEncode(uint32(398898678))
+    result = TLEncode(uint32(0x17c6b5f6))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.user)
 method TLDecode*(self: HelpSupport, bytes: var ScalingSeq[uint8]) = 
@@ -150,7 +150,7 @@ method TLDecode*(self: HelpSupport, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.user = cast[UserI](tempObj)
 method TLEncode*(self: HelpTermsOfService): seq[uint8] =
-    result = TLEncode(uint32(2013922064))
+    result = TLEncode(uint32(0x780a0310))
     if self.popup:
         self.flags = self.flags or 1 shl 0
     if self.min_age_confirm.isSome():
@@ -178,7 +178,7 @@ method TLDecode*(self: HelpTermsOfService, bytes: var ScalingSeq[uint8]) =
         bytes.TLDecode(addr tempVal)
         self.min_age_confirm = some(tempVal)
 method TLEncode*(self: HelpRecentMeUrls): seq[uint8] =
-    result = TLEncode(uint32(3761311088))
+    result = TLEncode(uint32(0xe0310d7))
     result = result & TLEncode(cast[seq[TL]](self.urls))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -194,12 +194,12 @@ method TLDecode*(self: HelpRecentMeUrls, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: HelpTermsOfServiceUpdateEmpty): seq[uint8] =
-    result = TLEncode(uint32(3811614591))
+    result = TLEncode(uint32(0xe3309f7f))
     result = result & TLEncode(self.expires)
 method TLDecode*(self: HelpTermsOfServiceUpdateEmpty, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.expires)
 method TLEncode*(self: HelpTermsOfServiceUpdate): seq[uint8] =
-    result = TLEncode(uint32(686618977))
+    result = TLEncode(uint32(0x28ecf961))
     result = result & TLEncode(self.expires)
     result = result & TLEncode(self.terms_of_service)
 method TLDecode*(self: HelpTermsOfServiceUpdate, bytes: var ScalingSeq[uint8]) = 
@@ -208,11 +208,11 @@ method TLDecode*(self: HelpTermsOfServiceUpdate, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.terms_of_service = cast[HelpTermsOfServiceI](tempObj)
 method TLEncode*(self: HelpDeepLinkInfoEmpty): seq[uint8] =
-    result = TLEncode(uint32(1722786150))
+    result = TLEncode(uint32(0x66afa166))
 method TLDecode*(self: HelpDeepLinkInfoEmpty, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpDeepLinkInfo): seq[uint8] =
-    result = TLEncode(uint32(1783556146))
+    result = TLEncode(uint32(0x6a4ee832))
     if self.update_app:
         self.flags = self.flags or 1 shl 0
     if self.entities.isSome():
@@ -231,11 +231,11 @@ method TLDecode*(self: HelpDeepLinkInfo, bytes: var ScalingSeq[uint8]) =
         tempVal.TLDecode(bytes)
         self.entities = some(cast[seq[MessageEntityI]](tempVal))
 method TLEncode*(self: HelpPassportConfigNotModified): seq[uint8] =
-    result = TLEncode(uint32(3216634967))
+    result = TLEncode(uint32(0xbfb9f457))
 method TLDecode*(self: HelpPassportConfigNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpPassportConfig): seq[uint8] =
-    result = TLEncode(uint32(2694370991))
+    result = TLEncode(uint32(0xa098d6af))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(self.countries_langs)
 method TLDecode*(self: HelpPassportConfig, bytes: var ScalingSeq[uint8]) = 
@@ -244,16 +244,16 @@ method TLDecode*(self: HelpPassportConfig, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.countries_langs = cast[DataJSONI](tempObj)
 method TLEncode*(self: HelpSupportName): seq[uint8] =
-    result = TLEncode(uint32(2349199817))
+    result = TLEncode(uint32(0x8c05f1c9))
     result = result & TLEncode(self.name)
 method TLDecode*(self: HelpSupportName, bytes: var ScalingSeq[uint8]) = 
     self.name = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpUserInfoEmpty): seq[uint8] =
-    result = TLEncode(uint32(4088278765))
+    result = TLEncode(uint32(0xf3ae2eed))
 method TLDecode*(self: HelpUserInfoEmpty, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpUserInfo): seq[uint8] =
-    result = TLEncode(uint32(515077504))
+    result = TLEncode(uint32(0x1eb3758))
     result = result & TLEncode(self.message)
     result = result & TLEncode(cast[seq[TL]](self.entities))
     result = result & TLEncode(self.author)
@@ -267,12 +267,12 @@ method TLDecode*(self: HelpUserInfo, bytes: var ScalingSeq[uint8]) =
     self.author = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.date)
 method TLEncode*(self: HelpPromoDataEmpty): seq[uint8] =
-    result = TLEncode(uint32(2566302837))
+    result = TLEncode(uint32(0x98f6ac75))
     result = result & TLEncode(self.expires)
 method TLDecode*(self: HelpPromoDataEmpty, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.expires)
 method TLEncode*(self: HelpPromoData): seq[uint8] =
-    result = TLEncode(uint32(2352576831))
+    result = TLEncode(uint32(0x8c39793f))
     if self.proxy:
         self.flags = self.flags or 1 shl 0
     if self.psa_type.isSome():
@@ -308,7 +308,7 @@ method TLDecode*(self: HelpPromoData, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 2)) != 0:
         self.psa_message = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: HelpCountryCode): seq[uint8] =
-    result = TLEncode(uint32(1107543535))
+    result = TLEncode(uint32(0x4203c5ef))
     if self.prefixes.isSome():
         self.flags = self.flags or 1 shl 0
     if self.patterns.isSome():
@@ -327,7 +327,7 @@ method TLDecode*(self: HelpCountryCode, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 1)) != 0:
         self.patterns = some(cast[seq[string]](bytes.TLDecodeSeq()))
 method TLEncode*(self: HelpCountry): seq[uint8] =
-    result = TLEncode(uint32(3280440867))
+    result = TLEncode(uint32(0xc3878e23))
     if self.hidden:
         self.flags = self.flags or 1 shl 0
     if self.name.isSome():
@@ -351,11 +351,11 @@ method TLDecode*(self: HelpCountry, bytes: var ScalingSeq[uint8]) =
     self.country_codes = cast[seq[HelpCountryCodeI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: HelpCountriesListNotModified): seq[uint8] =
-    result = TLEncode(uint32(2479628082))
+    result = TLEncode(uint32(0x93cc1f32))
 method TLDecode*(self: HelpCountriesListNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpCountriesList): seq[uint8] =
-    result = TLEncode(uint32(2278585758))
+    result = TLEncode(uint32(0x87d0759e))
     result = result & TLEncode(cast[seq[TL]](self.countries))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: HelpCountriesList, bytes: var ScalingSeq[uint8]) = 

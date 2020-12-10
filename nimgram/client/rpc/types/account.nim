@@ -81,7 +81,7 @@ method getTypeName*(self: AccountThemes): string = "AccountThemes"
 method getTypeName*(self: AccountContentSettings): string = "AccountContentSettings"
 
 method TLEncode*(self: AccountPrivacyRules): seq[uint8] =
-    result = TLEncode(uint32(1352683077))
+    result = TLEncode(uint32(0x50a04e45))
     result = result & TLEncode(cast[seq[TL]](self.rules))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -97,7 +97,7 @@ method TLDecode*(self: AccountPrivacyRules, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountAuthorizations): seq[uint8] =
-    result = TLEncode(uint32(307276766))
+    result = TLEncode(uint32(0x1250abde))
     result = result & TLEncode(cast[seq[TL]](self.authorizations))
 method TLDecode*(self: AccountAuthorizations, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -105,7 +105,7 @@ method TLDecode*(self: AccountAuthorizations, bytes: var ScalingSeq[uint8]) =
     self.authorizations = cast[seq[AuthorizationI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountPassword): seq[uint8] =
-    result = TLEncode(uint32(2904965624))
+    result = TLEncode(uint32(0xad2641f8))
     if self.has_recovery:
         self.flags = self.flags or 1 shl 0
     if self.has_secure_values:
@@ -165,7 +165,7 @@ method TLDecode*(self: AccountPassword, bytes: var ScalingSeq[uint8]) =
     self.new_secure_algo = cast[SecurePasswordKdfAlgoI](tempObj)
     self.secure_random = bytes.TLDecode()
 method TLEncode*(self: AccountPasswordSettings): seq[uint8] =
-    result = TLEncode(uint32(2589733861))
+    result = TLEncode(uint32(0x9a5c33e5))
     if self.email.isSome():
         self.flags = self.flags or 1 shl 0
     if self.secure_settings.isSome():
@@ -184,7 +184,7 @@ method TLDecode*(self: AccountPasswordSettings, bytes: var ScalingSeq[uint8]) =
         tempVal.TLDecode(bytes)
         self.secure_settings = some(tempVal.SecureSecretSettingsI)
 method TLEncode*(self: AccountPasswordInputSettings): seq[uint8] =
-    result = TLEncode(uint32(3258394569))
+    result = TLEncode(uint32(0xc23727c9))
     if self.new_algo.isSome():
         self.flags = self.flags or 1 shl 0
     if self.new_password_hash.isSome():
@@ -223,14 +223,14 @@ method TLDecode*(self: AccountPasswordInputSettings, bytes: var ScalingSeq[uint8
         tempVal.TLDecode(bytes)
         self.new_secure_settings = some(tempVal.SecureSecretSettingsI)
 method TLEncode*(self: AccountTmpPassword): seq[uint8] =
-    result = TLEncode(uint32(3680828724))
+    result = TLEncode(uint32(0xdb64fd34))
     result = result & TLEncode(self.tmp_password)
     result = result & TLEncode(self.valid_until)
 method TLDecode*(self: AccountTmpPassword, bytes: var ScalingSeq[uint8]) = 
     self.tmp_password = bytes.TLDecode()
     bytes.TLDecode(addr self.valid_until)
 method TLEncode*(self: AccountWebAuthorizations): seq[uint8] =
-    result = TLEncode(uint32(3981887996))
+    result = TLEncode(uint32(0xed56c9fc))
     result = result & TLEncode(cast[seq[TL]](self.authorizations))
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: AccountWebAuthorizations, bytes: var ScalingSeq[uint8]) = 
@@ -242,7 +242,7 @@ method TLDecode*(self: AccountWebAuthorizations, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountAuthorizationForm): seq[uint8] =
-    result = TLEncode(uint32(2905480408))
+    result = TLEncode(uint32(0xad2e1cd8))
     if self.privacy_policy_url.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -270,23 +270,23 @@ method TLDecode*(self: AccountAuthorizationForm, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 0)) != 0:
         self.privacy_policy_url = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: AccountSentEmailCode): seq[uint8] =
-    result = TLEncode(uint32(2166326607))
+    result = TLEncode(uint32(0x811f854f))
     result = result & TLEncode(self.email_pattern)
     result = result & TLEncode(self.length)
 method TLDecode*(self: AccountSentEmailCode, bytes: var ScalingSeq[uint8]) = 
     self.email_pattern = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.length)
 method TLEncode*(self: AccountTakeout): seq[uint8] =
-    result = TLEncode(uint32(1304052993))
+    result = TLEncode(uint32(0x4dba4501))
     result = result & TLEncode(self.id)
 method TLDecode*(self: AccountTakeout, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.id)
 method TLEncode*(self: AccountWallPapersNotModified): seq[uint8] =
-    result = TLEncode(uint32(471437699))
+    result = TLEncode(uint32(0x1c199183))
 method TLDecode*(self: AccountWallPapersNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountWallPapers): seq[uint8] =
-    result = TLEncode(uint32(1881892265))
+    result = TLEncode(uint32(0x702b65a9))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.wallpapers))
 method TLDecode*(self: AccountWallPapers, bytes: var ScalingSeq[uint8]) = 
@@ -296,7 +296,7 @@ method TLDecode*(self: AccountWallPapers, bytes: var ScalingSeq[uint8]) =
     self.wallpapers = cast[seq[WallPaperI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountAutoDownloadSettings): seq[uint8] =
-    result = TLEncode(uint32(1674235686))
+    result = TLEncode(uint32(0x63cacf26))
     result = result & TLEncode(self.low)
     result = result & TLEncode(self.medium)
     result = result & TLEncode(self.high)
@@ -309,11 +309,11 @@ method TLDecode*(self: AccountAutoDownloadSettings, bytes: var ScalingSeq[uint8]
     tempObj.TLDecode(bytes)
     self.high = cast[AutoDownloadSettingsI](tempObj)
 method TLEncode*(self: AccountThemesNotModified): seq[uint8] =
-    result = TLEncode(uint32(4095653410))
+    result = TLEncode(uint32(0xf41eb622))
 method TLDecode*(self: AccountThemesNotModified, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: AccountThemes): seq[uint8] =
-    result = TLEncode(uint32(2137482273))
+    result = TLEncode(uint32(0x7f676421))
     result = result & TLEncode(self.hash)
     result = result & TLEncode(cast[seq[TL]](self.themes))
 method TLDecode*(self: AccountThemes, bytes: var ScalingSeq[uint8]) = 
@@ -323,7 +323,7 @@ method TLDecode*(self: AccountThemes, bytes: var ScalingSeq[uint8]) =
     self.themes = cast[seq[ThemeI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: AccountContentSettings): seq[uint8] =
-    result = TLEncode(uint32(1474462241))
+    result = TLEncode(uint32(0x57e28221))
     if self.sensitive_enabled:
         self.flags = self.flags or 1 shl 0
     if self.sensitive_can_change:

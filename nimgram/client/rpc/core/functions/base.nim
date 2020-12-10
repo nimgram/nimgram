@@ -42,17 +42,17 @@ method getTypeName*(self: Destroy_session): string = "Destroy_session"
 method getTypeName*(self: Http_wait): string = "Http_wait"
 
 method TLEncode*(self: Req_pq): seq[uint8] =
-    result = TLEncode(uint32(1615239032))
+    result = TLEncode(uint32(0x60469778))
     result = result & TLEncode(self.nonce)
 method TLDecode*(self: Req_pq, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.nonce)
 method TLEncode*(self: Req_pq_multi): seq[uint8] =
-    result = TLEncode(uint32(3195965169))
+    result = TLEncode(uint32(0xbe7e8ef1))
     result = result & TLEncode(self.nonce)
 method TLDecode*(self: Req_pq_multi, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.nonce)
 method TLEncode*(self: Req_DH_params): seq[uint8] =
-    result = TLEncode(uint32(3608339646))
+    result = TLEncode(uint32(0xd712e4be))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.p)
@@ -67,7 +67,7 @@ method TLDecode*(self: Req_DH_params, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.public_key_fingerprint)
     self.encrypted_data = bytes.TLDecode()
 method TLEncode*(self: Set_client_DH_params): seq[uint8] =
-    result = TLEncode(uint32(4110704415))
+    result = TLEncode(uint32(0xf5045f1f))
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.server_nonce)
     result = result & TLEncode(self.encrypted_data)
@@ -76,34 +76,34 @@ method TLDecode*(self: Set_client_DH_params, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.server_nonce)
     self.encrypted_data = bytes.TLDecode()
 method TLEncode*(self: Rpc_drop_answer): seq[uint8] =
-    result = TLEncode(uint32(1491380032))
+    result = TLEncode(uint32(0x58e4a740))
     result = result & TLEncode(self.req_msg_id)
 method TLDecode*(self: Rpc_drop_answer, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.req_msg_id)
 method TLEncode*(self: Get_future_salts): seq[uint8] =
-    result = TLEncode(uint32(3105996036))
+    result = TLEncode(uint32(0xb921bd04))
     result = result & TLEncode(self.num)
 method TLDecode*(self: Get_future_salts, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.num)
 method TLEncode*(self: Ping): seq[uint8] =
-    result = TLEncode(uint32(2059302892))
+    result = TLEncode(uint32(0x7abe77ec))
     result = result & TLEncode(self.ping_id)
 method TLDecode*(self: Ping, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.ping_id)
 method TLEncode*(self: Ping_delay_disconnect): seq[uint8] =
-    result = TLEncode(uint32(4081220492))
+    result = TLEncode(uint32(0xf3427b8c))
     result = result & TLEncode(self.ping_id)
     result = result & TLEncode(self.disconnect_delay)
 method TLDecode*(self: Ping_delay_disconnect, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.ping_id)
     bytes.TLDecode(addr self.disconnect_delay)
 method TLEncode*(self: Destroy_session): seq[uint8] =
-    result = TLEncode(uint32(3880853798))
+    result = TLEncode(uint32(0xe7512126))
     result = result & TLEncode(self.session_id)
 method TLDecode*(self: Destroy_session, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.session_id)
 method TLEncode*(self: Http_wait): seq[uint8] =
-    result = TLEncode(uint32(2459514271))
+    result = TLEncode(uint32(0x9299359f))
     result = result & TLEncode(self.max_delay)
     result = result & TLEncode(self.wait_after)
     result = result & TLEncode(self.max_wait)

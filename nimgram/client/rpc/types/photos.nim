@@ -14,7 +14,7 @@ method getTypeName*(self: PhotosPhotosSlice): string = "PhotosPhotosSlice"
 method getTypeName*(self: PhotosPhoto): string = "PhotosPhoto"
 
 method TLEncode*(self: PhotosPhotos): seq[uint8] =
-    result = TLEncode(uint32(2378853029))
+    result = TLEncode(uint32(0x8dca6aa5))
     result = result & TLEncode(cast[seq[TL]](self.photos))
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: PhotosPhotos, bytes: var ScalingSeq[uint8]) = 
@@ -26,7 +26,7 @@ method TLDecode*(self: PhotosPhotos, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: PhotosPhotosSlice): seq[uint8] =
-    result = TLEncode(uint32(352657236))
+    result = TLEncode(uint32(0x15051f54))
     result = result & TLEncode(self.count)
     result = result & TLEncode(cast[seq[TL]](self.photos))
     result = result & TLEncode(cast[seq[TL]](self.users))
@@ -40,7 +40,7 @@ method TLDecode*(self: PhotosPhotosSlice, bytes: var ScalingSeq[uint8]) =
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: PhotosPhoto): seq[uint8] =
-    result = TLEncode(uint32(539045032))
+    result = TLEncode(uint32(0x20212ca8))
     result = result & TLEncode(self.photo)
     result = result & TLEncode(cast[seq[TL]](self.users))
 method TLDecode*(self: PhotosPhoto, bytes: var ScalingSeq[uint8]) = 

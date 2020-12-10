@@ -84,21 +84,21 @@ method getTypeName*(self: ContactsGetLocated): string = "ContactsGetLocated"
 method getTypeName*(self: ContactsBlockFromReplies): string = "ContactsBlockFromReplies"
 
 method TLEncode*(self: ContactsGetContactIDs): seq[uint8] =
-    result = TLEncode(uint32(749357634))
+    result = TLEncode(uint32(0x2caa4a42))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: ContactsGetContactIDs, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: ContactsGetStatuses): seq[uint8] =
-    result = TLEncode(uint32(3299038190))
+    result = TLEncode(uint32(0xc4a353ee))
 method TLDecode*(self: ContactsGetStatuses, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: ContactsGetContacts): seq[uint8] =
-    result = TLEncode(uint32(3223553183))
+    result = TLEncode(uint32(0xc023849f))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: ContactsGetContacts, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: ContactsImportContacts): seq[uint8] =
-    result = TLEncode(uint32(746589157))
+    result = TLEncode(uint32(0x2c800be5))
     result = result & TLEncode(cast[seq[TL]](self.contacts))
 method TLDecode*(self: ContactsImportContacts, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -106,7 +106,7 @@ method TLDecode*(self: ContactsImportContacts, bytes: var ScalingSeq[uint8]) =
     self.contacts = cast[seq[InputContactI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ContactsDeleteContacts): seq[uint8] =
-    result = TLEncode(uint32(2527125504))
+    result = TLEncode(uint32(0x96a0e00))
     result = result & TLEncode(cast[seq[TL]](self.id))
 method TLDecode*(self: ContactsDeleteContacts, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -114,45 +114,45 @@ method TLDecode*(self: ContactsDeleteContacts, bytes: var ScalingSeq[uint8]) =
     self.id = cast[seq[InputUserI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: ContactsDeleteByPhones): seq[uint8] =
-    result = TLEncode(uint32(269745566))
+    result = TLEncode(uint32(0x1013fd9e))
     result = result & TLEncode(cast[seq[TL]](self.phones))
 method TLDecode*(self: ContactsDeleteByPhones, bytes: var ScalingSeq[uint8]) = 
     self.phones = cast[seq[string]](bytes.TLDecodeSeq())
 method TLEncode*(self: ContactsBlock): seq[uint8] =
-    result = TLEncode(uint32(1758204945))
+    result = TLEncode(uint32(0x68cc1411))
     result = result & TLEncode(self.id)
 method TLDecode*(self: ContactsBlock, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputPeerI](tempObj)
 method TLEncode*(self: ContactsUnblock): seq[uint8] =
-    result = TLEncode(uint32(3198573904))
+    result = TLEncode(uint32(0xbea65d50))
     result = result & TLEncode(self.id)
 method TLDecode*(self: ContactsUnblock, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputPeerI](tempObj)
 method TLEncode*(self: ContactsGetBlocked): seq[uint8] =
-    result = TLEncode(uint32(4118557967))
+    result = TLEncode(uint32(0xf57c350f))
     result = result & TLEncode(self.offset)
     result = result & TLEncode(self.limit)
 method TLDecode*(self: ContactsGetBlocked, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.offset)
     bytes.TLDecode(addr self.limit)
 method TLEncode*(self: ContactsSearch): seq[uint8] =
-    result = TLEncode(uint32(301470424))
+    result = TLEncode(uint32(0x11f812d8))
     result = result & TLEncode(self.q)
     result = result & TLEncode(self.limit)
 method TLDecode*(self: ContactsSearch, bytes: var ScalingSeq[uint8]) = 
     self.q = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.limit)
 method TLEncode*(self: ContactsResolveUsername): seq[uint8] =
-    result = TLEncode(uint32(4181511075))
+    result = TLEncode(uint32(0xf93ccba3))
     result = result & TLEncode(self.username)
 method TLDecode*(self: ContactsResolveUsername, bytes: var ScalingSeq[uint8]) = 
     self.username = cast[string](bytes.TLDecode())
 method TLEncode*(self: ContactsGetTopPeers): seq[uint8] =
-    result = TLEncode(uint32(3566742965))
+    result = TLEncode(uint32(0xd4982db5))
     if self.correspondents:
         self.flags = self.flags or 1 shl 0
     if self.bots_pm:
@@ -195,7 +195,7 @@ method TLDecode*(self: ContactsGetTopPeers, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: ContactsResetTopPeerRating): seq[uint8] =
-    result = TLEncode(uint32(451113900))
+    result = TLEncode(uint32(0x1ae373ac))
     result = result & TLEncode(self.category)
     result = result & TLEncode(self.peer)
 method TLDecode*(self: ContactsResetTopPeerRating, bytes: var ScalingSeq[uint8]) = 
@@ -205,20 +205,20 @@ method TLDecode*(self: ContactsResetTopPeerRating, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
 method TLEncode*(self: ContactsResetSaved): seq[uint8] =
-    result = TLEncode(uint32(2274703345))
+    result = TLEncode(uint32(0x879537f1))
 method TLDecode*(self: ContactsResetSaved, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: ContactsGetSaved): seq[uint8] =
-    result = TLEncode(uint32(2196890527))
+    result = TLEncode(uint32(0x82f1e39f))
 method TLDecode*(self: ContactsGetSaved, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: ContactsToggleTopPeers): seq[uint8] =
-    result = TLEncode(uint32(2232729050))
+    result = TLEncode(uint32(0x8514bdda))
     result = result & TLEncode(self.enabled)
 method TLDecode*(self: ContactsToggleTopPeers, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(self.enabled)
 method TLEncode*(self: ContactsAddContact): seq[uint8] =
-    result = TLEncode(uint32(3908330448))
+    result = TLEncode(uint32(0xe8f463d0))
     if self.add_phone_privacy_exception:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -237,14 +237,14 @@ method TLDecode*(self: ContactsAddContact, bytes: var ScalingSeq[uint8]) =
     self.last_name = cast[string](bytes.TLDecode())
     self.phone = cast[string](bytes.TLDecode())
 method TLEncode*(self: ContactsAcceptContact): seq[uint8] =
-    result = TLEncode(uint32(4164002319))
+    result = TLEncode(uint32(0xf831a20f))
     result = result & TLEncode(self.id)
 method TLDecode*(self: ContactsAcceptContact, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputUserI](tempObj)
 method TLEncode*(self: ContactsGetLocated): seq[uint8] =
-    result = TLEncode(uint32(3544759364))
+    result = TLEncode(uint32(0xd348bc44))
     if self.background:
         self.flags = self.flags or 1 shl 1
     if self.self_expires.isSome():
@@ -265,7 +265,7 @@ method TLDecode*(self: ContactsGetLocated, bytes: var ScalingSeq[uint8]) =
         bytes.TLDecode(addr tempVal)
         self.self_expires = some(tempVal)
 method TLEncode*(self: ContactsBlockFromReplies): seq[uint8] =
-    result = TLEncode(uint32(698914348))
+    result = TLEncode(uint32(0x29a8962c))
     if self.delete_message:
         self.flags = self.flags or 1 shl 0
     if self.delete_history:

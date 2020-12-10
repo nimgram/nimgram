@@ -18,11 +18,11 @@ method getTypeName*(self: UpdatesGetDifference): string = "UpdatesGetDifference"
 method getTypeName*(self: UpdatesGetChannelDifference): string = "UpdatesGetChannelDifference"
 
 method TLEncode*(self: UpdatesGetState): seq[uint8] =
-    result = TLEncode(uint32(3990128682))
+    result = TLEncode(uint32(0xedd4882a))
 method TLDecode*(self: UpdatesGetState, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: UpdatesGetDifference): seq[uint8] =
-    result = TLEncode(uint32(630429265))
+    result = TLEncode(uint32(0x25939651))
     if self.pts_total_limit.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -41,7 +41,7 @@ method TLDecode*(self: UpdatesGetDifference, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.date)
     bytes.TLDecode(addr self.qts)
 method TLEncode*(self: UpdatesGetChannelDifference): seq[uint8] =
-    result = TLEncode(uint32(829675392))
+    result = TLEncode(uint32(0x3173d78))
     if self.force:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)

@@ -26,7 +26,7 @@ method getTypeName*(self: UploadCdnFileReuploadNeeded): string = "UploadCdnFileR
 method getTypeName*(self: UploadCdnFile): string = "UploadCdnFile"
 
 method TLEncode*(self: UploadFile): seq[uint8] =
-    result = TLEncode(uint32(2527169872))
+    result = TLEncode(uint32(0x96a18d5))
     result = result & TLEncode(self.typeof)
     result = result & TLEncode(self.mtime)
     result = result & TLEncode(self.bytes)
@@ -37,7 +37,7 @@ method TLDecode*(self: UploadFile, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.mtime)
     self.bytes = bytes.TLDecode()
 method TLEncode*(self: UploadFileCdnRedirect): seq[uint8] =
-    result = TLEncode(uint32(4052539972))
+    result = TLEncode(uint32(0xf18cda44))
     result = result & TLEncode(self.dc_id)
     result = result & TLEncode(self.file_token)
     result = result & TLEncode(self.encryption_key)
@@ -53,7 +53,7 @@ method TLDecode*(self: UploadFileCdnRedirect, bytes: var ScalingSeq[uint8]) =
     self.file_hashes = cast[seq[FileHashI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: UploadWebFile): seq[uint8] =
-    result = TLEncode(uint32(568808380))
+    result = TLEncode(uint32(0x21e753bc))
     result = result & TLEncode(self.size)
     result = result & TLEncode(self.mime_type)
     result = result & TLEncode(self.file_type)
@@ -68,12 +68,12 @@ method TLDecode*(self: UploadWebFile, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.mtime)
     self.bytes = bytes.TLDecode()
 method TLEncode*(self: UploadCdnFileReuploadNeeded): seq[uint8] =
-    result = TLEncode(uint32(4004045934))
+    result = TLEncode(uint32(0xeea8e46e))
     result = result & TLEncode(self.request_token)
 method TLDecode*(self: UploadCdnFileReuploadNeeded, bytes: var ScalingSeq[uint8]) = 
     self.request_token = bytes.TLDecode()
 method TLEncode*(self: UploadCdnFile): seq[uint8] =
-    result = TLEncode(uint32(2845821519))
+    result = TLEncode(uint32(0xa99fca4f))
     result = result & TLEncode(self.bytes)
 method TLDecode*(self: UploadCdnFile, bytes: var ScalingSeq[uint8]) = 
     self.bytes = bytes.TLDecode()

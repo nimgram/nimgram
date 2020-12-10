@@ -62,69 +62,69 @@ method getTypeName*(self: HelpDismissSuggestion): string = "HelpDismissSuggestio
 method getTypeName*(self: HelpGetCountriesList): string = "HelpGetCountriesList"
 
 method TLEncode*(self: HelpGetConfig): seq[uint8] =
-    result = TLEncode(uint32(3304659051))
+    result = TLEncode(uint32(0xc4f9186b))
 method TLDecode*(self: HelpGetConfig, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetNearestDc): seq[uint8] =
-    result = TLEncode(uint32(531836966))
+    result = TLEncode(uint32(0x1fb33026))
 method TLDecode*(self: HelpGetNearestDc, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetAppUpdate): seq[uint8] =
-    result = TLEncode(uint32(1378703997))
+    result = TLEncode(uint32(0x522d5a7d))
     result = result & TLEncode(self.source)
 method TLDecode*(self: HelpGetAppUpdate, bytes: var ScalingSeq[uint8]) = 
     self.source = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetInviteText): seq[uint8] =
-    result = TLEncode(uint32(1295590211))
+    result = TLEncode(uint32(0x4d392343))
 method TLDecode*(self: HelpGetInviteText, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetSupport): seq[uint8] =
-    result = TLEncode(uint32(2631862477))
+    result = TLEncode(uint32(0x9cdf08cd))
 method TLDecode*(self: HelpGetSupport, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetAppChangelog): seq[uint8] =
-    result = TLEncode(uint32(2417028975))
+    result = TLEncode(uint32(0x9010ef6f))
     result = result & TLEncode(self.prev_app_version)
 method TLDecode*(self: HelpGetAppChangelog, bytes: var ScalingSeq[uint8]) = 
     self.prev_app_version = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpSetBotUpdatesStatus): seq[uint8] =
-    result = TLEncode(uint32(3961704397))
+    result = TLEncode(uint32(0xec22cfcd))
     result = result & TLEncode(self.pending_updates_count)
     result = result & TLEncode(self.message)
 method TLDecode*(self: HelpSetBotUpdatesStatus, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.pending_updates_count)
     self.message = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetCdnConfig): seq[uint8] =
-    result = TLEncode(uint32(1375900482))
+    result = TLEncode(uint32(0x52029342))
 method TLDecode*(self: HelpGetCdnConfig, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetRecentMeUrls): seq[uint8] =
-    result = TLEncode(uint32(1036054804))
+    result = TLEncode(uint32(0x3dc0f114))
     result = result & TLEncode(self.referer)
 method TLDecode*(self: HelpGetRecentMeUrls, bytes: var ScalingSeq[uint8]) = 
     self.referer = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetTermsOfServiceUpdate): seq[uint8] =
-    result = TLEncode(uint32(749019089))
+    result = TLEncode(uint32(0x2ca51fd1))
 method TLDecode*(self: HelpGetTermsOfServiceUpdate, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpAcceptTermsOfService): seq[uint8] =
-    result = TLEncode(uint32(4000511898))
+    result = TLEncode(uint32(0xee72f79a))
     result = result & TLEncode(self.id)
 method TLDecode*(self: HelpAcceptTermsOfService, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[DataJSONI](tempObj)
 method TLEncode*(self: HelpGetDeepLinkInfo): seq[uint8] =
-    result = TLEncode(uint32(1072547679))
+    result = TLEncode(uint32(0x3fedc75f))
     result = result & TLEncode(self.path)
 method TLDecode*(self: HelpGetDeepLinkInfo, bytes: var ScalingSeq[uint8]) = 
     self.path = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetAppConfig): seq[uint8] =
-    result = TLEncode(uint32(2559656208))
+    result = TLEncode(uint32(0x98914110))
 method TLDecode*(self: HelpGetAppConfig, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpSaveAppLog): seq[uint8] =
-    result = TLEncode(uint32(1862465352))
+    result = TLEncode(uint32(0x6f02f748))
     result = result & TLEncode(cast[seq[TL]](self.events))
 method TLDecode*(self: HelpSaveAppLog, bytes: var ScalingSeq[uint8]) = 
     var tempVector = newSeq[TL]()
@@ -132,23 +132,23 @@ method TLDecode*(self: HelpSaveAppLog, bytes: var ScalingSeq[uint8]) =
     self.events = cast[seq[InputAppEventI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: HelpGetPassportConfig): seq[uint8] =
-    result = TLEncode(uint32(3328290056))
+    result = TLEncode(uint32(0xc661ad08))
     result = result & TLEncode(self.hash)
 method TLDecode*(self: HelpGetPassportConfig, bytes: var ScalingSeq[uint8]) = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: HelpGetSupportName): seq[uint8] =
-    result = TLEncode(uint32(3546343212))
+    result = TLEncode(uint32(0xd360e72c))
 method TLDecode*(self: HelpGetSupportName, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpGetUserInfo): seq[uint8] =
-    result = TLEncode(uint32(950046000))
+    result = TLEncode(uint32(0x38a08d3))
     result = result & TLEncode(self.user_id)
 method TLDecode*(self: HelpGetUserInfo, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
 method TLEncode*(self: HelpEditUserInfo): seq[uint8] =
-    result = TLEncode(uint32(1723407216))
+    result = TLEncode(uint32(0x66b91b70))
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.message)
     result = result & TLEncode(cast[seq[TL]](self.entities))
@@ -162,23 +162,23 @@ method TLDecode*(self: HelpEditUserInfo, bytes: var ScalingSeq[uint8]) =
     self.entities = cast[seq[MessageEntityI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: HelpGetPromoData): seq[uint8] =
-    result = TLEncode(uint32(3231151137))
+    result = TLEncode(uint32(0xc0977421))
 method TLDecode*(self: HelpGetPromoData, bytes: var ScalingSeq[uint8]) = 
     discard
 method TLEncode*(self: HelpHidePromoData): seq[uint8] =
-    result = TLEncode(uint32(505748629))
+    result = TLEncode(uint32(0x1e251c95))
     result = result & TLEncode(self.peer)
 method TLDecode*(self: HelpHidePromoData, bytes: var ScalingSeq[uint8]) = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
 method TLEncode*(self: HelpDismissSuggestion): seq[uint8] =
-    result = TLEncode(uint32(2012912112))
+    result = TLEncode(uint32(0x77fa99f))
     result = result & TLEncode(self.suggestion)
 method TLDecode*(self: HelpDismissSuggestion, bytes: var ScalingSeq[uint8]) = 
     self.suggestion = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetCountriesList): seq[uint8] =
-    result = TLEncode(uint32(1935116200))
+    result = TLEncode(uint32(0x735787a8))
     result = result & TLEncode(self.lang_code)
     result = result & TLEncode(self.hash)
 method TLDecode*(self: HelpGetCountriesList, bytes: var ScalingSeq[uint8]) = 
