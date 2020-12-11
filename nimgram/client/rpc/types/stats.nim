@@ -39,7 +39,7 @@ method getTypeName*(self: StatsBroadcastStats): string = "StatsBroadcastStats"
 method getTypeName*(self: StatsMegagroupStats): string = "StatsMegagroupStats"
 method getTypeName*(self: StatsMessageStats): string = "StatsMessageStats"
 
-method TLEncode*(self: StatsBroadcastStats): seq[uint8] =
+method TLEncode*(self: StatsBroadcastStats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbdf78394))
     result = result & TLEncode(self.period)
     result = result & TLEncode(self.followers)
@@ -56,7 +56,7 @@ method TLEncode*(self: StatsBroadcastStats): seq[uint8] =
     result = result & TLEncode(self.new_followers_by_source_graph)
     result = result & TLEncode(self.languages_graph)
     result = result & TLEncode(cast[seq[TL]](self.recent_message_interactions))
-method TLDecode*(self: StatsBroadcastStats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StatsBroadcastStats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.period = cast[StatsDateRangeDaysI](tempObj)
@@ -90,7 +90,7 @@ method TLDecode*(self: StatsBroadcastStats, bytes: var ScalingSeq[uint8]) =
     tempVector.TLDecode(bytes)
     self.recent_message_interactions = cast[seq[MessageInteractionCountersI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: StatsMegagroupStats): seq[uint8] =
+method TLEncode*(self: StatsMegagroupStats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xef7ff916))
     result = result & TLEncode(self.period)
     result = result & TLEncode(self.members)
@@ -109,7 +109,7 @@ method TLEncode*(self: StatsMegagroupStats): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.top_admins))
     result = result & TLEncode(cast[seq[TL]](self.top_inviters))
     result = result & TLEncode(cast[seq[TL]](self.users))
-method TLDecode*(self: StatsMegagroupStats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StatsMegagroupStats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.period = cast[StatsDateRangeDaysI](tempObj)
@@ -150,10 +150,10 @@ method TLDecode*(self: StatsMegagroupStats, bytes: var ScalingSeq[uint8]) =
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: StatsMessageStats): seq[uint8] =
+method TLEncode*(self: StatsMessageStats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x8999f295))
     result = result & TLEncode(self.views_graph)
-method TLDecode*(self: StatsMessageStats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StatsMessageStats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.views_graph = cast[StatsGraphI](tempObj)

@@ -13,15 +13,15 @@ type TLFunction* = ref object of TL
 
 method getTypeName*(self: TL): string {.base.} = "TL"
 
-method TLEncode*(self: TL): seq[uint8] {.base.} = raise newException(Exception, "Trying to encode a generic object")
+method TLEncode*(self: TL): seq[uint8] {.base, locks: "unknown".} = raise newException(Exception, "Trying to encode a generic object")
 
-proc TLEncode*(self: seq[TL]): seq[uint8]
+proc TLEncode*(self: seq[TL]): seq[uint8] 
 
 method getTypeName*(self: TLObject): string = "TLObject"
 
 method getTypeName*(self: TLFunction): string = "TLFunction"
 
-method TLDecode*(self: TL, bytes: var ScalingSeq[uint8]) {.base.} = discard
+method TLDecode*(self: TL, bytes: var ScalingSeq[uint8]) {.base, locks: "unknown".} = discard
 
 proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8])    
 
@@ -33,11 +33,11 @@ type GZipPacked* = ref object of TLObject
         
 method getTypeName*(self: GZipPacked): string = "GZipPacked"
 
-method TLEncode*(self: GZipPacked): seq[uint8] =
+method TLEncode*(self: GZipPacked): seq[uint8] {.locks: "unknown".} =
     result.add(TLEncode(uint32(0x3072CFA1)))
     result.add(TLEncode(compress(self.body.TLEncode())))
 
-method TLDecode*(self: GZipPacked, bytes: var ScalingSeq[uint8]) =
+method TLDecode*(self: GZipPacked, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} =
     var data = newScalingSeq(uncompress(bytes.TLDecode()))
     self.body.TLDecode(data)
 
@@ -67,13 +67,13 @@ method getTypeName*(self: FutureSalts): string = "FutureSalts"
 method getTypeName*(self: MessageContainer): string = "MessageContainer"
 
 
-method TLDecode*(self: FutureSalt, bytes: var ScalingSeq[uint8]) =
+method TLDecode*(self: FutureSalt, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} =
     bytes.TLDecode(addr self.validSince) 
     bytes.TLDecode(addr self.validUntil)
     bytes.TLDecode(addr self.salt)  
 
 
-method TLDecode*(self: FutureSalts, bytes: var ScalingSeq[uint8]) =
+method TLDecode*(self: FutureSalts, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} =
     bytes.TLDecode(addr self.reqMsgID)
     bytes.TLDecode(addr self.now)
     
@@ -270,7 +270,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             var tmp = new Rpc_answer_dropped
             tmp.TLDecode(bytes)
             self = tmp
-            return 
+            return
         of uint32(0x347773c5):
             var tmp = new Pong
             tmp.TLDecode(bytes)

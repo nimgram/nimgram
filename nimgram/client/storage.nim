@@ -7,8 +7,6 @@ import asyncfile, asyncdispatch
 
 type BinData* = object 
     authKey*: seq[uint8]
-    connectionOpened*: bool
-    connection*: TcpNetwork
     salt*: seq[uint8]
 
 
@@ -23,7 +21,7 @@ proc loadBin(filename: string): Future[BinData] {.async.} =
         if sha256.digest(realdata).data[0..31] != hash:
             raise newException(Exception, "integrity check failed")
         file.close()
-        return BinData(salt: realdata[0..7], authKey: realdata[8..(realdata.len-1)], connectionOpened: false)
+        return BinData(salt: realdata[0..7], authKey: realdata[8..(realdata.len-1)])
     except:
         raise
         #raise newException(Exception, "failed opening client data binary")
@@ -44,13 +42,11 @@ proc createBin*(authKey: seq[uint8], salt: seq[uint8], filename: string) {.async
     
 
 
-proc authSalt*(filename: string, address: string, port: uint16, netType: TcpNetworkTypes): Future[BinData] {.async.} =
+proc authSalt*(filename: string, connection: MTProtoNetwork): Future[BinData] {.async.} =
     if fileExists(filename):
         return await loadBin(filename)
     else:
-        #TODO: Load from configuration
-        var connection = await newConnection(address, port, netType) 
         var data = await generateAuthKey(connection)
         await createBin(data[0], data[1], filename)
         connection.close()
-        return BinData(authKey: data[0], salt: data[1], connectionOpened: false)
+        return BinData(authKey: data[0], salt: data[1])

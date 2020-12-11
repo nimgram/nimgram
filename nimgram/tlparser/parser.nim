@@ -18,7 +18,7 @@ import strformat
 const typeUtilsFile = staticRead("static/typeutils.nim")
 const encodeFile = staticRead("static/encoding.nim")
 const decodingFile = staticRead("static/decoding.nim")
-
+const LOCKS = "{.locks: \"unknown\".}"
 proc getPmr(unpmr: string): string =
     if unpmr.split(".").len == 1:
         result = unpmr
@@ -134,7 +134,7 @@ proc parseParameters(params: JsonNode, genericTypesBlock: var string, interfaces
             result = result & &"        {name}*: {paramType}\n"
 
 proc generateDecode(predicate: string, params: JsonNode): string =
-    result = &"method TLDecode*(self: {predicate}, bytes: var ScalingSeq[uint8]) = \n"
+    result = &"method TLDecode*(self: {predicate}, bytes: var ScalingSeq[uint8]) {LOCKS} = \n"
     var ok = false    
     #var flagsCode = ""
     #var decodeBlock = ""
@@ -245,19 +245,6 @@ proc generateDecode(predicate: string, params: JsonNode): string =
     if not ok:
         result.add("    discard\n")
 
-#[
-
-type GZipPacked* = ref object of TLObject
-        body*: TL
-
-method TLEncode*(self: GZipPacked}): seq[uint8] =
-    result.add(TLEncode(uint32(0x3072CFA1)))
-    result.add(TLEncode(compress(self.body.TLEncode())))
-
-method TLDecode*(self: var GZipPacked, bytes: ScalingSeq[uint8]) =
-    var data = newScalingSeq(uncompress(bytes.TLDecode()))
-    res.TLDecode(res.body)
-]#
 
 proc getSomething(something: string): string = 
     var sub = "base"
@@ -303,7 +290,7 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
 
 
 proc generateEncode(predicate: string, id: string, params: JsonNode): string =
-    result = &"method TLEncode*(self: {predicate}): seq[uint8] =\n"
+    result = &"method TLEncode*(self: {predicate}): seq[uint8] {LOCKS} =\n"
     result.add(&"    result = TLEncode(uint32(0x{id}))\n")    
     var flagsCode = ""
     var encodeBlock = ""

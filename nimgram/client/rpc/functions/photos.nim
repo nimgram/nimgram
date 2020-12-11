@@ -18,14 +18,14 @@ method getTypeName*(self: PhotosUploadProfilePhoto): string = "PhotosUploadProfi
 method getTypeName*(self: PhotosDeletePhotos): string = "PhotosDeletePhotos"
 method getTypeName*(self: PhotosGetUserPhotos): string = "PhotosGetUserPhotos"
 
-method TLEncode*(self: PhotosUpdateProfilePhoto): seq[uint8] =
+method TLEncode*(self: PhotosUpdateProfilePhoto): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x72d4742c))
     result = result & TLEncode(self.id)
-method TLDecode*(self: PhotosUpdateProfilePhoto, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PhotosUpdateProfilePhoto, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputPhotoI](tempObj)
-method TLEncode*(self: PhotosUploadProfilePhoto): seq[uint8] =
+method TLEncode*(self: PhotosUploadProfilePhoto): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x89f30f69))
     if self.file.isSome():
         self.flags = self.flags or 1 shl 0
@@ -40,7 +40,7 @@ method TLEncode*(self: PhotosUploadProfilePhoto): seq[uint8] =
         result = result & TLEncode(self.video.get())
     if self.video_start_ts.isSome():
         result = result & TLEncode(self.video_start_ts.get())
-method TLDecode*(self: PhotosUploadProfilePhoto, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PhotosUploadProfilePhoto, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         var tempVal = new TL
@@ -54,21 +54,21 @@ method TLDecode*(self: PhotosUploadProfilePhoto, bytes: var ScalingSeq[uint8]) =
         var tempVal: float64 = 0
         bytes.TLDecode(addr tempVal)
         self.video_start_ts = some(tempVal)
-method TLEncode*(self: PhotosDeletePhotos): seq[uint8] =
+method TLEncode*(self: PhotosDeletePhotos): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x87cf7f2f))
     result = result & TLEncode(cast[seq[TL]](self.id))
-method TLDecode*(self: PhotosDeletePhotos, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PhotosDeletePhotos, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.id = cast[seq[InputPhotoI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: PhotosGetUserPhotos): seq[uint8] =
+method TLEncode*(self: PhotosGetUserPhotos): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x91cd32a8))
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.offset)
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.limit)
-method TLDecode*(self: PhotosGetUserPhotos, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PhotosGetUserPhotos, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)

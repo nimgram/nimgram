@@ -32,7 +32,6 @@ proc getID(line: string): string =
     var Split = Splitt[Splitt.high]
 
     Split = split(Split, " ", 1)[0]
-    echo Split
     return Split
 
 
@@ -59,7 +58,7 @@ proc getReturnType(line: string): string =
 
 
 
-proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
+proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
     var methodMode = false
     var schema = TlSchema()
     schema.layer = layerVersion
@@ -83,7 +82,6 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
             constructor.params = getParameters(line)
             constructor.typeof = getReturnType(line)
             schema.constructors = schema.constructors & constructor
-            echo %*constructor
         else:
             var meth = TLMethod()
             meth.id = getID(line)

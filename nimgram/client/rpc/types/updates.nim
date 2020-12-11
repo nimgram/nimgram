@@ -55,27 +55,27 @@ method getTypeName*(self: UpdatesChannelDifferenceEmpty): string = "UpdatesChann
 method getTypeName*(self: UpdatesChannelDifferenceTooLong): string = "UpdatesChannelDifferenceTooLong"
 method getTypeName*(self: UpdatesChannelDifference): string = "UpdatesChannelDifference"
 
-method TLEncode*(self: UpdatesState): seq[uint8] =
+method TLEncode*(self: UpdatesState): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa56c2a3e))
     result = result & TLEncode(self.pts)
     result = result & TLEncode(self.qts)
     result = result & TLEncode(self.date)
     result = result & TLEncode(self.seq)
     result = result & TLEncode(self.unread_count)
-method TLDecode*(self: UpdatesState, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesState, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.pts)
     bytes.TLDecode(addr self.qts)
     bytes.TLDecode(addr self.date)
     bytes.TLDecode(addr self.seq)
     bytes.TLDecode(addr self.unread_count)
-method TLEncode*(self: UpdatesDifferenceEmpty): seq[uint8] =
+method TLEncode*(self: UpdatesDifferenceEmpty): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5d75a138))
     result = result & TLEncode(self.date)
     result = result & TLEncode(self.seq)
-method TLDecode*(self: UpdatesDifferenceEmpty, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesDifferenceEmpty, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.date)
     bytes.TLDecode(addr self.seq)
-method TLEncode*(self: UpdatesDifference): seq[uint8] =
+method TLEncode*(self: UpdatesDifference): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf49ca0))
     result = result & TLEncode(cast[seq[TL]](self.new_messages))
     result = result & TLEncode(cast[seq[TL]](self.new_encrypted_messages))
@@ -83,7 +83,7 @@ method TLEncode*(self: UpdatesDifference): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
     result = result & TLEncode(self.state)
-method TLDecode*(self: UpdatesDifference, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesDifference, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.new_messages = cast[seq[MessageI]](tempVector)
@@ -103,7 +103,7 @@ method TLDecode*(self: UpdatesDifference, bytes: var ScalingSeq[uint8]) =
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.state = cast[UpdatesStateI](tempObj)
-method TLEncode*(self: UpdatesDifferenceSlice): seq[uint8] =
+method TLEncode*(self: UpdatesDifferenceSlice): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa8fb1981))
     result = result & TLEncode(cast[seq[TL]](self.new_messages))
     result = result & TLEncode(cast[seq[TL]](self.new_encrypted_messages))
@@ -111,7 +111,7 @@ method TLEncode*(self: UpdatesDifferenceSlice): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
     result = result & TLEncode(self.intermediate_state)
-method TLDecode*(self: UpdatesDifferenceSlice, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesDifferenceSlice, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.new_messages = cast[seq[MessageI]](tempVector)
@@ -131,12 +131,12 @@ method TLDecode*(self: UpdatesDifferenceSlice, bytes: var ScalingSeq[uint8]) =
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.intermediate_state = cast[UpdatesStateI](tempObj)
-method TLEncode*(self: UpdatesDifferenceTooLong): seq[uint8] =
+method TLEncode*(self: UpdatesDifferenceTooLong): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4afe8f6d))
     result = result & TLEncode(self.pts)
-method TLDecode*(self: UpdatesDifferenceTooLong, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesDifferenceTooLong, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.pts)
-method TLEncode*(self: UpdatesChannelDifferenceEmpty): seq[uint8] =
+method TLEncode*(self: UpdatesChannelDifferenceEmpty): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3e11affb))
     if self.final:
         self.flags = self.flags or 1 shl 0
@@ -146,7 +146,7 @@ method TLEncode*(self: UpdatesChannelDifferenceEmpty): seq[uint8] =
     result = result & TLEncode(self.pts)
     if self.timeout.isSome():
         result = result & TLEncode(self.timeout.get())
-method TLDecode*(self: UpdatesChannelDifferenceEmpty, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesChannelDifferenceEmpty, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.final = true
@@ -155,7 +155,7 @@ method TLDecode*(self: UpdatesChannelDifferenceEmpty, bytes: var ScalingSeq[uint
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.timeout = some(tempVal)
-method TLEncode*(self: UpdatesChannelDifferenceTooLong): seq[uint8] =
+method TLEncode*(self: UpdatesChannelDifferenceTooLong): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa4bcc6fe))
     if self.final:
         self.flags = self.flags or 1 shl 0
@@ -168,7 +168,7 @@ method TLEncode*(self: UpdatesChannelDifferenceTooLong): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.messages))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
-method TLDecode*(self: UpdatesChannelDifferenceTooLong, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesChannelDifferenceTooLong, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.final = true
@@ -189,7 +189,7 @@ method TLDecode*(self: UpdatesChannelDifferenceTooLong, bytes: var ScalingSeq[ui
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: UpdatesChannelDifference): seq[uint8] =
+method TLEncode*(self: UpdatesChannelDifference): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x2064674e))
     if self.final:
         self.flags = self.flags or 1 shl 0
@@ -203,7 +203,7 @@ method TLEncode*(self: UpdatesChannelDifference): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.other_updates))
     result = result & TLEncode(cast[seq[TL]](self.chats))
     result = result & TLEncode(cast[seq[TL]](self.users))
-method TLDecode*(self: UpdatesChannelDifference, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesChannelDifference, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.final = true

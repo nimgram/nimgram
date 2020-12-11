@@ -31,7 +31,7 @@ proc messageID(): int64 = int64(pow(float64(now().toTime().toUnix()*2),float64(3
 
 
 
-proc send(self: TcpNetwork, data: TLFunction): Future[TL] {.async.} =
+proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     var bytes = data.TLEncode()
     bytes = TLEncode(int64(0)) & TLEncode(messageID())  & TLEncode(int32(len(bytes))) & bytes
     await self.write(bytes)
@@ -71,7 +71,7 @@ iterator reverse*[T](a: seq[T]): T {.inline.} =
 
 
 
-proc generateAuthKey*(connection: TcpNetwork): Future[(seq[uint8], seq[uint8])] {.async.} =
+proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8])] {.async.} =
 
     
     #step 1

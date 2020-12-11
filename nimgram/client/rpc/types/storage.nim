@@ -20,43 +20,43 @@ method getTypeName*(self: StorageFileMov): string = "StorageFileMov"
 method getTypeName*(self: StorageFileMp4): string = "StorageFileMp4"
 method getTypeName*(self: StorageFileWebp): string = "StorageFileWebp"
 
-method TLEncode*(self: StorageFileUnknown): seq[uint8] =
+method TLEncode*(self: StorageFileUnknown): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xaa963b05))
-method TLDecode*(self: StorageFileUnknown, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileUnknown, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFilePartial): seq[uint8] =
+method TLEncode*(self: StorageFilePartial): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x40bc6f52))
-method TLDecode*(self: StorageFilePartial, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFilePartial, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileJpeg): seq[uint8] =
+method TLEncode*(self: StorageFileJpeg): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x7efe0e))
-method TLDecode*(self: StorageFileJpeg, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileJpeg, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileGif): seq[uint8] =
+method TLEncode*(self: StorageFileGif): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcae1aadf))
-method TLDecode*(self: StorageFileGif, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileGif, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFilePng): seq[uint8] =
+method TLEncode*(self: StorageFilePng): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa4f63c0))
-method TLDecode*(self: StorageFilePng, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFilePng, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFilePdf): seq[uint8] =
+method TLEncode*(self: StorageFilePdf): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xae1e508d))
-method TLDecode*(self: StorageFilePdf, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFilePdf, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileMp3): seq[uint8] =
+method TLEncode*(self: StorageFileMp3): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x528a0677))
-method TLDecode*(self: StorageFileMp3, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileMp3, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileMov): seq[uint8] =
+method TLEncode*(self: StorageFileMov): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4b09ebbc))
-method TLDecode*(self: StorageFileMov, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileMov, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileMp4): seq[uint8] =
+method TLEncode*(self: StorageFileMp4): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xb3cea0e4))
-method TLDecode*(self: StorageFileMp4, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileMp4, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: StorageFileWebp): seq[uint8] =
+method TLEncode*(self: StorageFileWebp): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1081464c))
-method TLDecode*(self: StorageFileWebp, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: StorageFileWebp, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard

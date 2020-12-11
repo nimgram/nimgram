@@ -47,7 +47,7 @@ method getTypeName*(self: PaymentsPaymentReceipt): string = "PaymentsPaymentRece
 method getTypeName*(self: PaymentsSavedInfo): string = "PaymentsSavedInfo"
 method getTypeName*(self: PaymentsBankCardData): string = "PaymentsBankCardData"
 
-method TLEncode*(self: PaymentsPaymentForm): seq[uint8] =
+method TLEncode*(self: PaymentsPaymentForm): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3f56aea3))
     if self.can_save_credentials:
         self.flags = self.flags or 1 shl 2
@@ -75,7 +75,7 @@ method TLEncode*(self: PaymentsPaymentForm): seq[uint8] =
     if self.saved_credentials.isSome():
         result = result & TLEncode(self.saved_credentials.get())
     result = result & TLEncode(cast[seq[TL]](self.users))
-method TLDecode*(self: PaymentsPaymentForm, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsPaymentForm, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 2)) != 0:
         self.can_save_credentials = true
@@ -105,7 +105,7 @@ method TLDecode*(self: PaymentsPaymentForm, bytes: var ScalingSeq[uint8]) =
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: PaymentsValidatedRequestedInfo): seq[uint8] =
+method TLEncode*(self: PaymentsValidatedRequestedInfo): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd1451883))
     if self.id.isSome():
         self.flags = self.flags or 1 shl 0
@@ -116,7 +116,7 @@ method TLEncode*(self: PaymentsValidatedRequestedInfo): seq[uint8] =
         result = result & TLEncode(self.id.get())
     if self.shipping_options.isSome():
         result = result & TLEncode(cast[seq[TL]](self.shipping_options.get()))
-method TLDecode*(self: PaymentsValidatedRequestedInfo, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsValidatedRequestedInfo, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.id = some(cast[string](bytes.TLDecode()))
@@ -124,19 +124,19 @@ method TLDecode*(self: PaymentsValidatedRequestedInfo, bytes: var ScalingSeq[uin
         var tempVal = newSeq[TL]()
         tempVal.TLDecode(bytes)
         self.shipping_options = some(cast[seq[ShippingOptionI]](tempVal))
-method TLEncode*(self: PaymentsPaymentResult): seq[uint8] =
+method TLEncode*(self: PaymentsPaymentResult): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4e5f810d))
     result = result & TLEncode(self.updates)
-method TLDecode*(self: PaymentsPaymentResult, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsPaymentResult, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.updates = cast[UpdatesI](tempObj)
-method TLEncode*(self: PaymentsPaymentVerificationNeeded): seq[uint8] =
+method TLEncode*(self: PaymentsPaymentVerificationNeeded): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd8411139))
     result = result & TLEncode(self.url)
-method TLDecode*(self: PaymentsPaymentVerificationNeeded, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsPaymentVerificationNeeded, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.url = cast[string](bytes.TLDecode())
-method TLEncode*(self: PaymentsPaymentReceipt): seq[uint8] =
+method TLEncode*(self: PaymentsPaymentReceipt): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x500911e1))
     if self.info.isSome():
         self.flags = self.flags or 1 shl 0
@@ -155,7 +155,7 @@ method TLEncode*(self: PaymentsPaymentReceipt): seq[uint8] =
     result = result & TLEncode(self.total_amount)
     result = result & TLEncode(self.credentials_title)
     result = result & TLEncode(cast[seq[TL]](self.users))
-method TLDecode*(self: PaymentsPaymentReceipt, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsPaymentReceipt, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.date)
     bytes.TLDecode(addr self.bot_id)
@@ -178,7 +178,7 @@ method TLDecode*(self: PaymentsPaymentReceipt, bytes: var ScalingSeq[uint8]) =
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: PaymentsSavedInfo): seq[uint8] =
+method TLEncode*(self: PaymentsSavedInfo): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xfb8fe43c))
     if self.has_saved_credentials:
         self.flags = self.flags or 1 shl 1
@@ -187,7 +187,7 @@ method TLEncode*(self: PaymentsSavedInfo): seq[uint8] =
     result = result & TLEncode(self.flags)
     if self.saved_info.isSome():
         result = result & TLEncode(self.saved_info.get())
-method TLDecode*(self: PaymentsSavedInfo, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsSavedInfo, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.has_saved_credentials = true
@@ -195,11 +195,11 @@ method TLDecode*(self: PaymentsSavedInfo, bytes: var ScalingSeq[uint8]) =
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.saved_info = some(tempVal.PaymentRequestedInfoI)
-method TLEncode*(self: PaymentsBankCardData): seq[uint8] =
+method TLEncode*(self: PaymentsBankCardData): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3e24e573))
     result = result & TLEncode(self.title)
     result = result & TLEncode(cast[seq[TL]](self.open_urls))
-method TLDecode*(self: PaymentsBankCardData, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: PaymentsBankCardData, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.title = cast[string](bytes.TLDecode())
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)

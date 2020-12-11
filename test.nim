@@ -44,7 +44,7 @@ proc runClient*(): Future[void] {.async.} =
     
     mtprotoClient  =await initNimgram("session.bin", NimgramConfig(
     testMode: false, 
-    transportMode: Abridged,
+    transportMode: NetTcpAbridged,
     apiID: 0,
     apiHash: "0",
     deviceModel: "Nimphone",

@@ -1,5 +1,7 @@
 import client/rpc/raw
 import client/storage
+import client/network/tcp/abridged
+import client/network/tcp/intermediate
 import client/network/transports
 import asyncdispatch
 import random
@@ -10,7 +12,7 @@ type NimgramClient* = ref object
 
 type NimgramConfig* = object
     testMode*: bool
-    transportMode*: TcpNetworkTypes
+    transportMode*: NetworkTypes
     apiID*: int32
     apiHash*: string
     deviceModel*: string
@@ -28,6 +30,19 @@ const TestmodePort = 443
 const ProdModeIp = "149.154.167.91"
 const ProdModePort = 443
 
+
+proc getConnection(connectionType: NetworkTypes, address: string, port: uint16): Future[MTProtoNetwork] {.async.} =
+    case connectionType:
+    of NetTcpAbridged:
+        var connection = new TcpAbridged
+        await connection.connect(address, port)
+        result = connection.MTProtoNetwork
+    of NetTcpIntermediate:
+        var connection = new TcpIntermediate
+        await connection.connect(address, port)
+        result = connection.MTProtoNetwork
+
+
 proc initNimgram*(databinFile: string, config: NimgramConfig): Future[NimgramClient] {.async.} = 
 
     var ip = ""
@@ -42,12 +57,13 @@ proc initNimgram*(databinFile: string, config: NimgramConfig): Future[NimgramCli
 
 
     result = new NimgramClient
-    var autsalt = await authSalt(databinFile, ip, uint16(port), config.transportMode)
-    if autsalt.connectionOpened:
-        result.mainSession = initSession(autsalt.connection, 2, autsalt.authKey, autsalt.salt, databinFile)
-    else:
-        var connection = await newConnection(ip, uint16(port), config.transportMode) 
-        result.mainSession = initSession(connection, 2, autsalt.authKey, autsalt.salt, databinFile)
+    
+
+
+    var autsalt = await authSalt(databinFile, await getConnection(config.transportMode, ip, uint16(port)) )
+
+    var connection = await getConnection(config.transportMode, ip, uint16(port)) 
+    result.mainSession = initSession(connection, 2, autsalt.authKey, autsalt.salt, databinFile)
     asyncCheck result.mainSession.startHandler()
     let pingID = int64(rand(9999))
     var ponger = await result.mainSession.send(Ping(ping_id: pingID))

@@ -655,15 +655,15 @@ method getTypeName*(self: MessagesGetDiscussionMessage): string = "MessagesGetDi
 method getTypeName*(self: MessagesReadDiscussion): string = "MessagesReadDiscussion"
 method getTypeName*(self: MessagesUnpinAllMessages): string = "MessagesUnpinAllMessages"
 
-method TLEncode*(self: MessagesGetMessages): seq[uint8] =
+method TLEncode*(self: MessagesGetMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x63c66506))
     result = result & TLEncode(cast[seq[TL]](self.id))
-method TLDecode*(self: MessagesGetMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.id = cast[seq[InputMessageI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: MessagesGetDialogs): seq[uint8] =
+method TLEncode*(self: MessagesGetDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa0ee3b73))
     if self.exclude_pinned:
         self.flags = self.flags or 1 shl 0
@@ -677,7 +677,7 @@ method TLEncode*(self: MessagesGetDialogs): seq[uint8] =
     result = result & TLEncode(self.offset_peer)
     result = result & TLEncode(self.limit)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetDialogs, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDialogs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.exclude_pinned = true
@@ -692,7 +692,7 @@ method TLDecode*(self: MessagesGetDialogs, bytes: var ScalingSeq[uint8]) =
     self.offset_peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetHistory): seq[uint8] =
+method TLEncode*(self: MessagesGetHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xdcbb8260))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.offset_id)
@@ -702,7 +702,7 @@ method TLEncode*(self: MessagesGetHistory): seq[uint8] =
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.min_id)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetHistory, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
@@ -713,7 +713,7 @@ method TLDecode*(self: MessagesGetHistory, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.max_id)
     bytes.TLDecode(addr self.min_id)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesSearch): seq[uint8] =
+method TLEncode*(self: MessagesSearch): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc352eec))
     if self.from_id.isSome():
         self.flags = self.flags or 1 shl 0
@@ -735,7 +735,7 @@ method TLEncode*(self: MessagesSearch): seq[uint8] =
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.min_id)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesSearch, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSearch, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -759,16 +759,16 @@ method TLDecode*(self: MessagesSearch, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.max_id)
     bytes.TLDecode(addr self.min_id)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesReadHistory): seq[uint8] =
+method TLEncode*(self: MessagesReadHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe306d3a))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.max_id)
-method TLDecode*(self: MessagesReadHistory, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.max_id)
-method TLEncode*(self: MessagesDeleteHistory): seq[uint8] =
+method TLEncode*(self: MessagesDeleteHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1c015b09))
     if self.just_clear:
         self.flags = self.flags or 1 shl 0
@@ -777,7 +777,7 @@ method TLEncode*(self: MessagesDeleteHistory): seq[uint8] =
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.max_id)
-method TLDecode*(self: MessagesDeleteHistory, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesDeleteHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.just_clear = true
@@ -787,23 +787,23 @@ method TLDecode*(self: MessagesDeleteHistory, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.max_id)
-method TLEncode*(self: MessagesDeleteMessages): seq[uint8] =
+method TLEncode*(self: MessagesDeleteMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe58e95d2))
     if self.revoke:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesDeleteMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesDeleteMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.revoke = true
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesReceivedMessages): seq[uint8] =
+method TLEncode*(self: MessagesReceivedMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5a954c0))
     result = result & TLEncode(self.max_id)
-method TLDecode*(self: MessagesReceivedMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReceivedMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.max_id)
-method TLEncode*(self: MessagesSetTyping): seq[uint8] =
+method TLEncode*(self: MessagesSetTyping): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x58943ee2))
     if self.top_msg_id.isSome():
         self.flags = self.flags or 1 shl 0
@@ -812,7 +812,7 @@ method TLEncode*(self: MessagesSetTyping): seq[uint8] =
     if self.top_msg_id.isSome():
         result = result & TLEncode(self.top_msg_id.get())
     result = result & TLEncode(self.action)
-method TLDecode*(self: MessagesSetTyping, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetTyping, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -823,7 +823,7 @@ method TLDecode*(self: MessagesSetTyping, bytes: var ScalingSeq[uint8]) =
         self.top_msg_id = some(tempVal)
     tempObj.TLDecode(bytes)
     self.action = cast[SendMessageActionI](tempObj)
-method TLEncode*(self: MessagesSendMessage): seq[uint8] =
+method TLEncode*(self: MessagesSendMessage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x520c3870))
     if self.no_webpage:
         self.flags = self.flags or 1 shl 1
@@ -853,7 +853,7 @@ method TLEncode*(self: MessagesSendMessage): seq[uint8] =
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesSendMessage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendMessage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.no_webpage = true
@@ -884,7 +884,7 @@ method TLDecode*(self: MessagesSendMessage, bytes: var ScalingSeq[uint8]) =
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesSendMedia): seq[uint8] =
+method TLEncode*(self: MessagesSendMedia): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3491eba9))
     if self.silent:
         self.flags = self.flags or 1 shl 5
@@ -913,7 +913,7 @@ method TLEncode*(self: MessagesSendMedia): seq[uint8] =
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesSendMedia, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendMedia, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 5)) != 0:
         self.silent = true
@@ -944,7 +944,7 @@ method TLDecode*(self: MessagesSendMedia, bytes: var ScalingSeq[uint8]) =
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesForwardMessages): seq[uint8] =
+method TLEncode*(self: MessagesForwardMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd9fee60e))
     if self.silent:
         self.flags = self.flags or 1 shl 5
@@ -961,7 +961,7 @@ method TLEncode*(self: MessagesForwardMessages): seq[uint8] =
     result = result & TLEncode(self.to_peer)
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesForwardMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesForwardMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 5)) != 0:
         self.silent = true
@@ -980,141 +980,141 @@ method TLDecode*(self: MessagesForwardMessages, bytes: var ScalingSeq[uint8]) =
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesReportSpam): seq[uint8] =
+method TLEncode*(self: MessagesReportSpam): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcf1592db))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesReportSpam, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReportSpam, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesGetPeerSettings): seq[uint8] =
+method TLEncode*(self: MessagesGetPeerSettings): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3672e09c))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesGetPeerSettings, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetPeerSettings, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesReport): seq[uint8] =
+method TLEncode*(self: MessagesReport): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbd82b658))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.reason)
-method TLDecode*(self: MessagesReport, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReport, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(self.id)
     tempObj.TLDecode(bytes)
     self.reason = cast[ReportReasonI](tempObj)
-method TLEncode*(self: MessagesGetChats): seq[uint8] =
+method TLEncode*(self: MessagesGetChats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3c6aa187))
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesGetChats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetChats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesGetFullChat): seq[uint8] =
+method TLEncode*(self: MessagesGetFullChat): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3b831c66))
     result = result & TLEncode(self.chat_id)
-method TLDecode*(self: MessagesGetFullChat, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetFullChat, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
-method TLEncode*(self: MessagesEditChatTitle): seq[uint8] =
+method TLEncode*(self: MessagesEditChatTitle): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xdc452855))
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.title)
-method TLDecode*(self: MessagesEditChatTitle, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditChatTitle, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
     self.title = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesEditChatPhoto): seq[uint8] =
+method TLEncode*(self: MessagesEditChatPhoto): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xca4c79d8))
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.photo)
-method TLDecode*(self: MessagesEditChatPhoto, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditChatPhoto, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.photo = cast[InputChatPhotoI](tempObj)
-method TLEncode*(self: MessagesAddChatUser): seq[uint8] =
+method TLEncode*(self: MessagesAddChatUser): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf9a0aa09))
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.fwd_limit)
-method TLDecode*(self: MessagesAddChatUser, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesAddChatUser, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.fwd_limit)
-method TLEncode*(self: MessagesDeleteChatUser): seq[uint8] =
+method TLEncode*(self: MessagesDeleteChatUser): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe0611f16))
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.user_id)
-method TLDecode*(self: MessagesDeleteChatUser, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesDeleteChatUser, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
-method TLEncode*(self: MessagesCreateChat): seq[uint8] =
+method TLEncode*(self: MessagesCreateChat): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x9cb126e))
     result = result & TLEncode(cast[seq[TL]](self.users))
     result = result & TLEncode(self.title)
-method TLDecode*(self: MessagesCreateChat, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesCreateChat, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.users = cast[seq[InputUserI]](tempVector)
     tempVector.setLen(0)
     self.title = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetDhConfig): seq[uint8] =
+method TLEncode*(self: MessagesGetDhConfig): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x26cf8950))
     result = result & TLEncode(self.version)
     result = result & TLEncode(self.random_length)
-method TLDecode*(self: MessagesGetDhConfig, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDhConfig, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.version)
     bytes.TLDecode(addr self.random_length)
-method TLEncode*(self: MessagesRequestEncryption): seq[uint8] =
+method TLEncode*(self: MessagesRequestEncryption): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf64daf43))
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.random_id)
     result = result & TLEncode(self.g_a)
-method TLDecode*(self: MessagesRequestEncryption, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesRequestEncryption, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.random_id)
     self.g_a = bytes.TLDecode()
-method TLEncode*(self: MessagesAcceptEncryption): seq[uint8] =
+method TLEncode*(self: MessagesAcceptEncryption): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3dbc0415))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.g_b)
     result = result & TLEncode(self.key_fingerprint)
-method TLDecode*(self: MessagesAcceptEncryption, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesAcceptEncryption, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
     self.g_b = bytes.TLDecode()
     bytes.TLDecode(addr self.key_fingerprint)
-method TLEncode*(self: MessagesDiscardEncryption): seq[uint8] =
+method TLEncode*(self: MessagesDiscardEncryption): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xedd923c5))
     result = result & TLEncode(self.chat_id)
-method TLDecode*(self: MessagesDiscardEncryption, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesDiscardEncryption, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
-method TLEncode*(self: MessagesSetEncryptedTyping): seq[uint8] =
+method TLEncode*(self: MessagesSetEncryptedTyping): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x791451ed))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.typing)
-method TLDecode*(self: MessagesSetEncryptedTyping, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetEncryptedTyping, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
     bytes.TLDecode(self.typing)
-method TLEncode*(self: MessagesReadEncryptedHistory): seq[uint8] =
+method TLEncode*(self: MessagesReadEncryptedHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x7f4b690a))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.max_date)
-method TLDecode*(self: MessagesReadEncryptedHistory, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadEncryptedHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
     bytes.TLDecode(addr self.max_date)
-method TLEncode*(self: MessagesSendEncrypted): seq[uint8] =
+method TLEncode*(self: MessagesSendEncrypted): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x44fa7a15))
     if self.silent:
         self.flags = self.flags or 1 shl 0
@@ -1122,7 +1122,7 @@ method TLEncode*(self: MessagesSendEncrypted): seq[uint8] =
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.random_id)
     result = result & TLEncode(self.data)
-method TLDecode*(self: MessagesSendEncrypted, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendEncrypted, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.silent = true
@@ -1131,7 +1131,7 @@ method TLDecode*(self: MessagesSendEncrypted, bytes: var ScalingSeq[uint8]) =
     self.peer = cast[InputEncryptedChatI](tempObj)
     bytes.TLDecode(addr self.random_id)
     self.data = bytes.TLDecode()
-method TLEncode*(self: MessagesSendEncryptedFile): seq[uint8] =
+method TLEncode*(self: MessagesSendEncryptedFile): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5559481d))
     if self.silent:
         self.flags = self.flags or 1 shl 0
@@ -1140,7 +1140,7 @@ method TLEncode*(self: MessagesSendEncryptedFile): seq[uint8] =
     result = result & TLEncode(self.random_id)
     result = result & TLEncode(self.data)
     result = result & TLEncode(self.file)
-method TLDecode*(self: MessagesSendEncryptedFile, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendEncryptedFile, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.silent = true
@@ -1151,47 +1151,47 @@ method TLDecode*(self: MessagesSendEncryptedFile, bytes: var ScalingSeq[uint8]) 
     self.data = bytes.TLDecode()
     tempObj.TLDecode(bytes)
     self.file = cast[InputEncryptedFileI](tempObj)
-method TLEncode*(self: MessagesSendEncryptedService): seq[uint8] =
+method TLEncode*(self: MessagesSendEncryptedService): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x32d439a4))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.random_id)
     result = result & TLEncode(self.data)
-method TLDecode*(self: MessagesSendEncryptedService, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendEncryptedService, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
     bytes.TLDecode(addr self.random_id)
     self.data = bytes.TLDecode()
-method TLEncode*(self: MessagesReceivedQueue): seq[uint8] =
+method TLEncode*(self: MessagesReceivedQueue): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x55a5bb66))
     result = result & TLEncode(self.max_qts)
-method TLDecode*(self: MessagesReceivedQueue, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReceivedQueue, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.max_qts)
-method TLEncode*(self: MessagesReportEncryptedSpam): seq[uint8] =
+method TLEncode*(self: MessagesReportEncryptedSpam): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4b0c8c0f))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesReportEncryptedSpam, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReportEncryptedSpam, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
-method TLEncode*(self: MessagesReadMessageContents): seq[uint8] =
+method TLEncode*(self: MessagesReadMessageContents): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x36a73f77))
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesReadMessageContents, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadMessageContents, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesGetStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x43d4f2c))
     result = result & TLEncode(self.emoticon)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.emoticon = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetAllStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetAllStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1c9618b1))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetAllStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetAllStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetWebPagePreview): seq[uint8] =
+method TLEncode*(self: MessagesGetWebPagePreview): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x8b68b0cc))
     if self.entities.isSome():
         self.flags = self.flags or 1 shl 3
@@ -1199,60 +1199,60 @@ method TLEncode*(self: MessagesGetWebPagePreview): seq[uint8] =
     result = result & TLEncode(self.message)
     if self.entities.isSome():
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
-method TLDecode*(self: MessagesGetWebPagePreview, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetWebPagePreview, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     self.message = cast[string](bytes.TLDecode())
     if (self.flags and (1 shl 3)) != 0:
         var tempVal = newSeq[TL]()
         tempVal.TLDecode(bytes)
         self.entities = some(cast[seq[MessageEntityI]](tempVal))
-method TLEncode*(self: MessagesExportChatInvite): seq[uint8] =
+method TLEncode*(self: MessagesExportChatInvite): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xdf7534c))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesExportChatInvite, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesExportChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesCheckChatInvite): seq[uint8] =
+method TLEncode*(self: MessagesCheckChatInvite): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3eadb1bb))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesCheckChatInvite, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesCheckChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.hash = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesImportChatInvite): seq[uint8] =
+method TLEncode*(self: MessagesImportChatInvite): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x6c50051c))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesImportChatInvite, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesImportChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.hash = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetStickerSet): seq[uint8] =
+method TLEncode*(self: MessagesGetStickerSet): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x2619a90e))
     result = result & TLEncode(self.stickerset)
-method TLDecode*(self: MessagesGetStickerSet, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetStickerSet, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.stickerset = cast[InputStickerSetI](tempObj)
-method TLEncode*(self: MessagesInstallStickerSet): seq[uint8] =
+method TLEncode*(self: MessagesInstallStickerSet): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc78fe460))
     result = result & TLEncode(self.stickerset)
     result = result & TLEncode(self.archived)
-method TLDecode*(self: MessagesInstallStickerSet, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesInstallStickerSet, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.stickerset = cast[InputStickerSetI](tempObj)
     bytes.TLDecode(self.archived)
-method TLEncode*(self: MessagesUninstallStickerSet): seq[uint8] =
+method TLEncode*(self: MessagesUninstallStickerSet): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf96e55de))
     result = result & TLEncode(self.stickerset)
-method TLDecode*(self: MessagesUninstallStickerSet, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUninstallStickerSet, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.stickerset = cast[InputStickerSetI](tempObj)
-method TLEncode*(self: MessagesStartBot): seq[uint8] =
+method TLEncode*(self: MessagesStartBot): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe6df7378))
     result = result & TLEncode(self.bot)
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.random_id)
     result = result & TLEncode(self.start_param)
-method TLDecode*(self: MessagesStartBot, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesStartBot, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.bot = cast[InputUserI](tempObj)
@@ -1260,34 +1260,34 @@ method TLDecode*(self: MessagesStartBot, bytes: var ScalingSeq[uint8]) =
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.random_id)
     self.start_param = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetMessagesViews): seq[uint8] =
+method TLEncode*(self: MessagesGetMessagesViews): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5784d3e1))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.increment)
-method TLDecode*(self: MessagesGetMessagesViews, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetMessagesViews, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(self.id)
     bytes.TLDecode(self.increment)
-method TLEncode*(self: MessagesEditChatAdmin): seq[uint8] =
+method TLEncode*(self: MessagesEditChatAdmin): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa9e69f2e))
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.is_admin)
-method TLDecode*(self: MessagesEditChatAdmin, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditChatAdmin, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(self.is_admin)
-method TLEncode*(self: MessagesMigrateChat): seq[uint8] =
+method TLEncode*(self: MessagesMigrateChat): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x15a3b8e3))
     result = result & TLEncode(self.chat_id)
-method TLDecode*(self: MessagesMigrateChat, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesMigrateChat, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
-method TLEncode*(self: MessagesSearchGlobal): seq[uint8] =
+method TLEncode*(self: MessagesSearchGlobal): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4bc6589a))
     if self.folder_id.isSome():
         self.flags = self.flags or 1 shl 0
@@ -1302,7 +1302,7 @@ method TLEncode*(self: MessagesSearchGlobal): seq[uint8] =
     result = result & TLEncode(self.offset_peer)
     result = result & TLEncode(self.offset_id)
     result = result & TLEncode(self.limit)
-method TLDecode*(self: MessagesSearchGlobal, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSearchGlobal, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         var tempVal: int32 = 0
@@ -1319,41 +1319,41 @@ method TLDecode*(self: MessagesSearchGlobal, bytes: var ScalingSeq[uint8]) =
     self.offset_peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.offset_id)
     bytes.TLDecode(addr self.limit)
-method TLEncode*(self: MessagesReorderStickerSets): seq[uint8] =
+method TLEncode*(self: MessagesReorderStickerSets): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x78337739))
     if self.masks:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.order)
-method TLDecode*(self: MessagesReorderStickerSets, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReorderStickerSets, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.masks = true
     bytes.TLDecode(self.order)
-method TLEncode*(self: MessagesGetDocumentByHash): seq[uint8] =
+method TLEncode*(self: MessagesGetDocumentByHash): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x338e2464))
     result = result & TLEncode(self.sha256)
     result = result & TLEncode(self.size)
     result = result & TLEncode(self.mime_type)
-method TLDecode*(self: MessagesGetDocumentByHash, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDocumentByHash, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.sha256 = bytes.TLDecode()
     bytes.TLDecode(addr self.size)
     self.mime_type = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetSavedGifs): seq[uint8] =
+method TLEncode*(self: MessagesGetSavedGifs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x83bf3d52))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetSavedGifs, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetSavedGifs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesSaveGif): seq[uint8] =
+method TLEncode*(self: MessagesSaveGif): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x327a30cb))
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.unsave)
-method TLDecode*(self: MessagesSaveGif, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSaveGif, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputDocumentI](tempObj)
     bytes.TLDecode(self.unsave)
-method TLEncode*(self: MessagesGetInlineBotResults): seq[uint8] =
+method TLEncode*(self: MessagesGetInlineBotResults): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x514e999d))
     if self.geo_point.isSome():
         self.flags = self.flags or 1 shl 0
@@ -1364,7 +1364,7 @@ method TLEncode*(self: MessagesGetInlineBotResults): seq[uint8] =
         result = result & TLEncode(self.geo_point.get())
     result = result & TLEncode(self.query)
     result = result & TLEncode(self.offset)
-method TLDecode*(self: MessagesGetInlineBotResults, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetInlineBotResults, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -1377,7 +1377,7 @@ method TLDecode*(self: MessagesGetInlineBotResults, bytes: var ScalingSeq[uint8]
         self.geo_point = some(tempVal.InputGeoPointI)
     self.query = cast[string](bytes.TLDecode())
     self.offset = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesSetInlineBotResults): seq[uint8] =
+method TLEncode*(self: MessagesSetInlineBotResults): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xeb5ea206))
     if self.gallery:
         self.flags = self.flags or 1 shl 0
@@ -1395,7 +1395,7 @@ method TLEncode*(self: MessagesSetInlineBotResults): seq[uint8] =
         result = result & TLEncode(self.next_offset.get())
     if self.switch_pm.isSome():
         result = result & TLEncode(self.switch_pm.get())
-method TLDecode*(self: MessagesSetInlineBotResults, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetInlineBotResults, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.gallery = true
@@ -1413,7 +1413,7 @@ method TLDecode*(self: MessagesSetInlineBotResults, bytes: var ScalingSeq[uint8]
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.switch_pm = some(tempVal.InlineBotSwitchPMI)
-method TLEncode*(self: MessagesSendInlineBotResult): seq[uint8] =
+method TLEncode*(self: MessagesSendInlineBotResult): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x220815b0))
     if self.silent:
         self.flags = self.flags or 1 shl 5
@@ -1436,7 +1436,7 @@ method TLEncode*(self: MessagesSendInlineBotResult): seq[uint8] =
     result = result & TLEncode(self.id)
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesSendInlineBotResult, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendInlineBotResult, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 5)) != 0:
         self.silent = true
@@ -1460,16 +1460,16 @@ method TLDecode*(self: MessagesSendInlineBotResult, bytes: var ScalingSeq[uint8]
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesGetMessageEditData): seq[uint8] =
+method TLEncode*(self: MessagesGetMessageEditData): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xfda68d36))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesGetMessageEditData, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetMessageEditData, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.id)
-method TLEncode*(self: MessagesEditMessage): seq[uint8] =
+method TLEncode*(self: MessagesEditMessage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x48f71778))
     if self.no_webpage:
         self.flags = self.flags or 1 shl 1
@@ -1496,7 +1496,7 @@ method TLEncode*(self: MessagesEditMessage): seq[uint8] =
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesEditMessage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditMessage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.no_webpage = true
@@ -1522,7 +1522,7 @@ method TLDecode*(self: MessagesEditMessage, bytes: var ScalingSeq[uint8]) =
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesEditInlineBotMessage): seq[uint8] =
+method TLEncode*(self: MessagesEditInlineBotMessage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x83557dba))
     if self.no_webpage:
         self.flags = self.flags or 1 shl 1
@@ -1544,7 +1544,7 @@ method TLEncode*(self: MessagesEditInlineBotMessage): seq[uint8] =
         result = result & TLEncode(self.reply_markup.get())
     if self.entities.isSome():
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
-method TLDecode*(self: MessagesEditInlineBotMessage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditInlineBotMessage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.no_webpage = true
@@ -1565,7 +1565,7 @@ method TLDecode*(self: MessagesEditInlineBotMessage, bytes: var ScalingSeq[uint8
         var tempVal = newSeq[TL]()
         tempVal.TLDecode(bytes)
         self.entities = some(cast[seq[MessageEntityI]](tempVal))
-method TLEncode*(self: MessagesGetBotCallbackAnswer): seq[uint8] =
+method TLEncode*(self: MessagesGetBotCallbackAnswer): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x9342ca07))
     if self.game:
         self.flags = self.flags or 1 shl 1
@@ -1580,7 +1580,7 @@ method TLEncode*(self: MessagesGetBotCallbackAnswer): seq[uint8] =
         result = result & TLEncode(self.data.get())
     if self.password.isSome():
         result = result & TLEncode(self.password.get())
-method TLDecode*(self: MessagesGetBotCallbackAnswer, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetBotCallbackAnswer, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.game = true
@@ -1594,7 +1594,7 @@ method TLDecode*(self: MessagesGetBotCallbackAnswer, bytes: var ScalingSeq[uint8
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.password = some(tempVal.InputCheckPasswordSRPI)
-method TLEncode*(self: MessagesSetBotCallbackAnswer): seq[uint8] =
+method TLEncode*(self: MessagesSetBotCallbackAnswer): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd58f130a))
     if self.alert:
         self.flags = self.flags or 1 shl 1
@@ -1609,7 +1609,7 @@ method TLEncode*(self: MessagesSetBotCallbackAnswer): seq[uint8] =
     if self.url.isSome():
         result = result & TLEncode(self.url.get())
     result = result & TLEncode(self.cache_time)
-method TLDecode*(self: MessagesSetBotCallbackAnswer, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetBotCallbackAnswer, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.alert = true
@@ -1619,15 +1619,15 @@ method TLDecode*(self: MessagesSetBotCallbackAnswer, bytes: var ScalingSeq[uint8
     if (self.flags and (1 shl 2)) != 0:
         self.url = some(cast[string](bytes.TLDecode()))
     bytes.TLDecode(addr self.cache_time)
-method TLEncode*(self: MessagesGetPeerDialogs): seq[uint8] =
+method TLEncode*(self: MessagesGetPeerDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe470bcfd))
     result = result & TLEncode(cast[seq[TL]](self.peers))
-method TLDecode*(self: MessagesGetPeerDialogs, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetPeerDialogs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempVector = newSeq[TL]()
     tempVector.TLDecode(bytes)
     self.peers = cast[seq[InputDialogPeerI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: MessagesSaveDraft): seq[uint8] =
+method TLEncode*(self: MessagesSaveDraft): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbc39e14b))
     if self.no_webpage:
         self.flags = self.flags or 1 shl 1
@@ -1642,7 +1642,7 @@ method TLEncode*(self: MessagesSaveDraft): seq[uint8] =
     result = result & TLEncode(self.message)
     if self.entities.isSome():
         result = result & TLEncode(cast[seq[TL]](self.entities.get()))
-method TLDecode*(self: MessagesSaveDraft, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSaveDraft, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.no_webpage = true
@@ -1658,39 +1658,39 @@ method TLDecode*(self: MessagesSaveDraft, bytes: var ScalingSeq[uint8]) =
         var tempVal = newSeq[TL]()
         tempVal.TLDecode(bytes)
         self.entities = some(cast[seq[MessageEntityI]](tempVal))
-method TLEncode*(self: MessagesGetAllDrafts): seq[uint8] =
+method TLEncode*(self: MessagesGetAllDrafts): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x6a3f8d65))
-method TLDecode*(self: MessagesGetAllDrafts, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetAllDrafts, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesGetFeaturedStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetFeaturedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x2dacca4f))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetFeaturedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetFeaturedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesReadFeaturedStickers): seq[uint8] =
+method TLEncode*(self: MessagesReadFeaturedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5b118126))
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesReadFeaturedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadFeaturedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesGetRecentStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetRecentStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5ea192c9))
     if self.attached:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetRecentStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetRecentStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.attached = true
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesSaveRecentSticker): seq[uint8] =
+method TLEncode*(self: MessagesSaveRecentSticker): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x392718f8))
     if self.attached:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.unsave)
-method TLDecode*(self: MessagesSaveRecentSticker, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSaveRecentSticker, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.attached = true
@@ -1698,41 +1698,41 @@ method TLDecode*(self: MessagesSaveRecentSticker, bytes: var ScalingSeq[uint8]) 
     tempObj.TLDecode(bytes)
     self.id = cast[InputDocumentI](tempObj)
     bytes.TLDecode(self.unsave)
-method TLEncode*(self: MessagesClearRecentStickers): seq[uint8] =
+method TLEncode*(self: MessagesClearRecentStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x8999602d))
     if self.attached:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
-method TLDecode*(self: MessagesClearRecentStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesClearRecentStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.attached = true
-method TLEncode*(self: MessagesGetArchivedStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetArchivedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x57f17692))
     if self.masks:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.offset_id)
     result = result & TLEncode(self.limit)
-method TLDecode*(self: MessagesGetArchivedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetArchivedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.masks = true
     bytes.TLDecode(addr self.offset_id)
     bytes.TLDecode(addr self.limit)
-method TLEncode*(self: MessagesGetMaskStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetMaskStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x65b8c79f))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetMaskStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetMaskStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetAttachedStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetAttachedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcc5b67cc))
     result = result & TLEncode(self.media)
-method TLDecode*(self: MessagesGetAttachedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetAttachedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.media = cast[InputStickeredMediaI](tempObj)
-method TLEncode*(self: MessagesSetGameScore): seq[uint8] =
+method TLEncode*(self: MessagesSetGameScore): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x8ef8ecc0))
     if self.edit_message:
         self.flags = self.flags or 1 shl 0
@@ -1743,7 +1743,7 @@ method TLEncode*(self: MessagesSetGameScore): seq[uint8] =
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.score)
-method TLDecode*(self: MessagesSetGameScore, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetGameScore, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.edit_message = true
@@ -1756,7 +1756,7 @@ method TLDecode*(self: MessagesSetGameScore, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.score)
-method TLEncode*(self: MessagesSetInlineGameScore): seq[uint8] =
+method TLEncode*(self: MessagesSetInlineGameScore): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x15ad9f64))
     if self.edit_message:
         self.flags = self.flags or 1 shl 0
@@ -1766,7 +1766,7 @@ method TLEncode*(self: MessagesSetInlineGameScore): seq[uint8] =
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.score)
-method TLDecode*(self: MessagesSetInlineGameScore, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetInlineGameScore, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.edit_message = true
@@ -1778,72 +1778,72 @@ method TLDecode*(self: MessagesSetInlineGameScore, bytes: var ScalingSeq[uint8])
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.score)
-method TLEncode*(self: MessagesGetGameHighScores): seq[uint8] =
+method TLEncode*(self: MessagesGetGameHighScores): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe822649d))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.user_id)
-method TLDecode*(self: MessagesGetGameHighScores, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetGameHighScores, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.id)
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
-method TLEncode*(self: MessagesGetInlineGameHighScores): seq[uint8] =
+method TLEncode*(self: MessagesGetInlineGameHighScores): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf635e1b))
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.user_id)
-method TLDecode*(self: MessagesGetInlineGameHighScores, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetInlineGameHighScores, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputBotInlineMessageIDI](tempObj)
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
-method TLEncode*(self: MessagesGetCommonChats): seq[uint8] =
+method TLEncode*(self: MessagesGetCommonChats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd0a48c4))
     result = result & TLEncode(self.user_id)
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.limit)
-method TLDecode*(self: MessagesGetCommonChats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetCommonChats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.max_id)
     bytes.TLDecode(addr self.limit)
-method TLEncode*(self: MessagesGetAllChats): seq[uint8] =
+method TLEncode*(self: MessagesGetAllChats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xeba80ff0))
     result = result & TLEncode(self.except_ids)
-method TLDecode*(self: MessagesGetAllChats, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetAllChats, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.except_ids)
-method TLEncode*(self: MessagesGetWebPage): seq[uint8] =
+method TLEncode*(self: MessagesGetWebPage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x32ca8f91))
     result = result & TLEncode(self.url)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetWebPage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetWebPage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.url = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesToggleDialogPin): seq[uint8] =
+method TLEncode*(self: MessagesToggleDialogPin): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa731e257))
     if self.pinned:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesToggleDialogPin, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesToggleDialogPin, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.pinned = true
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputDialogPeerI](tempObj)
-method TLEncode*(self: MessagesReorderPinnedDialogs): seq[uint8] =
+method TLEncode*(self: MessagesReorderPinnedDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3b1adf37))
     if self.force:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.folder_id)
     result = result & TLEncode(cast[seq[TL]](self.order))
-method TLDecode*(self: MessagesReorderPinnedDialogs, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReorderPinnedDialogs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.force = true
@@ -1852,12 +1852,12 @@ method TLDecode*(self: MessagesReorderPinnedDialogs, bytes: var ScalingSeq[uint8
     tempVector.TLDecode(bytes)
     self.order = cast[seq[InputDialogPeerI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: MessagesGetPinnedDialogs): seq[uint8] =
+method TLEncode*(self: MessagesGetPinnedDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd6b94df2))
     result = result & TLEncode(self.folder_id)
-method TLDecode*(self: MessagesGetPinnedDialogs, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetPinnedDialogs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.folder_id)
-method TLEncode*(self: MessagesSetBotShippingResults): seq[uint8] =
+method TLEncode*(self: MessagesSetBotShippingResults): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe5f672fa))
     if self.error.isSome():
         self.flags = self.flags or 1 shl 0
@@ -1869,7 +1869,7 @@ method TLEncode*(self: MessagesSetBotShippingResults): seq[uint8] =
         result = result & TLEncode(self.error.get())
     if self.shipping_options.isSome():
         result = result & TLEncode(cast[seq[TL]](self.shipping_options.get()))
-method TLDecode*(self: MessagesSetBotShippingResults, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetBotShippingResults, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.query_id)
     if (self.flags and (1 shl 0)) != 0:
@@ -1878,7 +1878,7 @@ method TLDecode*(self: MessagesSetBotShippingResults, bytes: var ScalingSeq[uint
         var tempVal = newSeq[TL]()
         tempVal.TLDecode(bytes)
         self.shipping_options = some(cast[seq[ShippingOptionI]](tempVal))
-method TLEncode*(self: MessagesSetBotPrecheckoutResults): seq[uint8] =
+method TLEncode*(self: MessagesSetBotPrecheckoutResults): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x9c2dd95))
     if self.success:
         self.flags = self.flags or 1 shl 1
@@ -1888,49 +1888,49 @@ method TLEncode*(self: MessagesSetBotPrecheckoutResults): seq[uint8] =
     result = result & TLEncode(self.query_id)
     if self.error.isSome():
         result = result & TLEncode(self.error.get())
-method TLDecode*(self: MessagesSetBotPrecheckoutResults, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSetBotPrecheckoutResults, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 1)) != 0:
         self.success = true
     bytes.TLDecode(addr self.query_id)
     if (self.flags and (1 shl 0)) != 0:
         self.error = some(cast[string](bytes.TLDecode()))
-method TLEncode*(self: MessagesUploadMedia): seq[uint8] =
+method TLEncode*(self: MessagesUploadMedia): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x519bc2b1))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.media)
-method TLDecode*(self: MessagesUploadMedia, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUploadMedia, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.media = cast[InputMediaI](tempObj)
-method TLEncode*(self: MessagesSendScreenshotNotification): seq[uint8] =
+method TLEncode*(self: MessagesSendScreenshotNotification): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc97df020))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.reply_to_msg_id)
     result = result & TLEncode(self.random_id)
-method TLDecode*(self: MessagesSendScreenshotNotification, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendScreenshotNotification, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.reply_to_msg_id)
     bytes.TLDecode(addr self.random_id)
-method TLEncode*(self: MessagesGetFavedStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetFavedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x21ce0b0e))
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetFavedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetFavedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesFaveSticker): seq[uint8] =
+method TLEncode*(self: MessagesFaveSticker): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xb9ffc55b))
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.unfave)
-method TLDecode*(self: MessagesFaveSticker, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesFaveSticker, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.id = cast[InputDocumentI](tempObj)
     bytes.TLDecode(self.unfave)
-method TLEncode*(self: MessagesGetUnreadMentions): seq[uint8] =
+method TLEncode*(self: MessagesGetUnreadMentions): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x46578472))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.offset_id)
@@ -1938,7 +1938,7 @@ method TLEncode*(self: MessagesGetUnreadMentions): seq[uint8] =
     result = result & TLEncode(self.limit)
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.min_id)
-method TLDecode*(self: MessagesGetUnreadMentions, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetUnreadMentions, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
@@ -1947,25 +1947,25 @@ method TLDecode*(self: MessagesGetUnreadMentions, bytes: var ScalingSeq[uint8]) 
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.max_id)
     bytes.TLDecode(addr self.min_id)
-method TLEncode*(self: MessagesReadMentions): seq[uint8] =
+method TLEncode*(self: MessagesReadMentions): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf0189d3))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesReadMentions, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadMentions, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesGetRecentLocations): seq[uint8] =
+method TLEncode*(self: MessagesGetRecentLocations): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbbc45b09))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.limit)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetRecentLocations, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetRecentLocations, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesSendMultiMedia): seq[uint8] =
+method TLEncode*(self: MessagesSendMultiMedia): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcc0110cb))
     if self.silent:
         self.flags = self.flags or 1 shl 5
@@ -1984,7 +1984,7 @@ method TLEncode*(self: MessagesSendMultiMedia): seq[uint8] =
     result = result & TLEncode(cast[seq[TL]](self.multi_media))
     if self.schedule_date.isSome():
         result = result & TLEncode(self.schedule_date.get())
-method TLDecode*(self: MessagesSendMultiMedia, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendMultiMedia, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 5)) != 0:
         self.silent = true
@@ -2007,55 +2007,55 @@ method TLDecode*(self: MessagesSendMultiMedia, bytes: var ScalingSeq[uint8]) =
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.schedule_date = some(tempVal)
-method TLEncode*(self: MessagesUploadEncryptedFile): seq[uint8] =
+method TLEncode*(self: MessagesUploadEncryptedFile): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5057c497))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.file)
-method TLDecode*(self: MessagesUploadEncryptedFile, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUploadEncryptedFile, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputEncryptedChatI](tempObj)
     tempObj.TLDecode(bytes)
     self.file = cast[InputEncryptedFileI](tempObj)
-method TLEncode*(self: MessagesSearchStickerSets): seq[uint8] =
+method TLEncode*(self: MessagesSearchStickerSets): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc2b7d08b))
     if self.exclude_featured:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.q)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesSearchStickerSets, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSearchStickerSets, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.exclude_featured = true
     self.q = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetSplitRanges): seq[uint8] =
+method TLEncode*(self: MessagesGetSplitRanges): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1cff7e08))
-method TLDecode*(self: MessagesGetSplitRanges, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetSplitRanges, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesMarkDialogUnread): seq[uint8] =
+method TLEncode*(self: MessagesMarkDialogUnread): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc286d98f))
     if self.unread:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesMarkDialogUnread, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesMarkDialogUnread, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.unread = true
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputDialogPeerI](tempObj)
-method TLEncode*(self: MessagesGetDialogUnreadMarks): seq[uint8] =
+method TLEncode*(self: MessagesGetDialogUnreadMarks): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x22e24e22))
-method TLDecode*(self: MessagesGetDialogUnreadMarks, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDialogUnreadMarks, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesClearAllDrafts): seq[uint8] =
+method TLEncode*(self: MessagesClearAllDrafts): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x7e58ee9c))
-method TLDecode*(self: MessagesClearAllDrafts, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesClearAllDrafts, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesUpdatePinnedMessage): seq[uint8] =
+method TLEncode*(self: MessagesUpdatePinnedMessage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd2aaf7ec))
     if self.silent:
         self.flags = self.flags or 1 shl 0
@@ -2066,7 +2066,7 @@ method TLEncode*(self: MessagesUpdatePinnedMessage): seq[uint8] =
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesUpdatePinnedMessage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUpdatePinnedMessage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.silent = true
@@ -2078,41 +2078,41 @@ method TLDecode*(self: MessagesUpdatePinnedMessage, bytes: var ScalingSeq[uint8]
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.id)
-method TLEncode*(self: MessagesSendVote): seq[uint8] =
+method TLEncode*(self: MessagesSendVote): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x10ea6184))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(cast[seq[TL]](self.options))
-method TLDecode*(self: MessagesSendVote, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendVote, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
     self.options = bytes.TLDecodeSeq()
-method TLEncode*(self: MessagesGetPollResults): seq[uint8] =
+method TLEncode*(self: MessagesGetPollResults): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x73bb643b))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
-method TLDecode*(self: MessagesGetPollResults, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetPollResults, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
-method TLEncode*(self: MessagesGetOnlines): seq[uint8] =
+method TLEncode*(self: MessagesGetOnlines): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x6e2be050))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesGetOnlines, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetOnlines, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesGetStatsURL): seq[uint8] =
+method TLEncode*(self: MessagesGetStatsURL): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x812c2ae6))
     if self.dark:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.params)
-method TLDecode*(self: MessagesGetStatsURL, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetStatsURL, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.dark = true
@@ -2120,52 +2120,52 @@ method TLDecode*(self: MessagesGetStatsURL, bytes: var ScalingSeq[uint8]) =
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     self.params = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesEditChatAbout): seq[uint8] =
+method TLEncode*(self: MessagesEditChatAbout): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xdef60797))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.about)
-method TLDecode*(self: MessagesEditChatAbout, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditChatAbout, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     self.about = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesEditChatDefaultBannedRights): seq[uint8] =
+method TLEncode*(self: MessagesEditChatDefaultBannedRights): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa5866b41))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.banned_rights)
-method TLDecode*(self: MessagesEditChatDefaultBannedRights, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesEditChatDefaultBannedRights, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.banned_rights = cast[ChatBannedRightsI](tempObj)
-method TLEncode*(self: MessagesGetEmojiKeywords): seq[uint8] =
+method TLEncode*(self: MessagesGetEmojiKeywords): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x35a0e062))
     result = result & TLEncode(self.lang_code)
-method TLDecode*(self: MessagesGetEmojiKeywords, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetEmojiKeywords, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.lang_code = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetEmojiKeywordsDifference): seq[uint8] =
+method TLEncode*(self: MessagesGetEmojiKeywordsDifference): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1508b6af))
     result = result & TLEncode(self.lang_code)
     result = result & TLEncode(self.from_version)
-method TLDecode*(self: MessagesGetEmojiKeywordsDifference, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetEmojiKeywordsDifference, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.lang_code = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.from_version)
-method TLEncode*(self: MessagesGetEmojiKeywordsLanguages): seq[uint8] =
+method TLEncode*(self: MessagesGetEmojiKeywordsLanguages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4e9963b2))
     result = result & TLEncode(cast[seq[TL]](self.lang_codes))
-method TLDecode*(self: MessagesGetEmojiKeywordsLanguages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetEmojiKeywordsLanguages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.lang_codes = cast[seq[string]](bytes.TLDecodeSeq())
-method TLEncode*(self: MessagesGetEmojiURL): seq[uint8] =
+method TLEncode*(self: MessagesGetEmojiURL): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd5b10c26))
     result = result & TLEncode(self.lang_code)
-method TLDecode*(self: MessagesGetEmojiURL, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetEmojiURL, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.lang_code = cast[string](bytes.TLDecode())
-method TLEncode*(self: MessagesGetSearchCounters): seq[uint8] =
+method TLEncode*(self: MessagesGetSearchCounters): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x732eef00))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(cast[seq[TL]](self.filters))
-method TLDecode*(self: MessagesGetSearchCounters, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetSearchCounters, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
@@ -2173,18 +2173,18 @@ method TLDecode*(self: MessagesGetSearchCounters, bytes: var ScalingSeq[uint8]) 
     tempVector.TLDecode(bytes)
     self.filters = cast[seq[MessagesFilterI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: MessagesRequestUrlAuth): seq[uint8] =
+method TLEncode*(self: MessagesRequestUrlAuth): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe33f5613))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.button_id)
-method TLDecode*(self: MessagesRequestUrlAuth, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesRequestUrlAuth, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
     bytes.TLDecode(addr self.button_id)
-method TLEncode*(self: MessagesAcceptUrlAuth): seq[uint8] =
+method TLEncode*(self: MessagesAcceptUrlAuth): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf729ea98))
     if self.write_allowed:
         self.flags = self.flags or 1 shl 0
@@ -2192,7 +2192,7 @@ method TLEncode*(self: MessagesAcceptUrlAuth): seq[uint8] =
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.button_id)
-method TLDecode*(self: MessagesAcceptUrlAuth, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesAcceptUrlAuth, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.write_allowed = true
@@ -2201,50 +2201,50 @@ method TLDecode*(self: MessagesAcceptUrlAuth, bytes: var ScalingSeq[uint8]) =
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
     bytes.TLDecode(addr self.button_id)
-method TLEncode*(self: MessagesHidePeerSettingsBar): seq[uint8] =
+method TLEncode*(self: MessagesHidePeerSettingsBar): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4facb138))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesHidePeerSettingsBar, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesHidePeerSettingsBar, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesGetScheduledHistory): seq[uint8] =
+method TLEncode*(self: MessagesGetScheduledHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe2c2685b))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetScheduledHistory, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetScheduledHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetScheduledMessages): seq[uint8] =
+method TLEncode*(self: MessagesGetScheduledMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbdbb0464))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesGetScheduledMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetScheduledMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesSendScheduledMessages): seq[uint8] =
+method TLEncode*(self: MessagesSendScheduledMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbd38850a))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesSendScheduledMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesSendScheduledMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesDeleteScheduledMessages): seq[uint8] =
+method TLEncode*(self: MessagesDeleteScheduledMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x59ae2b16))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
-method TLDecode*(self: MessagesDeleteScheduledMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesDeleteScheduledMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(self.id)
-method TLEncode*(self: MessagesGetPollVotes): seq[uint8] =
+method TLEncode*(self: MessagesGetPollVotes): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xb86e380e))
     if self.option.isSome():
         self.flags = self.flags or 1 shl 0
@@ -2258,7 +2258,7 @@ method TLEncode*(self: MessagesGetPollVotes): seq[uint8] =
     if self.offset.isSome():
         result = result & TLEncode(self.offset.get())
     result = result & TLEncode(self.limit)
-method TLDecode*(self: MessagesGetPollVotes, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetPollVotes, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -2269,7 +2269,7 @@ method TLDecode*(self: MessagesGetPollVotes, bytes: var ScalingSeq[uint8]) =
     if (self.flags and (1 shl 1)) != 0:
         self.offset = some(cast[string](bytes.TLDecode()))
     bytes.TLDecode(addr self.limit)
-method TLEncode*(self: MessagesToggleStickerSets): seq[uint8] =
+method TLEncode*(self: MessagesToggleStickerSets): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xb5052fea))
     if self.uninstall:
         self.flags = self.flags or 1 shl 0
@@ -2279,7 +2279,7 @@ method TLEncode*(self: MessagesToggleStickerSets): seq[uint8] =
         self.flags = self.flags or 1 shl 2
     result = result & TLEncode(self.flags)
     result = result & TLEncode(cast[seq[TL]](self.stickersets))
-method TLDecode*(self: MessagesToggleStickerSets, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesToggleStickerSets, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.uninstall = true
@@ -2291,15 +2291,15 @@ method TLDecode*(self: MessagesToggleStickerSets, bytes: var ScalingSeq[uint8]) 
     tempVector.TLDecode(bytes)
     self.stickersets = cast[seq[InputStickerSetI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: MessagesGetDialogFilters): seq[uint8] =
+method TLEncode*(self: MessagesGetDialogFilters): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf19ed96d))
-method TLDecode*(self: MessagesGetDialogFilters, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDialogFilters, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesGetSuggestedDialogFilters): seq[uint8] =
+method TLEncode*(self: MessagesGetSuggestedDialogFilters): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa29cd42c))
-method TLDecode*(self: MessagesGetSuggestedDialogFilters, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetSuggestedDialogFilters, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: MessagesUpdateDialogFilter): seq[uint8] =
+method TLEncode*(self: MessagesUpdateDialogFilter): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1ad4a04a))
     if self.filter.isSome():
         self.flags = self.flags or 1 shl 0
@@ -2307,28 +2307,28 @@ method TLEncode*(self: MessagesUpdateDialogFilter): seq[uint8] =
     result = result & TLEncode(self.id)
     if self.filter.isSome():
         result = result & TLEncode(self.filter.get())
-method TLDecode*(self: MessagesUpdateDialogFilter, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUpdateDialogFilter, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.id)
     if (self.flags and (1 shl 0)) != 0:
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.filter = some(tempVal.DialogFilterI)
-method TLEncode*(self: MessagesUpdateDialogFiltersOrder): seq[uint8] =
+method TLEncode*(self: MessagesUpdateDialogFiltersOrder): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc563c1e4))
     result = result & TLEncode(self.order)
-method TLDecode*(self: MessagesUpdateDialogFiltersOrder, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUpdateDialogFiltersOrder, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.order)
-method TLEncode*(self: MessagesGetOldFeaturedStickers): seq[uint8] =
+method TLEncode*(self: MessagesGetOldFeaturedStickers): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5fe7025b))
     result = result & TLEncode(self.offset)
     result = result & TLEncode(self.limit)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetOldFeaturedStickers, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetOldFeaturedStickers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.offset)
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetReplies): seq[uint8] =
+method TLEncode*(self: MessagesGetReplies): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x24b581ba))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
@@ -2339,7 +2339,7 @@ method TLEncode*(self: MessagesGetReplies): seq[uint8] =
     result = result & TLEncode(self.max_id)
     result = result & TLEncode(self.min_id)
     result = result & TLEncode(self.hash)
-method TLDecode*(self: MessagesGetReplies, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetReplies, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
@@ -2351,30 +2351,30 @@ method TLDecode*(self: MessagesGetReplies, bytes: var ScalingSeq[uint8]) =
     bytes.TLDecode(addr self.max_id)
     bytes.TLDecode(addr self.min_id)
     bytes.TLDecode(addr self.hash)
-method TLEncode*(self: MessagesGetDiscussionMessage): seq[uint8] =
+method TLEncode*(self: MessagesGetDiscussionMessage): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x446972fd))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
-method TLDecode*(self: MessagesGetDiscussionMessage, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesGetDiscussionMessage, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
-method TLEncode*(self: MessagesReadDiscussion): seq[uint8] =
+method TLEncode*(self: MessagesReadDiscussion): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf731a9f4))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.msg_id)
     result = result & TLEncode(self.read_max_id)
-method TLDecode*(self: MessagesReadDiscussion, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesReadDiscussion, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.msg_id)
     bytes.TLDecode(addr self.read_max_id)
-method TLEncode*(self: MessagesUnpinAllMessages): seq[uint8] =
+method TLEncode*(self: MessagesUnpinAllMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf025bc8b))
     result = result & TLEncode(self.peer)
-method TLDecode*(self: MessagesUnpinAllMessages, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: MessagesUnpinAllMessages, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)

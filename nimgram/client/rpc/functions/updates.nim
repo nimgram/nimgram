@@ -17,11 +17,11 @@ method getTypeName*(self: UpdatesGetState): string = "UpdatesGetState"
 method getTypeName*(self: UpdatesGetDifference): string = "UpdatesGetDifference"
 method getTypeName*(self: UpdatesGetChannelDifference): string = "UpdatesGetChannelDifference"
 
-method TLEncode*(self: UpdatesGetState): seq[uint8] =
+method TLEncode*(self: UpdatesGetState): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xedd4882a))
-method TLDecode*(self: UpdatesGetState, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesGetState, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: UpdatesGetDifference): seq[uint8] =
+method TLEncode*(self: UpdatesGetDifference): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x25939651))
     if self.pts_total_limit.isSome():
         self.flags = self.flags or 1 shl 0
@@ -31,7 +31,7 @@ method TLEncode*(self: UpdatesGetDifference): seq[uint8] =
         result = result & TLEncode(self.pts_total_limit.get())
     result = result & TLEncode(self.date)
     result = result & TLEncode(self.qts)
-method TLDecode*(self: UpdatesGetDifference, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesGetDifference, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.pts)
     if (self.flags and (1 shl 0)) != 0:
@@ -40,7 +40,7 @@ method TLDecode*(self: UpdatesGetDifference, bytes: var ScalingSeq[uint8]) =
         self.pts_total_limit = some(tempVal)
     bytes.TLDecode(addr self.date)
     bytes.TLDecode(addr self.qts)
-method TLEncode*(self: UpdatesGetChannelDifference): seq[uint8] =
+method TLEncode*(self: UpdatesGetChannelDifference): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3173d78))
     if self.force:
         self.flags = self.flags or 1 shl 0
@@ -49,7 +49,7 @@ method TLEncode*(self: UpdatesGetChannelDifference): seq[uint8] =
     result = result & TLEncode(self.filter)
     result = result & TLEncode(self.pts)
     result = result & TLEncode(self.limit)
-method TLDecode*(self: UpdatesGetChannelDifference, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UpdatesGetChannelDifference, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.force = true

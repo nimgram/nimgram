@@ -70,132 +70,132 @@ method getTypeName*(self: AuthExportLoginToken): string = "AuthExportLoginToken"
 method getTypeName*(self: AuthImportLoginToken): string = "AuthImportLoginToken"
 method getTypeName*(self: AuthAcceptLoginToken): string = "AuthAcceptLoginToken"
 
-method TLEncode*(self: AuthSendCode): seq[uint8] =
+method TLEncode*(self: AuthSendCode): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa677244f))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.api_id)
     result = result & TLEncode(self.api_hash)
     result = result & TLEncode(self.settings)
-method TLDecode*(self: AuthSendCode, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthSendCode, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.phone_number = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.api_id)
     self.api_hash = cast[string](bytes.TLDecode())
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.settings = cast[CodeSettingsI](tempObj)
-method TLEncode*(self: AuthSignUp): seq[uint8] =
+method TLEncode*(self: AuthSignUp): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x80eee427))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
     result = result & TLEncode(self.first_name)
     result = result & TLEncode(self.last_name)
-method TLDecode*(self: AuthSignUp, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthSignUp, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.phone_number = cast[string](bytes.TLDecode())
     self.phone_code_hash = cast[string](bytes.TLDecode())
     self.first_name = cast[string](bytes.TLDecode())
     self.last_name = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthSignIn): seq[uint8] =
+method TLEncode*(self: AuthSignIn): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xbcd51581))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
     result = result & TLEncode(self.phone_code)
-method TLDecode*(self: AuthSignIn, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthSignIn, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.phone_number = cast[string](bytes.TLDecode())
     self.phone_code_hash = cast[string](bytes.TLDecode())
     self.phone_code = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthLogOut): seq[uint8] =
+method TLEncode*(self: AuthLogOut): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x5717da40))
-method TLDecode*(self: AuthLogOut, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthLogOut, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: AuthResetAuthorizations): seq[uint8] =
+method TLEncode*(self: AuthResetAuthorizations): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x9fab0d1a))
-method TLDecode*(self: AuthResetAuthorizations, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthResetAuthorizations, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: AuthExportAuthorization): seq[uint8] =
+method TLEncode*(self: AuthExportAuthorization): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe5bfffcd))
     result = result & TLEncode(self.dc_id)
-method TLDecode*(self: AuthExportAuthorization, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthExportAuthorization, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.dc_id)
-method TLEncode*(self: AuthImportAuthorization): seq[uint8] =
+method TLEncode*(self: AuthImportAuthorization): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe3ef9613))
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.bytes)
-method TLDecode*(self: AuthImportAuthorization, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthImportAuthorization, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.id)
     self.bytes = bytes.TLDecode()
-method TLEncode*(self: AuthBindTempAuthKey): seq[uint8] =
+method TLEncode*(self: AuthBindTempAuthKey): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcdd42a05))
     result = result & TLEncode(self.perm_auth_key_id)
     result = result & TLEncode(self.nonce)
     result = result & TLEncode(self.expires_at)
     result = result & TLEncode(self.encrypted_message)
-method TLDecode*(self: AuthBindTempAuthKey, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthBindTempAuthKey, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.perm_auth_key_id)
     bytes.TLDecode(addr self.nonce)
     bytes.TLDecode(addr self.expires_at)
     self.encrypted_message = bytes.TLDecode()
-method TLEncode*(self: AuthImportBotAuthorization): seq[uint8] =
+method TLEncode*(self: AuthImportBotAuthorization): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x67a3ff2c))
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.api_id)
     result = result & TLEncode(self.api_hash)
     result = result & TLEncode(self.bot_auth_token)
-method TLDecode*(self: AuthImportBotAuthorization, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthImportBotAuthorization, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.api_id)
     self.api_hash = cast[string](bytes.TLDecode())
     self.bot_auth_token = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthCheckPassword): seq[uint8] =
+method TLEncode*(self: AuthCheckPassword): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd18b4d16))
     result = result & TLEncode(self.password)
-method TLDecode*(self: AuthCheckPassword, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthCheckPassword, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.password = cast[InputCheckPasswordSRPI](tempObj)
-method TLEncode*(self: AuthRequestPasswordRecovery): seq[uint8] =
+method TLEncode*(self: AuthRequestPasswordRecovery): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd897bc66))
-method TLDecode*(self: AuthRequestPasswordRecovery, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthRequestPasswordRecovery, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
-method TLEncode*(self: AuthRecoverPassword): seq[uint8] =
+method TLEncode*(self: AuthRecoverPassword): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4ea56e92))
     result = result & TLEncode(self.code)
-method TLDecode*(self: AuthRecoverPassword, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthRecoverPassword, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.code = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthResendCode): seq[uint8] =
+method TLEncode*(self: AuthResendCode): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3ef1a9bf))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
-method TLDecode*(self: AuthResendCode, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthResendCode, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.phone_number = cast[string](bytes.TLDecode())
     self.phone_code_hash = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthCancelCode): seq[uint8] =
+method TLEncode*(self: AuthCancelCode): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x1f040578))
     result = result & TLEncode(self.phone_number)
     result = result & TLEncode(self.phone_code_hash)
-method TLDecode*(self: AuthCancelCode, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthCancelCode, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.phone_number = cast[string](bytes.TLDecode())
     self.phone_code_hash = cast[string](bytes.TLDecode())
-method TLEncode*(self: AuthDropTempAuthKeys): seq[uint8] =
+method TLEncode*(self: AuthDropTempAuthKeys): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x8e48a188))
     result = result & TLEncode(self.except_auth_keys)
-method TLDecode*(self: AuthDropTempAuthKeys, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthDropTempAuthKeys, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(self.except_auth_keys)
-method TLEncode*(self: AuthExportLoginToken): seq[uint8] =
+method TLEncode*(self: AuthExportLoginToken): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xb1b41517))
     result = result & TLEncode(self.api_id)
     result = result & TLEncode(self.api_hash)
     result = result & TLEncode(self.except_ids)
-method TLDecode*(self: AuthExportLoginToken, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthExportLoginToken, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.api_id)
     self.api_hash = cast[string](bytes.TLDecode())
     bytes.TLDecode(self.except_ids)
-method TLEncode*(self: AuthImportLoginToken): seq[uint8] =
+method TLEncode*(self: AuthImportLoginToken): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x95ac5ce4))
     result = result & TLEncode(self.token)
-method TLDecode*(self: AuthImportLoginToken, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthImportLoginToken, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.token = bytes.TLDecode()
-method TLEncode*(self: AuthAcceptLoginToken): seq[uint8] =
+method TLEncode*(self: AuthAcceptLoginToken): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xe894ad4d))
     result = result & TLEncode(self.token)
-method TLDecode*(self: AuthAcceptLoginToken, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: AuthAcceptLoginToken, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.token = bytes.TLDecode()

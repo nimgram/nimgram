@@ -30,7 +30,7 @@ type Session* = ref object
     acks: seq[int64]
     responses: Table[int64, Response]
     maxMessageID: uint64
-    connection: TcpNetwork
+    connection: MTProtoNetwork
 
 #proc messageID(): uint64 = uint64(now().toTime().toUnixFloat()*2 ^ 32)
 
@@ -45,7 +45,7 @@ proc messageID(self: Session): uint64 =
 proc setCallback*(self: Session, callback: proc(updates: UpdatesI): Future[void] {.async.}) =
     self.callbackUpdates.setCallback(callback)
 
-proc initSession*(connection: TcpNetwork, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], sessionFile: string): Session =
+proc initSession*(connection: MTProtoNetwork, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], sessionFile: string): Session =
     result = new Session
     result.acks = newSeq[int64](0)
     result.connection = connection
@@ -201,7 +201,9 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true): Future[TL] {.async
         if response of Rpc_error:
             raise newException(CatchableError, response.Rpc_error.error_message, RPCException(errorCode: response.Rpc_error.error_code, errorMessage: response.Rpc_error.error_message))
 
-
-        #TODO: InvokeWithoutUpdates and InvokeWithTakeout support
+        if response of InvokeWithoutUpdates:
+            response = response.InvokeWithoutUpdates.query
+        if response of InvokeWithTakeout:
+            response = response.InvokeWithTakeout.query
 
         return response

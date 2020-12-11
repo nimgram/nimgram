@@ -25,25 +25,25 @@ method getTypeName*(self: UploadWebFile): string = "UploadWebFile"
 method getTypeName*(self: UploadCdnFileReuploadNeeded): string = "UploadCdnFileReuploadNeeded"
 method getTypeName*(self: UploadCdnFile): string = "UploadCdnFile"
 
-method TLEncode*(self: UploadFile): seq[uint8] =
+method TLEncode*(self: UploadFile): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x96a18d5))
     result = result & TLEncode(self.typeof)
     result = result & TLEncode(self.mtime)
     result = result & TLEncode(self.bytes)
-method TLDecode*(self: UploadFile, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UploadFile, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.typeof = cast[StorageFileTypeI](tempObj)
     bytes.TLDecode(addr self.mtime)
     self.bytes = bytes.TLDecode()
-method TLEncode*(self: UploadFileCdnRedirect): seq[uint8] =
+method TLEncode*(self: UploadFileCdnRedirect): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xf18cda44))
     result = result & TLEncode(self.dc_id)
     result = result & TLEncode(self.file_token)
     result = result & TLEncode(self.encryption_key)
     result = result & TLEncode(self.encryption_iv)
     result = result & TLEncode(cast[seq[TL]](self.file_hashes))
-method TLDecode*(self: UploadFileCdnRedirect, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UploadFileCdnRedirect, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.dc_id)
     self.file_token = bytes.TLDecode()
     self.encryption_key = bytes.TLDecode()
@@ -52,14 +52,14 @@ method TLDecode*(self: UploadFileCdnRedirect, bytes: var ScalingSeq[uint8]) =
     tempVector.TLDecode(bytes)
     self.file_hashes = cast[seq[FileHashI]](tempVector)
     tempVector.setLen(0)
-method TLEncode*(self: UploadWebFile): seq[uint8] =
+method TLEncode*(self: UploadWebFile): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x21e753bc))
     result = result & TLEncode(self.size)
     result = result & TLEncode(self.mime_type)
     result = result & TLEncode(self.file_type)
     result = result & TLEncode(self.mtime)
     result = result & TLEncode(self.bytes)
-method TLDecode*(self: UploadWebFile, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UploadWebFile, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.size)
     self.mime_type = cast[string](bytes.TLDecode())
     var tempObj = new TL
@@ -67,13 +67,13 @@ method TLDecode*(self: UploadWebFile, bytes: var ScalingSeq[uint8]) =
     self.file_type = cast[StorageFileTypeI](tempObj)
     bytes.TLDecode(addr self.mtime)
     self.bytes = bytes.TLDecode()
-method TLEncode*(self: UploadCdnFileReuploadNeeded): seq[uint8] =
+method TLEncode*(self: UploadCdnFileReuploadNeeded): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xeea8e46e))
     result = result & TLEncode(self.request_token)
-method TLDecode*(self: UploadCdnFileReuploadNeeded, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UploadCdnFileReuploadNeeded, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.request_token = bytes.TLDecode()
-method TLEncode*(self: UploadCdnFile): seq[uint8] =
+method TLEncode*(self: UploadCdnFile): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa99fca4f))
     result = result & TLEncode(self.bytes)
-method TLDecode*(self: UploadCdnFile, bytes: var ScalingSeq[uint8]) = 
+method TLDecode*(self: UploadCdnFile, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     self.bytes = bytes.TLDecode()
