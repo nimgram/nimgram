@@ -1,21 +1,18 @@
-import nimgram/client/network/transports
-import nimgram/client/rpc/decoding
-import nimgram/client/rpc/raw
-import nimgram/mtproto as mainclient
+import json
+import random
+import src/nimgram
 import asyncdispatch
 import typetraits
-import random
-import json
 
 var mtprotoClient: NimgramClient
 
-proc handleUpdate(updateGroup: UpdatesI): Future[void] {.async.} =
-    if updateGroup of raw.Updates:
-        var updates = updateGroup.Updates
-        for update in updates.updates:
-            if update of UpdateNewMessage:
-                var unm = update.UpdateNewMessage
-                if unm.message of raw.Message:
+proc handleUpdate(updts: UpdatesI): Future[void] {.async.} =
+    if updts of Updates:
+        var updatess = updts.Updates
+        for udpd in updatess.updates:
+            if udpd of UpdateNewMessage:
+                var unm = udpd.UpdateNewMessage
+                if unm.message of Message:
                     var textMessage = unm.message.Message
                     var chatID: InputPeerI
 
@@ -27,51 +24,47 @@ proc handleUpdate(updateGroup: UpdatesI): Future[void] {.async.} =
 
                     if textMessage.peer_id of PeerChannel:
                         chatID = InputPeerChannel(channel_id: textMessage.peer_id.PeerChannel.channel_id, access_hash: 0)    
+                        
                     randomize()
                     discard await mtprotoClient.send(MessagesSendMessage(
-                        no_webpage: true,
-                        silent: false,
-                        background: false,
-                        clear_draft: false,
-                        peer: chatID,
-                        message: $(%*textMessage),
-                        random_id: int64(rand(2147483646))
-                    ))
+                            no_webpage: true,
+                            silent: false,
+                            background: false,
+                            clear_draft: false,
+                            peer: chatID,
+                            message: $(%*textMessage),
+                            random_id: int64(rand(2147483646))
+                        ))
+
 
 
 
 proc runClient*(): Future[void] {.async.} =
-    
-    mtprotoClient = await initNimgram("session.bin", NimgramConfig(
+    ## Threads are required to be enabled using --threads:on
+    ## Or use StorageRam
+    mtprotoClient = await initNimgram("nimgram.db", NimgramConfig(
         testMode: false, 
         transportMode: NetTcpAbridged,
         apiID: 0,
-        apiHash: "0",
-        deviceModel: "NimGram Device",
-        systemVersion: "0.1-alpha",
+        apiHash: "yours",
+        deviceModel: "Nimphone",
+        systemVersion: "Nimos 1.0",
         appVersion: "dev",
         systemLangCode: "en",
         langPack: "",
         langCode: "en",
-    ))
+        useIpv6: false,
+        disableCache: false
+    ), StorageSqlite)
 
-    try:
-        discard await mtprotoClient.send(UsersGetFullUser(id: InputUserSelf()))
-    except:
-        echo getCurrentExceptionMsg()
-        echo "Logging in..."
-        discard await mtprotoClient.send(AuthImportBotAuthorization(
-            api_id: 0,
-            api_hash: "0",
-            bot_auth_token: "0:0"
-        ))
-    
-    echo %*await mtprotoClient.send(UpdatesGetState())
-    
+    await mtprotoClient.botLogin("0:0")
+    discard await mtprotoClient.send(UpdatesGetState())
+    echo "Listening for updates"
     mtprotoClient.setCallback(handleUpdate)
 
 
 
 when isMainModule:
-    asyncCheck runClient()
+    
+    runClient().waitFor
     runForever()
