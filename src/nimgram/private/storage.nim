@@ -8,13 +8,13 @@ when compileOption("threads"):
     import base64
 import utils/binmanager
 
-type NimgramStorageConfig* = object of RootObj
+type NimgramStorageConfig* = ref object of RootObj
 
-type NimgramStorageConfigRam* = object of NimgramStorageConfig
+type NimgramStorageConfigRam* = ref object of NimgramStorageConfig
     binfilename*: string
 
 when compileOption("threads"):
-    type NimgramStorageConfigSqlite* = object of NimgramStorageConfig
+    type NimgramStorageConfigSqlite* = ref object of NimgramStorageConfig
         filename*: string
         disableCache*: bool #By enabling this, cache in ram will be not used, increasing disk usage
 
