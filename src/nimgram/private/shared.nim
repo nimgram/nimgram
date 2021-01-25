@@ -1,4 +1,5 @@
 import tables
+import network/transports
 
 const NIMGRAM_VERSION* = 0.01
 
@@ -38,3 +39,18 @@ proc getIP*(num: int, ipv6, test: bool = false): string =
     if test:
         return IP_TEST.toTable[num]
     return IP_PROD.toTable[num]
+
+
+type NimgramConfig* = object
+    testMode*: bool
+    transportMode*: transports.NetworkTypes
+    useIpv6*: bool
+    apiID*: int32
+    disableCache*: bool
+    apiHash*: string
+    deviceModel*: string
+    systemVersion*: string
+    appVersion*: string
+    systemLangCode*: string
+    langPack*: string
+    langCode*: string

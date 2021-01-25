@@ -23,11 +23,15 @@ OR (if l >= 127)
 
 type TcpAbridged* = ref object of MTProtoNetwork
     socket: AsyncSocket
+    address: string
+    port: uint16
 
 method connect*(self: TcpAbridged, address: string, port: uint16) {.async.} =
     self.socket = await asyncnet.dial(address, port.Port)
     var initialBuffer = uint8(0xEF)
     await self.socket.send(addr initialBuffer, 1)
+    self.address = address
+    self.port = port
 
 method write*(self: TcpAbridged, data: seq[uint8]) {.async.} = 
     var lenght = uint32(len(data)/4)
@@ -37,8 +41,6 @@ method write*(self: TcpAbridged, data: seq[uint8]) {.async.} =
     else:
         var finalbuffer = @[uint8(lenght)] & data
         await self.socket.send(addr finalbuffer[0], len(finalbuffer))
-
-#TODO: Fix "Container is empty" issue, sometimes this error happens and it can be fixed just by restarting the instance, maybe it's a general error?
 
 method receive*(self: TcpAbridged): Future[seq[uint8]] {.async.} = 
     var lenght = cast[seq[uint8]](await self.socket.recv(1))
@@ -51,3 +53,8 @@ method receive*(self: TcpAbridged): Future[seq[uint8]] {.async.} =
 method isClosed*(self: TcpAbridged): bool = self.socket.isClosed()
 
 method close*(self: TcpAbridged) = self.socket.close()
+
+method reopen*(self: TcpAbridged) {.async.} = 
+    self.socket = await asyncnet.dial(self.address, self.port.Port)
+    var initialBuffer = uint8(0xEF)
+    await self.socket.send(addr initialBuffer, 1)

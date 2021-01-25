@@ -4,6 +4,7 @@ import ../rpc/encoding
 import ../rpc/decoding
 import ../rpc/raw
 import ../crypto/prime
+import strformat
 import ../network/transports
 import ../crypto/rsa
 import ../crypto/aes
@@ -13,7 +14,6 @@ import times
 import asyncdispatch
 import tables
 import math
-#import bigints
 import stint
 import nimcrypto/sha
 import strutils
@@ -30,14 +30,16 @@ proc generateNonce256(): Int256 =
 proc messageID(): int64 = int64(pow(float64(now().toTime().toUnix()*2),float64(32)))
 
 
-
 proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     var bytes = data.TLEncode()
     bytes = TLEncode(int64(0)) & TLEncode(messageID())  & TLEncode(int32(len(bytes))) & bytes
     await self.write(bytes)
+    
     var data = await self.receive()
+
     if data.len == 4:
-        raise newException(Exception, "Unexpected result: " & $int32(fromBytes(uint32, data, littleEndian)))
+        #I don't want to handle a separate error, just throw the same type to count as "connection closed"
+        raise newException(IndexDefect, "Unexpected result: " & $cast[int32](fromBytes(uint32, data, littleEndian)))
     var sdata = newScalingSeq(data[20..(data.len-1)])
     result.TLDecode(sdata)
 
@@ -46,7 +48,17 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
     
     #step 1
     var reqa = Req_pq_multi(nonce: generateNonce())
-    var response = await connection.send(reqa)
+    var response: TL
+    while true:
+        try:
+            #Retry until connection is opened
+            response = await connection.send(reqa)
+            break
+        except IndexDefect:
+            await sleepAsync(5000)
+            await connection.reopen()
+
+
 
     if response of ResPQ:
         var resPQs = cast[ResPQ](response)
@@ -54,7 +66,7 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         var pq = fromBytes(uint64, resPQs.pq, bigEndian)  
 
         if resPQs.nonce != reqa.nonce:
-            raise newException(Exception, "Generated nonce does not correspond to the one in the response")
+            raise newException(CatchableError, "Generated nonce does not correspond to the one in the response")
         
         var rsaKeys = Keychain.toTable
         var keyFingerprint = int64(0)
@@ -63,7 +75,7 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
                 keyFingerprint = key
         
         if keyFingerprint == 0:
-            raise newException(Exception, "Cannot find a valid RSA Fingerprint")
+            raise newException(CatchableError, "Cannot find a valid RSA Fingerprint")
         
         var factors = factors(pq.stint(128))
         #init inner data
@@ -86,11 +98,13 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         reqDHParams.q = factors[1].truncate(uint32).TLEncode(bigEndian)
         reqDHParams.public_key_fingerprint = keyFingerprint
         reqDHParams.encrypted_data = encryptedData
-        response = await connection.send(reqDHParams)
-
+        try:
+            response = await connection.send(reqDHParams)
+        except IndexDefect:
+            return await connection.generateAuthKey()
         #step 2
         if not (response of Server_DH_params_ok):
-            raise newException(Exception, "Wrong response from server")
+            raise newException(CatchableError, "Wrong response from server")
         var serverDHParmasOk = cast[Server_DH_params_ok](response)
 
         assert serverDHParmasOk.nonce == reqa.nonce 
@@ -106,7 +120,7 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         var tmp = new TL
         tmp.TLDecode(sbytes)
         if not(tmp of Server_DH_inner_data):
-            raise newException(Exception, "Wrong response type: " & tmp.getTypeName())
+            raise newException(CatchableError, "Wrong response type: " & tmp.getTypeName())
         var serverDHInnerData = tmp.Server_DH_inner_data
         assert serverDHInnerData.nonce == reqa.nonce 
         assert serverDHInnerData.server_nonce == resPQs.server_nonce
@@ -124,18 +138,21 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         while len(data) mod 16 != 0:
             data = data & urandom(1)
         data = aesIGE(tempAesKey, tempAesIV, data, true)
-        response = await connection.send(Set_client_DH_params(
-            nonce: reqa.nonce,
-            server_nonce: resPQs.server_nonce,
-            encrypted_data: data
-        ))
+        try:
+            response = await connection.send(Set_client_DH_params(
+                nonce: reqa.nonce,
+                server_nonce: resPQs.server_nonce,
+                encrypted_data: data
+            ))
+        except IndexDefect:
+            return await connection.generateAuthKey()
 
         #step 3
         if not (response of Dh_gen_ok):
-            raise newException(Exception, "Wrong response from server")
+            raise newException(CatchableError, "Wrong response from server")
 
         var authKey = exp(gA, b, dhPrime).toBytes(bigEndian)
         var serverSalt = fromBytes(uint64, newNonce[0..7], bigEndian) xor fromBytes(uint64, server_nonce[0..7], bigEndian)
         return (authKey[0..255], serverSalt.toBytes(bigEndian)[0..7])
     else:
-        raise newException(Exception, "Wrong response from server on step1")
+        raise newException(CatchableError, "Wrong response from server on step1")

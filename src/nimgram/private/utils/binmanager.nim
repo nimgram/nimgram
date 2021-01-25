@@ -73,14 +73,14 @@ proc loadBin*(filename: string): Future[Table[int, DcOption]] {.async.} =
         #Check if data is valid before reading everything
         var checksum = data[0..31]
         if sha256.digest(data[32..(data.len-1)]).data[0..31] != checksum:
-            raise newException(Exception, "integrity check failed")
+            raise newException(CatchableError, "integrity check failed")
         #Data is valid, continue
         var realdata = newScalingSeq(data[32..(data.len-1)])
         var fileBinVersion: uint16
         realdata.TLDecode(addr fileBinVersion)
         if fileBinVersion != BIN_VERSION:
             #Currently migrating bin version is not planned until minimum stability is reached
-            raise newException(Exception, "Unsupported bin version " & $fileBinVersion)
+            raise newException(CatchableError, "Unsupported bin version " & $fileBinVersion)
         var lenght: uint16
         realdata.TLDecode(addr lenght)
         for i in countup(1, int(lenght)):

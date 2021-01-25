@@ -44,7 +44,7 @@ method GetSessionsInfo*(self: NimgramStorage): Future[Table[int, DcOption]] {.ba
 
 method Init*(self: NimgramStorageRam, config: NimgramStorageConfig) = 
     if not(config of NimgramStorageConfigRam):
-        raise newException(Exception, "Expecting config of type NimgramStorageRam")
+        raise newException(CatchableError, "Expecting config of type NimgramStorageRam")
 
     var ramConfig = config.NimgramStorageConfigRam
     self.binFileName = ramConfig.binfilename
@@ -59,7 +59,7 @@ method GetSessionsInfo*(self: NimgramStorageRam): Future[Table[int, DcOption]] {
 when compileOption("threads"):
     method Init*(self: NimgramStorageSqlite, config: NimgramStorageConfig) = 
         if not(config of NimgramStorageConfigSqlite):
-            raise newException(Exception, "Expecting config of type NimgramStorageSqlite")
+            raise newException(CatchableError, "Expecting config of type NimgramStorageSqlite")
 
         var sqliteConfig = config.NimgramStorageConfigSqlite
         self.disableCache = sqliteConfig.disableCache
@@ -88,4 +88,4 @@ when compileOption("threads"):
             var authKey = cast[seq[uint8]](decode(row[3]))
             var salt = cast[seq[uint8]](decode(row[4]))
             result[int(number)] = DcOption(number: number, isAuthorized: isAuthorized, isMain: isMain, authKey: authKey, salt: salt)
-            
+

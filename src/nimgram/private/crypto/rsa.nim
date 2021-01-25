@@ -29,7 +29,7 @@ type RSA* = object
 proc initRSA*(id: int64): RSA =
     var keychainTable = Keychain.toTable()
     if not keychainTable.contains(id):
-        raise newException(Exception, "key not found")
+        raise newException(CatchableError, "key not found")
     var nbytes = keychainTable[id].n
     result.n = fromHex(StUint[2048], nbytes)
 

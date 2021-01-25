@@ -29,3 +29,4 @@ method isClosed*(self: MTProtoNetwork): bool {.base.} = true
 
 method close*(self: MTProtoNetwork) {.base,  locks: "unknown".} = discard
 
+method reopen*(self: MTProtoNetwork) {.async, base.} = discard

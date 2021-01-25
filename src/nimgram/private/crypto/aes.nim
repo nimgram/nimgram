@@ -16,40 +16,40 @@ proc blockAsArray(data: seq[uint8]): array[16, uint8] =
 
 proc aesIGE*(key, iv, message: seq[uint8], doEncrypt: bool): seq[uint8] =
     if key.len != 32:
-        raise newException(Exception, "key must be 32 bytes long")
+        raise newException(CatchableError, "key must be 32 bytes long")
 
-    if len(iv) != 32:
-        raise newException(Exception, "iv must be 32 bytes long")
+    if iv.len != 32:
+        raise newException(CatchableError, "iv must be 32 bytes long")
 
     var cipher: aes256
     cipher.init(key)
 
     if message.len mod 16 != 0:
-        raise newException(Exception, "data lenght must be a multiple of 16 bytes, instead is " & $message.len)
+        raise newException(CatchableError, "data lenght must be a multiple of 16 bytes, instead is " & $message.len)
 
-    var ivp = blockAsArray(iv[0..15])
-    var ivp2 = blockAsArray(iv[16..31])
+    var ivp = iv[0..15].blockAsArray()
+    var ivp2 = iv[16..31].blockAsArray()
     var ciphered: seq[uint8]
 
     var i = 0
-    while i < len(message):
+    while i < message.len:
         if not doEncrypt:
-            var xored = xorBlock(blockAsArray(message[i..i+15]), ivp2)
+            var xored = xorBlock(message[i..i+15].blockAsArray(), ivp2)
             var decryptedXored: array[16, uint8]
             cipher.decrypt(xored, decryptedXored)
 
             var outdata = xorBlock(decryptedXored, ivp)
-            ivp = blockAsArray(message[i..i+15])
+            ivp = message[i..i+15].blockAsArray()
             ivp2 = outdata
             ciphered.add(outdata)
         else:
-            var xored = xorBlock(blockAsArray(message[i..i+15]),  ivp)
+            var xored = xorBlock(message[i..i+15].blockAsArray(),  ivp)
             var encryptedXored: array[16, uint8]
             cipher.encrypt(xored, encryptedXored)
             
             var outdata = xorBlock(encryptedXored, ivp2)
             ivp = outdata
-            ivp2 = blockAsArray(message[i..i+15])
+            ivp2 = message[i..i+15].blockAsArray()
             ciphered.add(outdata)
 
         i += 16

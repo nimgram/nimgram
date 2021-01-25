@@ -109,7 +109,7 @@ proc TLDecode*(self: var ScalingSeq[uint8]): seq[uint8] =
             var fgdsfds = self.readN(1)
             tempLen += 1
             if fgdsfds[0] != uint8(0):
-                raise newException(Exception, "Deserialization error: Unexpected end of padding")
+                raise newException(CatchableError, "Deserialization error: Unexpected end of padding")
     else:
         var fullLenghtBytes = newScalingSeq(self.readN(3) & 0)
         var fullLenght: int32
@@ -121,7 +121,7 @@ proc TLDecode*(self: var ScalingSeq[uint8]): seq[uint8] =
             tempLen += 1
             var fgdsfds = self.readN(1)
             if fgdsfds[0] != uint8(0):
-                raise newException(Exception, "Deserialization error: Unexpected end of padding")
+                raise newException(CatchableError, "Deserialization error: Unexpected end of padding")
         #discard self.readN(fullLenght mod 4)
 
 
@@ -129,7 +129,7 @@ proc TLDecodeSeq*(self: var ScalingSeq[uint8]): seq[seq[uint8]] =
     var id: int32
     self.TLDecode(addr id)
     if id != 481674261:
-        raise newException(Exception, "Type is not Vector")
+        raise newException(CatchableError, "Type is not Vector")
     #get lenght of array
     var lenght: int32
     self.TLDecode(addr lenght)
@@ -144,7 +144,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[int32], enableIdDecode:
     if enableIdDecode:
         self.TLDecode(addr lenght)
         if lenght != 481674261:
-            raise newException(Exception, "Type is not Vector")
+            raise newException(CatchableError, "Type is not Vector")
     self.TLDecode(addr lenght)
     for i in countup(1, lenght):
         self.TLDecode(addr tempInt)
@@ -158,7 +158,7 @@ proc TLDecode*(self: var ScalingSeq[uint8], obj: var seq[int64], enableIdDecode:
     if enableIdDecode:
         self.TLDecode(addr lenght)
         if lenght != 481674261:
-            raise newException(Exception, "Type is not Vector: " & $lenght)
+            raise newException(CatchableError, "Type is not Vector: " & $lenght)
 
     self.TLDecode(addr lenght)
     for i in countup(1, lenght):
