@@ -4,7 +4,6 @@ import ../rpc/encoding
 import ../rpc/decoding
 import ../rpc/raw
 import ../crypto/prime
-import strformat
 import ../network/transports
 import ../crypto/rsa
 import ../crypto/aes

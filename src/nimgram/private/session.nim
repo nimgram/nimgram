@@ -24,6 +24,7 @@ type Session* = ref object
     isDead*: bool
     initDone*: bool
     authKey: seq[uint8]
+    alreadyCalledDisconnected: bool
     resumeConnectionWait*: AsyncEvent
     authKeyID: seq[uint8]
     storageManager: NimgramStorage
@@ -57,6 +58,7 @@ proc initSession*(connection: MTProtoNetwork, dcID: int, authKey: seq[uint8], se
     result.authKeyID = sha1.digest(authKey).data[12..19]
     result.storageManager = storageManager
     result.initDone = false
+    result.alreadyCalledDisconnected = false
     result.serverSalt = serverSalt
     result.callbackUpdates = UpdatesCallback()
     result.seqNo = 5
@@ -188,12 +190,17 @@ proc startHandler*(self: Session) {.async.} =
 
     #We need to reopen the connection if this session is required
     if self.isRequired:
+        if not self.alreadyCalledDisconnected:
+            self.callbackUpdates.processNetworkDisconnected()
+            self.alreadyCalledDisconnected = true
         while true:
-            echo "reopening connection"
-
             await sleepAsync(5000)
 
-            await self.connection.reopen()
+            try:
+                await self.connection.reopen()
+            except:
+                await sleepAsync(5000)
+                continue
             await sleepAsync(1000)
             if not self.connection.isClosed():
                 self.seqNo = 5
@@ -210,6 +217,8 @@ proc startHandler*(self: Session) {.async.} =
                 self.responses.clear()
                 self.initDone = true
                 self.resumeConnectionWait.trigger()
+                self.alreadyCalledDisconnected = false
+                self.callbackUpdates.processNetworkReconnected()
                 self.isDead = false
                 break
     else:

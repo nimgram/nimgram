@@ -37,6 +37,14 @@ proc onUpdates*(self: NimgramClient, procedure: proc(updates: UpdatesI): Future[
 proc onUpdateNewMessage*(self: NimgramClient, procedure: proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}) =
     self.sessions[self.mainDc].callbackUpdates.onUpdateNewMessage(procedure)
 
+proc onReconnection*(self: NimgramClient, procedure: proc(): Future[void] {.async.}) =
+    ## Call the specified procedure when client is reconnected successfully to network (Only main datacenter)
+    self.sessions[self.mainDc].callbackUpdates.onReconnection(procedure)
+
+proc onDisconnection*(self: NimgramClient, procedure: proc(): Future[void] {.async.}) =
+    ## Call the specified procedure when client is disconnected from network (Only main datacenter)
+    self.sessions[self.mainDc].callbackUpdates.onDisconnection(procedure)
+    
 proc getConnection(connectionType: NetworkTypes, address: string, port: uint16): Future[MTProtoNetwork] {.async.} =
     case connectionType:
     of NetTcpAbridged:

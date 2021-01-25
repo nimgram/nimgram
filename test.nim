@@ -31,6 +31,9 @@ proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
                             random_id: int64(rand(2147483646))
                         ))
 
+proc onReconnection() {.async.} =
+    echo "Reconnected!"
+    discard await mtprotoClient.send(UpdatesGetState())
 
 proc runClient*(): Future[void] {.async.} =
     mtprotoClient = await initNimgram("nimgram-session.bin", NimgramConfig(
@@ -48,6 +51,7 @@ proc runClient*(): Future[void] {.async.} =
         disableCache: false
     ), StorageRam)
     await mtprotoClient.botLogin("0:0")
+    mtprotoClient.onReconnection(onReconnection)
     discard await mtprotoClient.send(UpdatesGetState())
     mtprotoClient.onUpdateNewMessage(handleMessage)
     echo "Client started"
