@@ -38,7 +38,13 @@ proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
 
     if data.len == 4:
         #I don't want to handle a separate error, just throw the same type to count as "connection closed"
-        raise newException(IndexDefect, "Unexpected result: " & $cast[int32](fromBytes(uint32, data, littleEndian)))
+
+        #On Nim 1.2 IndexDefect doesn't exists and IndexError is deprecated on 1.4
+        when NimMinor <= 2:
+            raise newException(IndexError, "Unexpected result: " & $cast[int32](fromBytes(uint32, data, littleEndian)))
+        else:
+            raise newException(IndexDefect, "Unexpected result: " & $cast[int32](fromBytes(uint32, data, littleEndian)))
+
     var sdata = newScalingSeq(data[20..(data.len-1)])
     result.TLDecode(sdata)
 
@@ -49,14 +55,22 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
     var reqa = Req_pq_multi(nonce: generateNonce())
     var response: TL
     while true:
-        try:
-            #Retry until connection is opened
-            response = await connection.send(reqa)
-            break
-        except IndexDefect:
-            await sleepAsync(5000)
-            await connection.reopen()
-
+        when NimMinor <= 2:
+            try:
+                #Retry until connection is opened
+                response = await connection.send(reqa)
+                break
+            except IndexError:
+                await sleepAsync(5000)
+                await connection.reopen()
+        else:
+            try:
+                #Retry until connection is opened
+                response = await connection.send(reqa)
+                break
+            except IndexDefect:
+                await sleepAsync(5000)
+                await connection.reopen()
 
 
     if response of ResPQ:
@@ -97,10 +111,16 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         reqDHParams.q = factors[1].truncate(uint32).TLEncode(bigEndian)
         reqDHParams.public_key_fingerprint = keyFingerprint
         reqDHParams.encrypted_data = encryptedData
-        try:
-            response = await connection.send(reqDHParams)
-        except IndexDefect:
-            return await connection.generateAuthKey()
+        when NimMinor <= 2:
+            try:
+                response = await connection.send(reqDHParams)
+            except IndexError:
+                return await connection.generateAuthKey()
+        else:
+            try:
+                response = await connection.send(reqDHParams)
+            except IndexDefect:
+                return await connection.generateAuthKey()
         #step 2
         if not (response of Server_DH_params_ok):
             raise newException(CatchableError, "Wrong response from server")
@@ -137,14 +157,24 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         while len(data) mod 16 != 0:
             data = data & urandom(1)
         data = aesIGE(tempAesKey, tempAesIV, data, true)
-        try:
-            response = await connection.send(Set_client_DH_params(
-                nonce: reqa.nonce,
-                server_nonce: resPQs.server_nonce,
-                encrypted_data: data
-            ))
-        except IndexDefect:
-            return await connection.generateAuthKey()
+        when NimMinor <= 2:
+            try:
+                response = await connection.send(Set_client_DH_params(
+                    nonce: reqa.nonce,
+                    server_nonce: resPQs.server_nonce,
+                    encrypted_data: data
+                ))
+            except IndexError:
+                return await connection.generateAuthKey()
+        else:
+            try:
+                response = await connection.send(Set_client_DH_params(
+                    nonce: reqa.nonce,
+                    server_nonce: resPQs.server_nonce,
+                    encrypted_data: data
+                 ))
+            except IndexDefect:
+                return await connection.generateAuthKey()
 
         #step 3
         if not (response of Dh_gen_ok):
