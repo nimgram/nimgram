@@ -145,7 +145,7 @@ proc seqNo*(self: TL, currentInt: int): int =
         related = 0
     var fdasfd = currentInt + (2 * related)
     return fdasfd
-const LAYER_VERSION* = 122
+const LAYER_VERSION* = 123
 
 proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = 
         var id: uint32
@@ -1096,7 +1096,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xdf7534c):
+        of uint32(0x14b9bcd7):
             var tmp = new MessagesExportChatInvite
             tmp.TLDecode(bytes)
             self = tmp
@@ -1543,6 +1543,26 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             return
         of uint32(0xf025bc8b):
             var tmp = new MessagesUnpinAllMessages
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x6d9cae03):
+            var tmp = new MessagesGetExportedChatInvites
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x2e4ffbe):
+            var tmp = new MessagesEditExportedChatInvite
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x73746f5c):
+            var tmp = new MessagesGetExportedChatInvite
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x26fb7289):
+            var tmp = new MessagesGetChatInviteImporters
             tmp.TLDecode(bytes)
             self = tmp
             return
@@ -2041,7 +2061,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x63146ae4):
+        of uint32(0xa5e76cd8):
             var tmp = new PhoneEditGroupCallMember
             tmp.TLDecode(bytes)
             self = tmp
@@ -2501,12 +2521,12 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xdc8c181):
+        of uint32(0xf3474af6):
             var tmp = new ChatFull
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xef3a6acd):
+        of uint32(0x7a7de4f7):
             var tmp = new ChannelFull
             tmp.TLDecode(bytes)
             self = tmp
@@ -2546,7 +2566,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x83e5de54):
+        of uint32(0x90a6ca84):
             var tmp = new MessageEmpty
             tmp.TLDecode(bytes)
             self = tmp
@@ -4156,12 +4176,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x69df3769):
-            var tmp = new ChatInviteEmpty
-            tmp.TLDecode(bytes)
-            self = tmp
-            return
-        of uint32(0xfc2e05bc):
+        of uint32(0xa9a847ea):
             var tmp = new ChatInviteExported
             tmp.TLDecode(bytes)
             self = tmp
@@ -5226,8 +5241,8 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xca05d50e):
-            var tmp = new InputPaymentCredentialsAndroidPay
+        of uint32(0x8ac32801):
+            var tmp = new InputPaymentCredentialsGooglePay
             tmp.TLDecode(bytes)
             self = tmp
             return
@@ -6431,7 +6446,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x56b087c9):
+        of uint32(0xb881f32b):
             var tmp = new GroupCallParticipant
             tmp.TLDecode(bytes)
             self = tmp
@@ -6468,6 +6483,26 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             return
         of uint32(0x6334ee9a):
             var tmp = new InlineQueryPeerTypeBroadcast
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x1e3e6680):
+            var tmp = new ChatInviteImporter
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xbdc62dcc):
+            var tmp = new MessagesExportedChatInvites
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x97c5e3a9):
+            var tmp = new MessagesExportedChatInvite
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x81b6b00a):
+            var tmp = new MessagesChatInviteImporters
             tmp.TLDecode(bytes)
             self = tmp
             return

@@ -164,6 +164,18 @@ type
         read_outbox_max_id*: Option[int32]
         chats*: seq[ChatI]
         users*: seq[UserI]
+    MessagesExportedChatInvites* = ref object of MessagesExportedChatInvitesI
+        count*: int32
+        invites*: seq[ExportedChatInviteI]
+        users*: seq[UserI]
+    MessagesExportedChatInvite* = ref object of MessagesExportedChatInviteI
+        invite*: ExportedChatInviteI
+        recent_importers*: seq[int32]
+        users*: seq[UserI]
+    MessagesChatInviteImporters* = ref object of MessagesChatInviteImportersI
+        count*: int32
+        importers*: seq[ChatInviteImporterI]
+        users*: seq[UserI]
 method getTypeName*(self: MessagesDialogs): string = "MessagesDialogs"
 method getTypeName*(self: MessagesDialogsSlice): string = "MessagesDialogsSlice"
 method getTypeName*(self: MessagesDialogsNotModified): string = "MessagesDialogsNotModified"
@@ -208,6 +220,9 @@ method getTypeName*(self: MessagesInactiveChats): string = "MessagesInactiveChat
 method getTypeName*(self: MessagesVotesList): string = "MessagesVotesList"
 method getTypeName*(self: MessagesMessageViews): string = "MessagesMessageViews"
 method getTypeName*(self: MessagesDiscussionMessage): string = "MessagesDiscussionMessage"
+method getTypeName*(self: MessagesExportedChatInvites): string = "MessagesExportedChatInvites"
+method getTypeName*(self: MessagesExportedChatInvite): string = "MessagesExportedChatInvite"
+method getTypeName*(self: MessagesChatInviteImporters): string = "MessagesChatInviteImporters"
 
 method TLEncode*(self: MessagesDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x15ba6c40))
@@ -799,6 +814,48 @@ method TLDecode*(self: MessagesDiscussionMessage, bytes: var ScalingSeq[uint8]) 
         self.read_outbox_max_id = some(tempVal)
     tempVector.TLDecode(bytes)
     self.chats = cast[seq[ChatI]](tempVector)
+    tempVector.setLen(0)
+    tempVector.TLDecode(bytes)
+    self.users = cast[seq[UserI]](tempVector)
+    tempVector.setLen(0)
+method TLEncode*(self: MessagesExportedChatInvites): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xbdc62dcc))
+    result = result & TLEncode(self.count)
+    result = result & TLEncode(cast[seq[TL]](self.invites))
+    result = result & TLEncode(cast[seq[TL]](self.users))
+method TLDecode*(self: MessagesExportedChatInvites, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.count)
+    var tempVector = newSeq[TL]()
+    tempVector.TLDecode(bytes)
+    self.invites = cast[seq[ExportedChatInviteI]](tempVector)
+    tempVector.setLen(0)
+    tempVector.TLDecode(bytes)
+    self.users = cast[seq[UserI]](tempVector)
+    tempVector.setLen(0)
+method TLEncode*(self: MessagesExportedChatInvite): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x97c5e3a9))
+    result = result & TLEncode(self.invite)
+    result = result & TLEncode(self.recent_importers)
+    result = result & TLEncode(cast[seq[TL]](self.users))
+method TLDecode*(self: MessagesExportedChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.invite = cast[ExportedChatInviteI](tempObj)
+    bytes.TLDecode(self.recent_importers)
+    var tempVector = newSeq[TL]()
+    tempVector.TLDecode(bytes)
+    self.users = cast[seq[UserI]](tempVector)
+    tempVector.setLen(0)
+method TLEncode*(self: MessagesChatInviteImporters): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x81b6b00a))
+    result = result & TLEncode(self.count)
+    result = result & TLEncode(cast[seq[TL]](self.importers))
+    result = result & TLEncode(cast[seq[TL]](self.users))
+method TLDecode*(self: MessagesChatInviteImporters, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.count)
+    var tempVector = newSeq[TL]()
+    tempVector.TLDecode(bytes)
+    self.importers = cast[seq[ChatInviteImporterI]](tempVector)
     tempVector.setLen(0)
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
