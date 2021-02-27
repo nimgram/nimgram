@@ -34,6 +34,7 @@ type
     HelpHidePromoData* = ref object of TLFunction
         peer*: InputPeerI
     HelpDismissSuggestion* = ref object of TLFunction
+        peer*: InputPeerI
         suggestion*: string
     HelpGetCountriesList* = ref object of TLFunction
         lang_code*: string
@@ -173,9 +174,13 @@ method TLDecode*(self: HelpHidePromoData, bytes: var ScalingSeq[uint8]) {.locks:
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
 method TLEncode*(self: HelpDismissSuggestion): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x77fa99f))
+    result = TLEncode(uint32(0xf50dbaa1))
+    result = result & TLEncode(self.peer)
     result = result & TLEncode(self.suggestion)
 method TLDecode*(self: HelpDismissSuggestion, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
     self.suggestion = cast[string](bytes.TLDecode())
 method TLEncode*(self: HelpGetCountriesList): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x735787a8))

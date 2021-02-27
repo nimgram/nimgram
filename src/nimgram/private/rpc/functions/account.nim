@@ -29,6 +29,7 @@ type
     AccountReportPeer* = ref object of TLFunction
         peer*: InputPeerI
         reason*: ReportReasonI
+        message*: string
     AccountCheckUsername* = ref object of TLFunction
         username*: string
     AccountUpdateUsername* = ref object of TLFunction
@@ -191,6 +192,11 @@ type
     AccountGetGlobalPrivacySettings* = ref object of TLFunction
     AccountSetGlobalPrivacySettings* = ref object of TLFunction
         settings*: GlobalPrivacySettingsI
+    AccountReportProfilePhoto* = ref object of TLFunction
+        peer*: InputPeerI
+        photo_id*: InputPhotoI
+        reason*: ReportReasonI
+        message*: string
 method getTypeName*(self: AccountRegisterDevice): string = "AccountRegisterDevice"
 method getTypeName*(self: AccountUnregisterDevice): string = "AccountUnregisterDevice"
 method getTypeName*(self: AccountUpdateNotifySettings): string = "AccountUpdateNotifySettings"
@@ -258,6 +264,7 @@ method getTypeName*(self: AccountGetContentSettings): string = "AccountGetConten
 method getTypeName*(self: AccountGetMultiWallPapers): string = "AccountGetMultiWallPapers"
 method getTypeName*(self: AccountGetGlobalPrivacySettings): string = "AccountGetGlobalPrivacySettings"
 method getTypeName*(self: AccountSetGlobalPrivacySettings): string = "AccountSetGlobalPrivacySettings"
+method getTypeName*(self: AccountReportProfilePhoto): string = "AccountReportProfilePhoto"
 
 method TLEncode*(self: AccountRegisterDevice): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x68976c6f))
@@ -342,15 +349,17 @@ method TLEncode*(self: AccountGetWallPapers): seq[uint8] {.locks: "unknown".} =
 method TLDecode*(self: AccountGetWallPapers, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: AccountReportPeer): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xae189d5f))
+    result = TLEncode(uint32(0xc5ba3d86))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.reason)
+    result = result & TLEncode(self.message)
 method TLDecode*(self: AccountReportPeer, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.reason = cast[ReportReasonI](tempObj)
+    self.message = cast[string](bytes.TLDecode())
 method TLEncode*(self: AccountCheckUsername): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x2714d86c))
     result = result & TLEncode(self.username)
@@ -891,3 +900,18 @@ method TLDecode*(self: AccountSetGlobalPrivacySettings, bytes: var ScalingSeq[ui
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.settings = cast[GlobalPrivacySettingsI](tempObj)
+method TLEncode*(self: AccountReportProfilePhoto): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xfa8cc6f5))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.photo_id)
+    result = result & TLEncode(self.reason)
+    result = result & TLEncode(self.message)
+method TLDecode*(self: AccountReportProfilePhoto, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.photo_id = cast[InputPhotoI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.reason = cast[ReportReasonI](tempObj)
+    self.message = cast[string](bytes.TLDecode())

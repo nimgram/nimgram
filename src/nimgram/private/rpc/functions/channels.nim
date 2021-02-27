@@ -32,6 +32,7 @@ type
         flags: int32
         broadcast*: bool
         megagroup*: bool
+        for_import*: bool
         title*: string
         about*: string
         geo_point*: Option[InputGeoPointI]
@@ -118,6 +119,8 @@ type
         channel*: InputChannelI
         seconds*: int32
     ChannelsGetInactiveChannels* = ref object of TLFunction
+    ChannelsConvertToGigagroup* = ref object of TLFunction
+        channel*: InputChannelI
 method getTypeName*(self: ChannelsReadHistory): string = "ChannelsReadHistory"
 method getTypeName*(self: ChannelsDeleteMessages): string = "ChannelsDeleteMessages"
 method getTypeName*(self: ChannelsDeleteUserHistory): string = "ChannelsDeleteUserHistory"
@@ -153,6 +156,7 @@ method getTypeName*(self: ChannelsEditCreator): string = "ChannelsEditCreator"
 method getTypeName*(self: ChannelsEditLocation): string = "ChannelsEditLocation"
 method getTypeName*(self: ChannelsToggleSlowMode): string = "ChannelsToggleSlowMode"
 method getTypeName*(self: ChannelsGetInactiveChannels): string = "ChannelsGetInactiveChannels"
+method getTypeName*(self: ChannelsConvertToGigagroup): string = "ChannelsConvertToGigagroup"
 
 method TLEncode*(self: ChannelsReadHistory): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xcc104937))
@@ -253,6 +257,8 @@ method TLEncode*(self: ChannelsCreateChannel): seq[uint8] {.locks: "unknown".} =
         self.flags = self.flags or 1 shl 0
     if self.megagroup:
         self.flags = self.flags or 1 shl 1
+    if self.for_import:
+        self.flags = self.flags or 1 shl 3
     if self.geo_point.isSome():
         self.flags = self.flags or 1 shl 2
     if self.address.isSome():
@@ -270,6 +276,8 @@ method TLDecode*(self: ChannelsCreateChannel, bytes: var ScalingSeq[uint8]) {.lo
         self.broadcast = true
     if (self.flags and (1 shl 1)) != 0:
         self.megagroup = true
+    if (self.flags and (1 shl 3)) != 0:
+        self.for_import = true
     self.title = cast[string](bytes.TLDecode())
     self.about = cast[string](bytes.TLDecode())
     if (self.flags and (1 shl 2)) != 0:
@@ -544,3 +552,10 @@ method TLEncode*(self: ChannelsGetInactiveChannels): seq[uint8] {.locks: "unknow
     result = TLEncode(uint32(0x11e831ee))
 method TLDecode*(self: ChannelsGetInactiveChannels, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     discard
+method TLEncode*(self: ChannelsConvertToGigagroup): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xb290c69))
+    result = result & TLEncode(self.channel)
+method TLDecode*(self: ChannelsConvertToGigagroup, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.channel = cast[InputChannelI](tempObj)

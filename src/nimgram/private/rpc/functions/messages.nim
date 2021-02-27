@@ -98,6 +98,7 @@ type
         peer*: InputPeerI
         id*: seq[int32]
         reason*: ReportReasonI
+        message*: string
     MessagesGetChats* = ref object of TLFunction
         id*: seq[int32]
     MessagesGetFullChat* = ref object of TLFunction
@@ -113,6 +114,8 @@ type
         user_id*: InputUserI
         fwd_limit*: int32
     MessagesDeleteChatUser* = ref object of TLFunction
+        flags: int32
+        revoke_history*: bool
         chat_id*: int32
         user_id*: InputUserI
     MessagesCreateChat* = ref object of TLFunction
@@ -130,6 +133,8 @@ type
         g_b*: seq[uint8]
         key_fingerprint*: int64
     MessagesDiscardEncryption* = ref object of TLFunction
+        flags: int32
+        delete_history*: bool
         chat_id*: int32
     MessagesSetEncryptedTyping* = ref object of TLFunction
         peer*: InputEncryptedChatI
@@ -171,6 +176,7 @@ type
         entities*: Option[seq[MessageEntityI]]
     MessagesExportChatInvite* = ref object of TLFunction
         flags: int32
+        legacy_revoke_permanent*: bool
         peer*: InputPeerI
         expire_date*: Option[int32]
         usage_limit*: Option[int32]
@@ -530,11 +536,31 @@ type
         read_max_id*: int32
     MessagesUnpinAllMessages* = ref object of TLFunction
         peer*: InputPeerI
+    MessagesDeleteChat* = ref object of TLFunction
+        chat_id*: int32
+    MessagesDeletePhoneCallHistory* = ref object of TLFunction
+        flags: int32
+        revoke*: bool
+    MessagesCheckHistoryImport* = ref object of TLFunction
+        import_head*: string
+    MessagesInitHistoryImport* = ref object of TLFunction
+        peer*: InputPeerI
+        file*: InputFileI
+        media_count*: int32
+    MessagesUploadImportedMedia* = ref object of TLFunction
+        peer*: InputPeerI
+        import_id*: int64
+        file_name*: string
+        media*: InputMediaI
+    MessagesStartHistoryImport* = ref object of TLFunction
+        peer*: InputPeerI
+        import_id*: int64
     MessagesGetExportedChatInvites* = ref object of TLFunction
         flags: int32
-        expired*: bool
+        revoked*: bool
         peer*: InputPeerI
-        admin_id*: Option[InputUserI]
+        admin_id*: InputUserI
+        offset_date*: Option[int32]
         offset_link*: Option[string]
         limit*: int32
     MessagesEditExportedChatInvite* = ref object of TLFunction
@@ -544,15 +570,23 @@ type
         link*: string
         expire_date*: Option[int32]
         usage_limit*: Option[int32]
-    MessagesGetExportedChatInvite* = ref object of TLFunction
+    MessagesDeleteRevokedExportedChatInvites* = ref object of TLFunction
+        peer*: InputPeerI
+        admin_id*: InputUserI
+    MessagesDeleteExportedChatInvite* = ref object of TLFunction
         peer*: InputPeerI
         link*: string
+    MessagesGetAdminsWithInvites* = ref object of TLFunction
+        peer*: InputPeerI
     MessagesGetChatInviteImporters* = ref object of TLFunction
         peer*: InputPeerI
         link*: string
         offset_date*: int32
         offset_user*: InputUserI
         limit*: int32
+    MessagesSetHistoryTTL* = ref object of TLFunction
+        peer*: InputPeerI
+        period*: int32
 method getTypeName*(self: MessagesGetMessages): string = "MessagesGetMessages"
 method getTypeName*(self: MessagesGetDialogs): string = "MessagesGetDialogs"
 method getTypeName*(self: MessagesGetHistory): string = "MessagesGetHistory"
@@ -680,10 +714,19 @@ method getTypeName*(self: MessagesGetReplies): string = "MessagesGetReplies"
 method getTypeName*(self: MessagesGetDiscussionMessage): string = "MessagesGetDiscussionMessage"
 method getTypeName*(self: MessagesReadDiscussion): string = "MessagesReadDiscussion"
 method getTypeName*(self: MessagesUnpinAllMessages): string = "MessagesUnpinAllMessages"
+method getTypeName*(self: MessagesDeleteChat): string = "MessagesDeleteChat"
+method getTypeName*(self: MessagesDeletePhoneCallHistory): string = "MessagesDeletePhoneCallHistory"
+method getTypeName*(self: MessagesCheckHistoryImport): string = "MessagesCheckHistoryImport"
+method getTypeName*(self: MessagesInitHistoryImport): string = "MessagesInitHistoryImport"
+method getTypeName*(self: MessagesUploadImportedMedia): string = "MessagesUploadImportedMedia"
+method getTypeName*(self: MessagesStartHistoryImport): string = "MessagesStartHistoryImport"
 method getTypeName*(self: MessagesGetExportedChatInvites): string = "MessagesGetExportedChatInvites"
 method getTypeName*(self: MessagesEditExportedChatInvite): string = "MessagesEditExportedChatInvite"
-method getTypeName*(self: MessagesGetExportedChatInvite): string = "MessagesGetExportedChatInvite"
+method getTypeName*(self: MessagesDeleteRevokedExportedChatInvites): string = "MessagesDeleteRevokedExportedChatInvites"
+method getTypeName*(self: MessagesDeleteExportedChatInvite): string = "MessagesDeleteExportedChatInvite"
+method getTypeName*(self: MessagesGetAdminsWithInvites): string = "MessagesGetAdminsWithInvites"
 method getTypeName*(self: MessagesGetChatInviteImporters): string = "MessagesGetChatInviteImporters"
+method getTypeName*(self: MessagesSetHistoryTTL): string = "MessagesSetHistoryTTL"
 
 method TLEncode*(self: MessagesGetMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x63c66506))
@@ -1025,10 +1068,11 @@ method TLDecode*(self: MessagesGetPeerSettings, bytes: var ScalingSeq[uint8]) {.
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
 method TLEncode*(self: MessagesReport): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xbd82b658))
+    result = TLEncode(uint32(0x8953ab4e))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.reason)
+    result = result & TLEncode(self.message)
 method TLDecode*(self: MessagesReport, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -1036,6 +1080,7 @@ method TLDecode*(self: MessagesReport, bytes: var ScalingSeq[uint8]) {.locks: "u
     bytes.TLDecode(self.id)
     tempObj.TLDecode(bytes)
     self.reason = cast[ReportReasonI](tempObj)
+    self.message = cast[string](bytes.TLDecode())
 method TLEncode*(self: MessagesGetChats): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3c6aa187))
     result = result & TLEncode(self.id)
@@ -1074,10 +1119,16 @@ method TLDecode*(self: MessagesAddChatUser, bytes: var ScalingSeq[uint8]) {.lock
     self.user_id = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.fwd_limit)
 method TLEncode*(self: MessagesDeleteChatUser): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xe0611f16))
+    result = TLEncode(uint32(0xc534459a))
+    if self.revoke_history:
+        self.flags = self.flags or 1 shl 0
+    result = result & TLEncode(self.flags)
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.user_id)
 method TLDecode*(self: MessagesDeleteChatUser, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.revoke_history = true
     bytes.TLDecode(addr self.chat_id)
     var tempObj = new TL
     tempObj.TLDecode(bytes)
@@ -1122,9 +1173,15 @@ method TLDecode*(self: MessagesAcceptEncryption, bytes: var ScalingSeq[uint8]) {
     self.g_b = bytes.TLDecode()
     bytes.TLDecode(addr self.key_fingerprint)
 method TLEncode*(self: MessagesDiscardEncryption): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xedd923c5))
+    result = TLEncode(uint32(0xf393aea0))
+    if self.delete_history:
+        self.flags = self.flags or 1 shl 0
+    result = result & TLEncode(self.flags)
     result = result & TLEncode(self.chat_id)
 method TLDecode*(self: MessagesDiscardEncryption, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.delete_history = true
     bytes.TLDecode(addr self.chat_id)
 method TLEncode*(self: MessagesSetEncryptedTyping): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x791451ed))
@@ -1238,6 +1295,8 @@ method TLDecode*(self: MessagesGetWebPagePreview, bytes: var ScalingSeq[uint8]) 
         self.entities = some(cast[seq[MessageEntityI]](tempVal))
 method TLEncode*(self: MessagesExportChatInvite): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x14b9bcd7))
+    if self.legacy_revoke_permanent:
+        self.flags = self.flags or 1 shl 2
     if self.expire_date.isSome():
         self.flags = self.flags or 1 shl 0
     if self.usage_limit.isSome():
@@ -1250,6 +1309,8 @@ method TLEncode*(self: MessagesExportChatInvite): seq[uint8] {.locks: "unknown".
         result = result & TLEncode(self.usage_limit.get())
 method TLDecode*(self: MessagesExportChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 2)) != 0:
+        self.legacy_revoke_permanent = true
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
@@ -2426,32 +2487,89 @@ method TLDecode*(self: MessagesUnpinAllMessages, bytes: var ScalingSeq[uint8]) {
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-method TLEncode*(self: MessagesGetExportedChatInvites): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x6d9cae03))
-    if self.expired:
-        self.flags = self.flags or 1 shl 1
-    if self.admin_id.isSome():
+method TLEncode*(self: MessagesDeleteChat): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x83247d11))
+    result = result & TLEncode(self.chat_id)
+method TLDecode*(self: MessagesDeleteChat, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.chat_id)
+method TLEncode*(self: MessagesDeletePhoneCallHistory): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xf9cbe409))
+    if self.revoke:
         self.flags = self.flags or 1 shl 0
+    result = result & TLEncode(self.flags)
+method TLDecode*(self: MessagesDeletePhoneCallHistory, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.revoke = true
+method TLEncode*(self: MessagesCheckHistoryImport): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x43fe19f3))
+    result = result & TLEncode(self.import_head)
+method TLDecode*(self: MessagesCheckHistoryImport, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    self.import_head = cast[string](bytes.TLDecode())
+method TLEncode*(self: MessagesInitHistoryImport): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x34090c3b))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.file)
+    result = result & TLEncode(self.media_count)
+method TLDecode*(self: MessagesInitHistoryImport, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.file = cast[InputFileI](tempObj)
+    bytes.TLDecode(addr self.media_count)
+method TLEncode*(self: MessagesUploadImportedMedia): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x2a862092))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.import_id)
+    result = result & TLEncode(self.file_name)
+    result = result & TLEncode(self.media)
+method TLDecode*(self: MessagesUploadImportedMedia, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    bytes.TLDecode(addr self.import_id)
+    self.file_name = cast[string](bytes.TLDecode())
+    tempObj.TLDecode(bytes)
+    self.media = cast[InputMediaI](tempObj)
+method TLEncode*(self: MessagesStartHistoryImport): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xb43df344))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.import_id)
+method TLDecode*(self: MessagesStartHistoryImport, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    bytes.TLDecode(addr self.import_id)
+method TLEncode*(self: MessagesGetExportedChatInvites): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xa2b5a3f6))
+    if self.revoked:
+        self.flags = self.flags or 1 shl 3
+    if self.offset_date.isSome():
+        self.flags = self.flags or 1 shl 2
     if self.offset_link.isSome():
         self.flags = self.flags or 1 shl 2
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.peer)
-    if self.admin_id.isSome():
-        result = result & TLEncode(self.admin_id.get())
+    result = result & TLEncode(self.admin_id)
+    if self.offset_date.isSome():
+        result = result & TLEncode(self.offset_date.get())
     if self.offset_link.isSome():
         result = result & TLEncode(self.offset_link.get())
     result = result & TLEncode(self.limit)
 method TLDecode*(self: MessagesGetExportedChatInvites, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
-    if (self.flags and (1 shl 1)) != 0:
-        self.expired = true
+    if (self.flags and (1 shl 3)) != 0:
+        self.revoked = true
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
-    if (self.flags and (1 shl 0)) != 0:
-        var tempVal = new TL
-        tempVal.TLDecode(bytes)
-        self.admin_id = some(tempVal.InputUserI)
+    tempObj.TLDecode(bytes)
+    self.admin_id = cast[InputUserI](tempObj)
+    if (self.flags and (1 shl 2)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.offset_date = some(tempVal)
     if (self.flags and (1 shl 2)) != 0:
         self.offset_link = some(cast[string](bytes.TLDecode()))
     bytes.TLDecode(addr self.limit)
@@ -2486,15 +2604,32 @@ method TLDecode*(self: MessagesEditExportedChatInvite, bytes: var ScalingSeq[uin
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.usage_limit = some(tempVal)
-method TLEncode*(self: MessagesGetExportedChatInvite): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x73746f5c))
+method TLEncode*(self: MessagesDeleteRevokedExportedChatInvites): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x56987bd5))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.admin_id)
+method TLDecode*(self: MessagesDeleteRevokedExportedChatInvites, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.admin_id = cast[InputUserI](tempObj)
+method TLEncode*(self: MessagesDeleteExportedChatInvite): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xd464a42b))
     result = result & TLEncode(self.peer)
     result = result & TLEncode(self.link)
-method TLDecode*(self: MessagesGetExportedChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+method TLDecode*(self: MessagesDeleteExportedChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     self.link = cast[string](bytes.TLDecode())
+method TLEncode*(self: MessagesGetAdminsWithInvites): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x3920e6ef))
+    result = result & TLEncode(self.peer)
+method TLDecode*(self: MessagesGetAdminsWithInvites, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
 method TLEncode*(self: MessagesGetChatInviteImporters): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x26fb7289))
     result = result & TLEncode(self.peer)
@@ -2511,3 +2646,12 @@ method TLDecode*(self: MessagesGetChatInviteImporters, bytes: var ScalingSeq[uin
     tempObj.TLDecode(bytes)
     self.offset_user = cast[InputUserI](tempObj)
     bytes.TLDecode(addr self.limit)
+method TLEncode*(self: MessagesSetHistoryTTL): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xb80e5fe4))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.period)
+method TLDecode*(self: MessagesSetHistoryTTL, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    bytes.TLDecode(addr self.period)
