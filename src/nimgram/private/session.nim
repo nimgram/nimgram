@@ -102,7 +102,7 @@ proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
     var aesIv = b[0..7] & a[8..23] & b[24..31]
     var encryptredata = sdata.readAll()
     var plaintext = aesIGE(aesKey, aesIv, encryptredata, false)
-    var msgKey = sha256.digest(self.authKey[96..(96+31)] & plaintext).data[8..23]
+    var msgKey = sha256.digest(self.authKey[96..127] & plaintext).data[8..23]
     doAssert msgKey == responseMsgKey, "Computed Msg Key is different from response"
     var splaintext = newScalingSeq(plaintext)
     discard splaintext.readN(8)
@@ -181,7 +181,7 @@ proc startHandler*(self: Session) {.async.} =
             
             if body of UpdatesTooLong or body of UpdateShortMessage or body of UpdateShortChatMessage or body of UpdateShort or body of UpdatesCombined or body of raw.Updates:
                 self.seqNo = seqNo(body, self.seqNo)
-                asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI)
+                asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI, self.storageManager)
                 
 
             if len(self.acks) >= 8:
@@ -211,7 +211,8 @@ proc startHandler*(self: Session) {.async.} =
                     await self.mtprotoInit()
                 except:
                     return
-                for i, _ in self.responses:
+                var responsesCopy = self.responses
+                for i, _ in responsesCopy:
                     self.responses[i].body = nil
                     self.responses[i].event.trigger() 
                 self.responses.clear()
@@ -222,7 +223,9 @@ proc startHandler*(self: Session) {.async.} =
                 self.isDead = false
                 break
     else:
-        for i, _ in self.responses:
+        var responsesCopy = self.responses
+
+        for i, _ in responsesCopy:
             self.responses[i].body = nil
             self.responses[i].event.trigger() 
             self.responses.clear()

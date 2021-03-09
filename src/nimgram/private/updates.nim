@@ -1,37 +1,79 @@
 import rpc/raw
 import asyncdispatch
+import storage
+import shared
+import strformat
+import strutils
 import options 
 type UpdatesCallback* = ref object
     callback: Option[proc(updates: UpdatesI): Future[void] {.async.}]
     eventUpdateNewMessage: Option[proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}]
     eventNetworkReconnected: Option[proc(): Future[void] {.async.}]
     eventNetworkDisconnected: Option[proc(): Future[void] {.async.}]
+    eventUpdateNewChannelMessage: Option[proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}]
 
-proc processUpdates*(self: UpdatesCallback, updates: UpdatesI): Future[void] {.async.} =
-    ## Process updates
+
+proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.async.} = 
+    for userGeneric in users:
+        if userGeneric of User:
+            let user = userGeneric.User
+            if user.access_hash.isSome():
+                await storage.AddPeer(StoragePeer(peerID: user.id, accessHash: user.access_hash.get()))
+    for chatGeneric in chats:
+        if chatGeneric of raw.Channel:
+            let channel = cast[raw.Channel](chatGeneric)
+            if channel.access_hash.isSome():
+                await storage.AddPeer(StoragePeer(peerID: (&"-100{channel.id}").parseBiggestInt, accessHash: channel.access_hash.get()))
+
+
+
+proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramStorage): Future[void] {.async.} =
+    ## Process raw updates
 
     if self.callback.isSome():
         asyncCheck self.callback.get()(updates)
 
     if updates of Updates:
         var updatesType = updates.Updates
+        await storage.saveData(updatesType.users, updatesType.chats)
+        # Handle UpdateNewMessage
         for update in updatesType.updates:
             if update of UpdateNewMessage:
                 if self.eventUpdateNewMessage.isSome():
                     asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
+        # Handle UpdateNewChannelMessage
+            if update of UpdateNewChannelMessage:
+                if self.eventUpdateNewChannelMessage.isSome():
+                    asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
+
 
     if updates of UpdateShort:
         var updateShort = updates.UpdateShort
+
+        # Handle UpdateNewMessage
         if updateShort.update of UpdateNewMessage:
             if self.eventUpdateNewMessage.isSome():
                 asyncCheck self.eventUpdateNewMessage.get()(updateShort.update.UpdateNewMessage)
+        
+        # Handle UpdateNewChannelMessage
+        if updateShort.update of UpdateNewChannelMessage:
+            if self.eventUpdateNewChannelMessage.isSome():
+                asyncCheck self.eventUpdateNewChannelMessage.get()(updateShort.update.UpdateNewChannelMessage)
 
     if updates of UpdatesCombined:
         var updatesCombined = updates.UpdatesCombined
+        await storage.saveData(updatesCombined.users, updatesCombined.chats)
         for update in updatesCombined.updates:
+            
+            # Handle UpdateNewMessage
             if update of UpdateNewMessage:
                 if self.eventUpdateNewMessage.isSome():
                     asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
+
+            # Handle UpdateNewChannelMessage
+            if update of UpdateNewChannelMessage:
+                if self.eventUpdateNewChannelMessage.isSome():
+                    asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
 
 proc processNetworkReconnected*(self: UpdatesCallback) = 
     # Procedure to be called to handle "onReconnection"
@@ -60,7 +102,13 @@ proc onUpdateNewMessage*(self: UpdatesCallback, procedure: proc(updateNewMessage
     ## Call the specified procedure when UpdateNewMessage is received
     
     self.eventUpdateNewMessage = some(procedure)
+
+
+proc onUpdateNewChannelMessage*(self: UpdatesCallback, procedure: proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}) =
+    ## Call the specified procedure when UpdateNewChannelMessage is received
     
+    self.eventUpdateNewChannelMessage = some(procedure)
+
 proc onUpdates*(self: UpdatesCallback, procedure: proc(updates: UpdatesI): Future[void] {.async.}) =
     ## Call the specified procedure when UpdatesI is received.
     ## You should use this if you want to handle low level updates

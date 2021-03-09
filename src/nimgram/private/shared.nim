@@ -54,3 +54,7 @@ type NimgramConfig* = object
     systemLangCode*: string
     langPack*: string
     langCode*: string
+
+type StoragePeer* = object
+    peerID*: int64
+    accessHash*: int64

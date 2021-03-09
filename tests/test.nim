@@ -24,16 +24,7 @@ proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
 
     var chatID: InputPeerI
 
-    # Detect the source of the message
-    if textMessage.peer_id of PeerUser:
-      chatID = InputPeerUser(user_id: textMessage.peer_id.PeerUser.user_id, access_hash: 0)
-
-    if textMessage.peer_id of PeerChat:
-      chatID = InputPeerChat(chat_id: textMessage.peer_id.PeerChat.chat_id)  
-
-    if textMessage.peer_id of PeerChannel:
-      chatID = InputPeerChannel(channel_id: textMessage.peer_id.PeerChannel.channel_id, access_hash: 0)
-
+    var inputPeer = await mtprotoClient.resolveInputPeer(textMessage.peer_id)
     # Preparing to throw the dice...
     randomize()
 
@@ -43,7 +34,35 @@ proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
       silent: false,
       background: false,
       clear_draft: false,
-      peer: chatID,
+      peer: inputPeer,
+      message: $(%*textMessage),
+      random_id: int64(rand(2147483646))
+    ))
+proc handleChannelMessage(message: UpdateNewChannelMessage): Future[void] {.async.} =
+  let contents = message.message
+  # Reacts only if the message is the actually message
+  if contents of Message:
+    let textMessage = contents.Message
+    if textMessage.isout:
+      return
+    # The test program waits for the message "fff"
+    if textMessage.message == "fff":
+      quit 0
+
+    var chatID: InputPeerI
+
+    var inputPeer = await mtprotoClient.resolveInputPeer(textMessage.peer_id)
+    echo %*inputPeer
+    # Preparing to throw the dice...
+    randomize()
+
+    # Send the message
+    discard await mtprotoClient.send(MessagesSendMessage(
+      no_webpage: true,
+      silent: false,
+      background: false,
+      clear_draft: false,
+      peer: inputPeer,
       message: $(%*textMessage),
       random_id: int64(rand(2147483646))
     ))
@@ -66,6 +85,8 @@ proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.}
   discard await mtprotoClient.send(UpdatesGetState())
   # Set the update handler
   mtprotoClient.onUpdateNewMessage(handleMessage)
+  mtprotoClient.onUpdateNewChannelMessage(handleChannelMessage)
+
   # Write text to console, now send `fff` to have the test succseeded
   echo "Client started, send `fff` to the bot"
 

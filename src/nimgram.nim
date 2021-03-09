@@ -5,7 +5,6 @@ import nimgram/private/network/tcp/intermediate
 import nimgram/private/network/transports
 import asyncdispatch
 import tables
-import tables
 import random
 import nimgram/private/shared
 import nimgram/private/utils/auth_key
@@ -31,11 +30,17 @@ type NimgramClient* = ref object
     config: NimgramConfig
     storageManager: NimgramStorage
 
+proc clearCache*(self: NimgramClient): Future[void] {.async.} =
+    self.storageManager.ClearCache()
+
 proc onUpdates*(self: NimgramClient, procedure: proc(updates: UpdatesI): Future[void] {.async.}) =
     self.sessions[self.mainDc].callbackUpdates.onUpdates(procedure)
 
 proc onUpdateNewMessage*(self: NimgramClient, procedure: proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}) =
     self.sessions[self.mainDc].callbackUpdates.onUpdateNewMessage(procedure)
+
+proc onUpdateNewChannelMessage*(self: NimgramClient, procedure: proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}) =
+    self.sessions[self.mainDc].callbackUpdates.onUpdateNewChannelMessage(procedure)
 
 proc onReconnection*(self: NimgramClient, procedure: proc(): Future[void] {.async.}) =
     ## Call the specified procedure when client is reconnected successfully to network (Only main datacenter)
@@ -133,6 +138,33 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         discard
 proc send*(self: NimgramClient, function: TLFunction, waitFor: bool = true): Future[TL] {.async.} =
     result = await self.sessions[self.mainDc].send(function, waitFor)
+
+
+proc resolveInputPeer*(self: NimgramClient, id: int64): Future[InputPeerI] {.async.} =
+    #chat
+    if id < 0 and id > -1000000000000:
+        return InputPeerChat(chat_id: int32(id))
+    var userpeer = await self.storageManager.GetPeer(id)
+    if id < -1000000000000:
+        return InputPeerChannel(channel_id: int32(($id).replace("-100", "").parseBiggestInt), access_hash: userpeer.accessHash)
+    return InputPeerUser(user_id: int32(id), access_hash: userpeer.accessHash)
+
+
+
+proc resolveInputPeer*(self: NimgramClient, peer: PeerI): Future[InputPeerI] {.async.} =
+    #chat
+    if peer of PeerChat:
+        return InputPeerChat(chat_id: peer.PeerChat.chat_id)
+    #channel
+    if peer of PeerChannel:
+        var channelpeer = await self.storageManager.GetPeer(("-100"& ($peer.PeerChannel.channel_id)).parseBiggestInt)
+        return InputPeerChannel(channel_id: peer.PeerChannel.channel_id, access_hash: channelpeer.accessHash)
+    #user
+    if peer of PeerUser:
+        var userpeer = await self.storageManager.GetPeer(peer.PeerUser.user_id)
+        return InputPeerUser(user_id: peer.PeerUser.user_id, access_hash: userpeer.accessHash)
+
+
 
 
 proc botLogin*(self: NimgramClient, token: string) {.async.} =

@@ -8,6 +8,7 @@ when compileOption("threads"):
         success: bool
         exception: ref Exception
         response: string
+        rowResponse: Row
         seqResponse: seq[Row]
 
     type SqlRequest = ref object 
@@ -54,6 +55,14 @@ when compileOption("threads"):
                     response.exception = getCurrentException()
                 request.chnanswer[].send(response)
                 request.event.trigger()
+            if request.queryType == "getRow":
+                try:
+                    response.rowResponse = self.sql.getRow(request.query, request.args)
+                except DbError:
+                    response.success = false
+                    response.exception = getCurrentException()
+                request.chnanswer[].send(response)
+                request.event.trigger()
 
 
 
@@ -68,6 +77,7 @@ when compileOption("threads"):
 
         result.sql = open(filename, "", "", "")
         result.sql.exec(sql"create table if not exists dcoptions( number int constraint table_name_pk primary key, isAuthorized int, isMain int, authKey TEXT, salt TEXT);")
+        result.sql.exec(sql"create table if not exists peerdata ( id int constraint peerdata_pk primary key, access_hash int );")
         createThread(result.worker, worker, result)
  
     proc waitEvent(ev: AsyncEvent): Future[void] =
@@ -122,6 +132,22 @@ when compileOption("threads"):
         if not response.success:
             raise response.exception
         return response.seqResponse
+
+    proc getRow*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[Row] {.async.} =
+        var event = newAsyncEvent()
+        var answerchn =  cast[ptr Channel[SqlResponse]](
+            allocShared0(sizeof(Channel[SqlResponse]))
+        )
+        answerchn[].open()
+        var request = SqlRequest(queryType: "getRow", query: query, args: argss, event: event, chnanswer: answerchn)
+        self.chn[].send(request)
+        await waitEvent(event)
+        var response = answerchn[].recv()
+        answerchn[].close()
+        deallocShared(answerchn) 
+        if not response.success:
+            raise response.exception
+        return response.rowResponse
 
     proc close*(self: SqlManager) = 
         self.execute = false
