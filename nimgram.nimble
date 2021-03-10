@@ -3,7 +3,7 @@
 version       = "0.0.1"
 author        = "dadadani"
 description   = "MTProto client written in Nim"
-license       = "LGPL-3.0"
+license       = "MIT"
 srcDir        = "src"
 
 
