@@ -42,5 +42,5 @@ By default GMP is used to do modular exponentation since is faster than stint's 
 # License
 
 
-Nimgram is distributed and licensed under the LGPL 3.0 License. (See LICENSE)
+Nimgram is distributed and licensed under the MIT License. (See LICENSE)
 
