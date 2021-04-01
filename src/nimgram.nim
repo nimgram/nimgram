@@ -131,6 +131,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         doAssert config of Config, "Failed to get config, type is of " & config.getTypeName()
         result.sessions[result.mainDc].initDone = true
         result.sessions[result.mainDc].resumeConnectionWait.trigger()
+        asyncCheck result.sessions[result.mainDc].checkConnectionLoop()
     except RPCException:
         raise
     except CatchableError:
@@ -222,6 +223,7 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
                     self.isMainAuthorized = true
                     sessions.original[migrateDc].isMain = true
                     await self.storageManager.WriteSessionsInfo(sessions.original)
+                    asyncCheck self.sessions[migrateDC].checkConnectionLoop()
                 except CatchableError:
                     #TODO: Sync response from automatic reconnection, but config now is unused, so not working on that currently
                     discard

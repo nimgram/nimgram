@@ -116,11 +116,15 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
 proc mtprotoInit(self: Session): Future[void] {.async.}
 
 proc startHandler*(self: Session) {.async.} = 
-
     while not self.connection.isClosed():
         var mdata: seq[uint8]
         try:
-            mdata = await self.connection.receive()
+            var asyncReceive = self.connection.receive()
+            var t = await withTimeout(asyncReceive, 11000)
+            if not t:
+                break
+            mdata = asyncReceive.waitFor
+            
         except:
             break
         if len(mdata) == 0:
@@ -264,7 +268,7 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
             var info = await self.storageManager.GetSessionsInfo()
             info[self.dcID].salt = self.serverSalt
             await self.storageManager.WriteSessionsInfo(info)
-            return await self.send(tl)
+            return await self.send(tl, waitResponse, ignoreInitDone)
         if response of Rpc_error:
             var excp = RPCException(errorMessage: response.Rpc_error.error_message, errorCode: response.Rpc_error.error_code)
             excp.msg = response.Rpc_error.error_message
@@ -276,6 +280,14 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
             response = response.InvokeWithTakeout.query
         self.responses.del(data.messageID.int64)
         return response
+
+proc checkConnectionLoop*(self: Session) {.async.} =
+    while not self.connection.isClosed():
+        await sleepAsync(10000)
+        randomize()
+        let pingID = int64(rand(9999))
+        discard await self.send(Ping(ping_id: pingID), false, true)
+
 
 proc mtprotoInit(self: Session): Future[void] {.async.} =
     randomize()
@@ -295,3 +307,4 @@ proc mtprotoInit(self: Session): Future[void] {.async.} =
             lang_pack: self.clientConfig.langPack,
             lang_code: self.clientConfig.langCode,
             query: HelpGetConfig())), false, true)
+    asyncCheck self.checkConnectionLoop()
