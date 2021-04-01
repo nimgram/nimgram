@@ -44,16 +44,12 @@ type
         flags: int32
         muted*: bool
         call*: InputGroupCallI
+        join_as*: InputPeerI
+        invite_hash*: Option[string]
         params*: DataJSONI
     PhoneLeaveGroupCall* = ref object of TLFunction
         call*: InputGroupCallI
         source*: int32
-    PhoneEditGroupCallMember* = ref object of TLFunction
-        flags: int32
-        muted*: bool
-        call*: InputGroupCallI
-        user_id*: InputUserI
-        volume*: Option[int32]
     PhoneInviteToGroupCall* = ref object of TLFunction
         call*: InputGroupCallI
         users*: seq[InputUserI]
@@ -61,19 +57,41 @@ type
         call*: InputGroupCallI
     PhoneToggleGroupCallSettings* = ref object of TLFunction
         flags: int32
+        reset_invite_hash*: bool
         call*: InputGroupCallI
         join_muted*: Option[bool]
     PhoneGetGroupCall* = ref object of TLFunction
         call*: InputGroupCallI
     PhoneGetGroupParticipants* = ref object of TLFunction
         call*: InputGroupCallI
-        ids*: seq[int32]
+        ids*: seq[InputPeerI]
         sources*: seq[int32]
         offset*: string
         limit*: int32
     PhoneCheckGroupCall* = ref object of TLFunction
         call*: InputGroupCallI
         source*: int32
+    PhoneToggleGroupCallRecord* = ref object of TLFunction
+        flags: int32
+        start*: bool
+        call*: InputGroupCallI
+        title*: Option[string]
+    PhoneEditGroupCallParticipant* = ref object of TLFunction
+        flags: int32
+        muted*: bool
+        call*: InputGroupCallI
+        participant*: InputPeerI
+        volume*: Option[int32]
+        raise_hand*: Option[bool]
+    PhoneEditGroupCallTitle* = ref object of TLFunction
+        call*: InputGroupCallI
+        title*: string
+    PhoneGetGroupCallJoinAs* = ref object of TLFunction
+        peer*: InputPeerI
+    PhoneExportGroupCallInvite* = ref object of TLFunction
+        flags: int32
+        can_self_unmute*: bool
+        call*: InputGroupCallI
 method getTypeName*(self: PhoneGetCallConfig): string = "PhoneGetCallConfig"
 method getTypeName*(self: PhoneRequestCall): string = "PhoneRequestCall"
 method getTypeName*(self: PhoneAcceptCall): string = "PhoneAcceptCall"
@@ -86,13 +104,17 @@ method getTypeName*(self: PhoneSendSignalingData): string = "PhoneSendSignalingD
 method getTypeName*(self: PhoneCreateGroupCall): string = "PhoneCreateGroupCall"
 method getTypeName*(self: PhoneJoinGroupCall): string = "PhoneJoinGroupCall"
 method getTypeName*(self: PhoneLeaveGroupCall): string = "PhoneLeaveGroupCall"
-method getTypeName*(self: PhoneEditGroupCallMember): string = "PhoneEditGroupCallMember"
 method getTypeName*(self: PhoneInviteToGroupCall): string = "PhoneInviteToGroupCall"
 method getTypeName*(self: PhoneDiscardGroupCall): string = "PhoneDiscardGroupCall"
 method getTypeName*(self: PhoneToggleGroupCallSettings): string = "PhoneToggleGroupCallSettings"
 method getTypeName*(self: PhoneGetGroupCall): string = "PhoneGetGroupCall"
 method getTypeName*(self: PhoneGetGroupParticipants): string = "PhoneGetGroupParticipants"
 method getTypeName*(self: PhoneCheckGroupCall): string = "PhoneCheckGroupCall"
+method getTypeName*(self: PhoneToggleGroupCallRecord): string = "PhoneToggleGroupCallRecord"
+method getTypeName*(self: PhoneEditGroupCallParticipant): string = "PhoneEditGroupCallParticipant"
+method getTypeName*(self: PhoneEditGroupCallTitle): string = "PhoneEditGroupCallTitle"
+method getTypeName*(self: PhoneGetGroupCallJoinAs): string = "PhoneGetGroupCallJoinAs"
+method getTypeName*(self: PhoneExportGroupCallInvite): string = "PhoneExportGroupCallInvite"
 
 method TLEncode*(self: PhoneGetCallConfig): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x55451fa9))
@@ -217,11 +239,16 @@ method TLDecode*(self: PhoneCreateGroupCall, bytes: var ScalingSeq[uint8]) {.loc
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.random_id)
 method TLEncode*(self: PhoneJoinGroupCall): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x5f9c8e62))
+    result = TLEncode(uint32(0xb132ff7b))
     if self.muted:
         self.flags = self.flags or 1 shl 0
+    if self.invite_hash.isSome():
+        self.flags = self.flags or 1 shl 1
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.call)
+    result = result & TLEncode(self.join_as)
+    if self.invite_hash.isSome():
+        result = result & TLEncode(self.invite_hash.get())
     result = result & TLEncode(self.params)
 method TLDecode*(self: PhoneJoinGroupCall, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
@@ -230,6 +257,10 @@ method TLDecode*(self: PhoneJoinGroupCall, bytes: var ScalingSeq[uint8]) {.locks
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.join_as = cast[InputPeerI](tempObj)
+    if (self.flags and (1 shl 1)) != 0:
+        self.invite_hash = some(cast[string](bytes.TLDecode()))
     tempObj.TLDecode(bytes)
     self.params = cast[DataJSONI](tempObj)
 method TLEncode*(self: PhoneLeaveGroupCall): seq[uint8] {.locks: "unknown".} =
@@ -241,30 +272,6 @@ method TLDecode*(self: PhoneLeaveGroupCall, bytes: var ScalingSeq[uint8]) {.lock
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
     bytes.TLDecode(addr self.source)
-method TLEncode*(self: PhoneEditGroupCallMember): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xa5e76cd8))
-    if self.muted:
-        self.flags = self.flags or 1 shl 0
-    if self.volume.isSome():
-        self.flags = self.flags or 1 shl 1
-    result = result & TLEncode(self.flags)
-    result = result & TLEncode(self.call)
-    result = result & TLEncode(self.user_id)
-    if self.volume.isSome():
-        result = result & TLEncode(self.volume.get())
-method TLDecode*(self: PhoneEditGroupCallMember, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
-    bytes.TLDecode(addr self.flags)
-    if (self.flags and (1 shl 0)) != 0:
-        self.muted = true
-    var tempObj = new TL
-    tempObj.TLDecode(bytes)
-    self.call = cast[InputGroupCallI](tempObj)
-    tempObj.TLDecode(bytes)
-    self.user_id = cast[InputUserI](tempObj)
-    if (self.flags and (1 shl 1)) != 0:
-        var tempVal: int32 = 0
-        bytes.TLDecode(addr tempVal)
-        self.volume = some(tempVal)
 method TLEncode*(self: PhoneInviteToGroupCall): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x7b393160))
     result = result & TLEncode(self.call)
@@ -286,6 +293,8 @@ method TLDecode*(self: PhoneDiscardGroupCall, bytes: var ScalingSeq[uint8]) {.lo
     self.call = cast[InputGroupCallI](tempObj)
 method TLEncode*(self: PhoneToggleGroupCallSettings): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x74bbb43d))
+    if self.reset_invite_hash:
+        self.flags = self.flags or 1 shl 1
     if self.join_muted.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
@@ -294,6 +303,8 @@ method TLEncode*(self: PhoneToggleGroupCallSettings): seq[uint8] {.locks: "unkno
         result = result & TLEncode(self.join_muted.get())
 method TLDecode*(self: PhoneToggleGroupCallSettings, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 1)) != 0:
+        self.reset_invite_hash = true
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
@@ -309,9 +320,9 @@ method TLDecode*(self: PhoneGetGroupCall, bytes: var ScalingSeq[uint8]) {.locks:
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
 method TLEncode*(self: PhoneGetGroupParticipants): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xc9f1d285))
+    result = TLEncode(uint32(0xc558d8ab))
     result = result & TLEncode(self.call)
-    result = result & TLEncode(self.ids)
+    result = result & TLEncode(cast[seq[TL]](self.ids))
     result = result & TLEncode(self.sources)
     result = result & TLEncode(self.offset)
     result = result & TLEncode(self.limit)
@@ -319,7 +330,10 @@ method TLDecode*(self: PhoneGetGroupParticipants, bytes: var ScalingSeq[uint8]) 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
-    bytes.TLDecode(self.ids)
+    var tempVector = newSeq[TL]()
+    tempVector.TLDecode(bytes)
+    self.ids = cast[seq[InputPeerI]](tempVector)
+    tempVector.setLen(0)
     bytes.TLDecode(self.sources)
     self.offset = cast[string](bytes.TLDecode())
     bytes.TLDecode(addr self.limit)
@@ -332,3 +346,83 @@ method TLDecode*(self: PhoneCheckGroupCall, bytes: var ScalingSeq[uint8]) {.lock
     tempObj.TLDecode(bytes)
     self.call = cast[InputGroupCallI](tempObj)
     bytes.TLDecode(addr self.source)
+method TLEncode*(self: PhoneToggleGroupCallRecord): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xc02a66d7))
+    if self.start:
+        self.flags = self.flags or 1 shl 0
+    if self.title.isSome():
+        self.flags = self.flags or 1 shl 1
+    result = result & TLEncode(self.flags)
+    result = result & TLEncode(self.call)
+    if self.title.isSome():
+        result = result & TLEncode(self.title.get())
+method TLDecode*(self: PhoneToggleGroupCallRecord, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.start = true
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.call = cast[InputGroupCallI](tempObj)
+    if (self.flags and (1 shl 1)) != 0:
+        self.title = some(cast[string](bytes.TLDecode()))
+method TLEncode*(self: PhoneEditGroupCallParticipant): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xd975eb80))
+    if self.muted:
+        self.flags = self.flags or 1 shl 0
+    if self.volume.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.raise_hand.isSome():
+        self.flags = self.flags or 1 shl 2
+    result = result & TLEncode(self.flags)
+    result = result & TLEncode(self.call)
+    result = result & TLEncode(self.participant)
+    if self.volume.isSome():
+        result = result & TLEncode(self.volume.get())
+    if self.raise_hand.isSome():
+        result = result & TLEncode(self.raise_hand.get())
+method TLDecode*(self: PhoneEditGroupCallParticipant, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.muted = true
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.call = cast[InputGroupCallI](tempObj)
+    tempObj.TLDecode(bytes)
+    self.participant = cast[InputPeerI](tempObj)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.volume = some(tempVal)
+    if (self.flags and (1 shl 2)) != 0:
+        var tempVal: bool
+        bytes.TLDecode(tempVal)
+        self.raise_hand = some(tempVal)
+method TLEncode*(self: PhoneEditGroupCallTitle): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x1ca6ac0a))
+    result = result & TLEncode(self.call)
+    result = result & TLEncode(self.title)
+method TLDecode*(self: PhoneEditGroupCallTitle, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.call = cast[InputGroupCallI](tempObj)
+    self.title = cast[string](bytes.TLDecode())
+method TLEncode*(self: PhoneGetGroupCallJoinAs): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xef7c213a))
+    result = result & TLEncode(self.peer)
+method TLDecode*(self: PhoneGetGroupCallJoinAs, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+method TLEncode*(self: PhoneExportGroupCallInvite): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xe6aa647f))
+    if self.can_self_unmute:
+        self.flags = self.flags or 1 shl 0
+    result = result & TLEncode(self.flags)
+    result = result & TLEncode(self.call)
+method TLDecode*(self: PhoneExportGroupCallInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 0)) != 0:
+        self.can_self_unmute = true
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.call = cast[InputGroupCallI](tempObj)

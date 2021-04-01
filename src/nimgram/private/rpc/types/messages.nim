@@ -194,6 +194,8 @@ type
     MessagesChatAdminsWithInvites* = ref object of MessagesChatAdminsWithInvitesI
         admins*: seq[ChatAdminWithInvitesI]
         users*: seq[UserI]
+    MessagesCheckedHistoryImportPeer* = ref object of MessagesCheckedHistoryImportPeerI
+        confirm_text*: string
 method getTypeName*(self: MessagesDialogs): string = "MessagesDialogs"
 method getTypeName*(self: MessagesDialogsSlice): string = "MessagesDialogsSlice"
 method getTypeName*(self: MessagesDialogsNotModified): string = "MessagesDialogsNotModified"
@@ -246,6 +248,7 @@ method getTypeName*(self: MessagesExportedChatInvite): string = "MessagesExporte
 method getTypeName*(self: MessagesExportedChatInviteReplaced): string = "MessagesExportedChatInviteReplaced"
 method getTypeName*(self: MessagesChatInviteImporters): string = "MessagesChatInviteImporters"
 method getTypeName*(self: MessagesChatAdminsWithInvites): string = "MessagesChatAdminsWithInvites"
+method getTypeName*(self: MessagesCheckedHistoryImportPeer): string = "MessagesCheckedHistoryImportPeer"
 
 method TLEncode*(self: MessagesDialogs): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x15ba6c40))
@@ -943,3 +946,8 @@ method TLDecode*(self: MessagesChatAdminsWithInvites, bytes: var ScalingSeq[uint
     tempVector.TLDecode(bytes)
     self.users = cast[seq[UserI]](tempVector)
     tempVector.setLen(0)
+method TLEncode*(self: MessagesCheckedHistoryImportPeer): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xa24de717))
+    result = result & TLEncode(self.confirm_text)
+method TLDecode*(self: MessagesCheckedHistoryImportPeer, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    self.confirm_text = cast[string](bytes.TLDecode())

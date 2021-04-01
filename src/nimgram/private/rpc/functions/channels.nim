@@ -23,7 +23,7 @@ type
         hash*: int32
     ChannelsGetParticipant* = ref object of TLFunction
         channel*: InputChannelI
-        user_id*: InputUserI
+        participant*: InputPeerI
     ChannelsGetChannels* = ref object of TLFunction
         id*: seq[InputChannelI]
     ChannelsGetFullChannel* = ref object of TLFunction
@@ -78,7 +78,7 @@ type
         check_limit*: bool
     ChannelsEditBanned* = ref object of TLFunction
         channel*: InputChannelI
-        user_id*: InputUserI
+        participant*: InputPeerI
         banned_rights*: ChatBannedRightsI
     ChannelsGetAdminLog* = ref object of TLFunction
         flags: int32
@@ -227,15 +227,15 @@ method TLDecode*(self: ChannelsGetParticipants, bytes: var ScalingSeq[uint8]) {.
     bytes.TLDecode(addr self.limit)
     bytes.TLDecode(addr self.hash)
 method TLEncode*(self: ChannelsGetParticipant): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x546dd7a6))
+    result = TLEncode(uint32(0xa0ab6cc6))
     result = result & TLEncode(self.channel)
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.participant)
 method TLDecode*(self: ChannelsGetParticipant, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
     tempObj.TLDecode(bytes)
-    self.user_id = cast[InputUserI](tempObj)
+    self.participant = cast[InputPeerI](tempObj)
 method TLEncode*(self: ChannelsGetChannels): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xa7f6bbb))
     result = result & TLEncode(cast[seq[TL]](self.id))
@@ -413,16 +413,16 @@ method TLDecode*(self: ChannelsGetAdminedPublicChannels, bytes: var ScalingSeq[u
     if (self.flags and (1 shl 1)) != 0:
         self.check_limit = true
 method TLEncode*(self: ChannelsEditBanned): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x72796912))
+    result = TLEncode(uint32(0x96e6cd81))
     result = result & TLEncode(self.channel)
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.participant)
     result = result & TLEncode(self.banned_rights)
 method TLDecode*(self: ChannelsEditBanned, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.channel = cast[InputChannelI](tempObj)
     tempObj.TLDecode(bytes)
-    self.user_id = cast[InputUserI](tempObj)
+    self.participant = cast[InputPeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.banned_rights = cast[ChatBannedRightsI](tempObj)
 method TLEncode*(self: ChannelsGetAdminLog): seq[uint8] {.locks: "unknown".} =

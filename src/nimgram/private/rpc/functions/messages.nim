@@ -469,15 +469,18 @@ type
         peer*: InputPeerI
         filters*: seq[MessagesFilterI]
     MessagesRequestUrlAuth* = ref object of TLFunction
-        peer*: InputPeerI
-        msg_id*: int32
-        button_id*: int32
+        flags: int32
+        peer*: Option[InputPeerI]
+        msg_id*: Option[int32]
+        button_id*: Option[int32]
+        url*: Option[string]
     MessagesAcceptUrlAuth* = ref object of TLFunction
         flags: int32
         write_allowed*: bool
-        peer*: InputPeerI
-        msg_id*: int32
-        button_id*: int32
+        peer*: Option[InputPeerI]
+        msg_id*: Option[int32]
+        button_id*: Option[int32]
+        url*: Option[string]
     MessagesHidePeerSettingsBar* = ref object of TLFunction
         peer*: InputPeerI
     MessagesGetScheduledHistory* = ref object of TLFunction
@@ -563,6 +566,9 @@ type
         offset_date*: Option[int32]
         offset_link*: Option[string]
         limit*: int32
+    MessagesGetExportedChatInvite* = ref object of TLFunction
+        peer*: InputPeerI
+        link*: string
     MessagesEditExportedChatInvite* = ref object of TLFunction
         flags: int32
         revoked*: bool
@@ -587,6 +593,8 @@ type
     MessagesSetHistoryTTL* = ref object of TLFunction
         peer*: InputPeerI
         period*: int32
+    MessagesCheckHistoryImportPeer* = ref object of TLFunction
+        peer*: InputPeerI
 method getTypeName*(self: MessagesGetMessages): string = "MessagesGetMessages"
 method getTypeName*(self: MessagesGetDialogs): string = "MessagesGetDialogs"
 method getTypeName*(self: MessagesGetHistory): string = "MessagesGetHistory"
@@ -721,12 +729,14 @@ method getTypeName*(self: MessagesInitHistoryImport): string = "MessagesInitHist
 method getTypeName*(self: MessagesUploadImportedMedia): string = "MessagesUploadImportedMedia"
 method getTypeName*(self: MessagesStartHistoryImport): string = "MessagesStartHistoryImport"
 method getTypeName*(self: MessagesGetExportedChatInvites): string = "MessagesGetExportedChatInvites"
+method getTypeName*(self: MessagesGetExportedChatInvite): string = "MessagesGetExportedChatInvite"
 method getTypeName*(self: MessagesEditExportedChatInvite): string = "MessagesEditExportedChatInvite"
 method getTypeName*(self: MessagesDeleteRevokedExportedChatInvites): string = "MessagesDeleteRevokedExportedChatInvites"
 method getTypeName*(self: MessagesDeleteExportedChatInvite): string = "MessagesDeleteExportedChatInvite"
 method getTypeName*(self: MessagesGetAdminsWithInvites): string = "MessagesGetAdminsWithInvites"
 method getTypeName*(self: MessagesGetChatInviteImporters): string = "MessagesGetChatInviteImporters"
 method getTypeName*(self: MessagesSetHistoryTTL): string = "MessagesSetHistoryTTL"
+method getTypeName*(self: MessagesCheckHistoryImportPeer): string = "MessagesCheckHistoryImportPeer"
 
 method TLEncode*(self: MessagesGetMessages): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x63c66506))
@@ -2283,33 +2293,79 @@ method TLDecode*(self: MessagesGetSearchCounters, bytes: var ScalingSeq[uint8]) 
     self.filters = cast[seq[MessagesFilterI]](tempVector)
     tempVector.setLen(0)
 method TLEncode*(self: MessagesRequestUrlAuth): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xe33f5613))
-    result = result & TLEncode(self.peer)
-    result = result & TLEncode(self.msg_id)
-    result = result & TLEncode(self.button_id)
+    result = TLEncode(uint32(0x198fb446))
+    if self.peer.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.msg_id.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.button_id.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.url.isSome():
+        self.flags = self.flags or 1 shl 2
+    result = result & TLEncode(self.flags)
+    if self.peer.isSome():
+        result = result & TLEncode(self.peer.get())
+    if self.msg_id.isSome():
+        result = result & TLEncode(self.msg_id.get())
+    if self.button_id.isSome():
+        result = result & TLEncode(self.button_id.get())
+    if self.url.isSome():
+        result = result & TLEncode(self.url.get())
 method TLDecode*(self: MessagesRequestUrlAuth, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
-    var tempObj = new TL
-    tempObj.TLDecode(bytes)
-    self.peer = cast[InputPeerI](tempObj)
-    bytes.TLDecode(addr self.msg_id)
-    bytes.TLDecode(addr self.button_id)
+    bytes.TLDecode(addr self.flags)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.peer = some(tempVal.InputPeerI)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.msg_id = some(tempVal)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.button_id = some(tempVal)
+    if (self.flags and (1 shl 2)) != 0:
+        self.url = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: MessagesAcceptUrlAuth): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xf729ea98))
+    result = TLEncode(uint32(0xb12c7125))
     if self.write_allowed:
         self.flags = self.flags or 1 shl 0
+    if self.peer.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.msg_id.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.button_id.isSome():
+        self.flags = self.flags or 1 shl 1
+    if self.url.isSome():
+        self.flags = self.flags or 1 shl 2
     result = result & TLEncode(self.flags)
-    result = result & TLEncode(self.peer)
-    result = result & TLEncode(self.msg_id)
-    result = result & TLEncode(self.button_id)
+    if self.peer.isSome():
+        result = result & TLEncode(self.peer.get())
+    if self.msg_id.isSome():
+        result = result & TLEncode(self.msg_id.get())
+    if self.button_id.isSome():
+        result = result & TLEncode(self.button_id.get())
+    if self.url.isSome():
+        result = result & TLEncode(self.url.get())
 method TLDecode*(self: MessagesAcceptUrlAuth, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.write_allowed = true
-    var tempObj = new TL
-    tempObj.TLDecode(bytes)
-    self.peer = cast[InputPeerI](tempObj)
-    bytes.TLDecode(addr self.msg_id)
-    bytes.TLDecode(addr self.button_id)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.peer = some(tempVal.InputPeerI)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.msg_id = some(tempVal)
+    if (self.flags and (1 shl 1)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.button_id = some(tempVal)
+    if (self.flags and (1 shl 2)) != 0:
+        self.url = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: MessagesHidePeerSettingsBar): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x4facb138))
     result = result & TLEncode(self.peer)
@@ -2573,6 +2629,15 @@ method TLDecode*(self: MessagesGetExportedChatInvites, bytes: var ScalingSeq[uin
     if (self.flags and (1 shl 2)) != 0:
         self.offset_link = some(cast[string](bytes.TLDecode()))
     bytes.TLDecode(addr self.limit)
+method TLEncode*(self: MessagesGetExportedChatInvite): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x73746f5c))
+    result = result & TLEncode(self.peer)
+    result = result & TLEncode(self.link)
+method TLDecode*(self: MessagesGetExportedChatInvite, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)
+    self.link = cast[string](bytes.TLDecode())
 method TLEncode*(self: MessagesEditExportedChatInvite): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x2e4ffbe))
     if self.revoked:
@@ -2655,3 +2720,10 @@ method TLDecode*(self: MessagesSetHistoryTTL, bytes: var ScalingSeq[uint8]) {.lo
     tempObj.TLDecode(bytes)
     self.peer = cast[InputPeerI](tempObj)
     bytes.TLDecode(addr self.period)
+method TLEncode*(self: MessagesCheckHistoryImportPeer): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0x5dc60f03))
+    result = result & TLEncode(self.peer)
+method TLDecode*(self: MessagesCheckHistoryImportPeer, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[InputPeerI](tempObj)

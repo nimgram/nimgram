@@ -145,7 +145,7 @@ proc seqNo*(self: TL, currentInt: int): int =
         related = 0
     var fdasfd = currentInt + (2 * related)
     return fdasfd
-const LAYER_VERSION* = 124
+const LAYER_VERSION* = 126
 
 proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = 
         var id: uint32
@@ -1461,12 +1461,12 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xe33f5613):
+        of uint32(0x198fb446):
             var tmp = new MessagesRequestUrlAuth
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xf729ea98):
+        of uint32(0xb12c7125):
             var tmp = new MessagesAcceptUrlAuth
             tmp.TLDecode(bytes)
             self = tmp
@@ -1586,6 +1586,11 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
+        of uint32(0x73746f5c):
+            var tmp = new MessagesGetExportedChatInvite
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
         of uint32(0x2e4ffbe):
             var tmp = new MessagesEditExportedChatInvite
             tmp.TLDecode(bytes)
@@ -1613,6 +1618,11 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             return
         of uint32(0xb80e5fe4):
             var tmp = new MessagesSetHistoryTTL
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x5dc60f03):
+            var tmp = new MessagesCheckHistoryImportPeer
             tmp.TLDecode(bytes)
             self = tmp
             return
@@ -1831,7 +1841,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x546dd7a6):
+        of uint32(0xa0ab6cc6):
             var tmp = new ChannelsGetParticipant
             tmp.TLDecode(bytes)
             self = tmp
@@ -1911,7 +1921,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x72796912):
+        of uint32(0x96e6cd81):
             var tmp = new ChannelsEditBanned
             tmp.TLDecode(bytes)
             self = tmp
@@ -2106,18 +2116,13 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x5f9c8e62):
+        of uint32(0xb132ff7b):
             var tmp = new PhoneJoinGroupCall
             tmp.TLDecode(bytes)
             self = tmp
             return
         of uint32(0x500377f9):
             var tmp = new PhoneLeaveGroupCall
-            tmp.TLDecode(bytes)
-            self = tmp
-            return
-        of uint32(0xa5e76cd8):
-            var tmp = new PhoneEditGroupCallMember
             tmp.TLDecode(bytes)
             self = tmp
             return
@@ -2141,13 +2146,38 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xc9f1d285):
+        of uint32(0xc558d8ab):
             var tmp = new PhoneGetGroupParticipants
             tmp.TLDecode(bytes)
             self = tmp
             return
         of uint32(0xb74a7bea):
             var tmp = new PhoneCheckGroupCall
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xc02a66d7):
+            var tmp = new PhoneToggleGroupCallRecord
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xd975eb80):
+            var tmp = new PhoneEditGroupCallParticipant
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x1ca6ac0a):
+            var tmp = new PhoneEditGroupCallTitle
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xef7c213a):
+            var tmp = new PhoneGetGroupCallJoinAs
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xe6aa647f):
+            var tmp = new PhoneExportGroupCallInvite
             tmp.TLDecode(bytes)
             self = tmp
             return
@@ -2436,6 +2466,11 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
+        of uint32(0xbba51639):
+            var tmp = new InputGroupCallStream
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
         of uint32(0x9db1bc6d):
             var tmp = new PeerUser
             tmp.TLDecode(bytes)
@@ -2576,12 +2611,12 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xf06c4018):
+        of uint32(0x8a1e2983):
             var tmp = new ChatFull
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x2548c037):
+        of uint32(0x548c3f93):
             var tmp = new ChannelFull
             tmp.TLDecode(bytes)
             self = tmp
@@ -3206,7 +3241,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x9a65ea1f):
+        of uint32(0x86cadb6c):
             var tmp = new UpdateChatUserTyping
             tmp.TLDecode(bytes)
             self = tmp
@@ -3591,7 +3626,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xff2abe9f):
+        of uint32(0x6b171718):
             var tmp = new UpdateChannelUserTyping
             tmp.TLDecode(bytes)
             self = tmp
@@ -3626,17 +3661,17 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x609a6ed4):
+        of uint32(0xf3b3781f):
             var tmp = new UpdateChatParticipant
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x65d2b464):
+        of uint32(0x7fecb1ec):
             var tmp = new UpdateChannelParticipant
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x30ec6ebc):
+        of uint32(0x7f9488a):
             var tmp = new UpdateBotStopped
             tmp.TLDecode(bytes)
             self = tmp
@@ -4571,12 +4606,12 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x1c0facaf):
+        of uint32(0x50a1dfd6):
             var tmp = new ChannelParticipantBanned
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xc3c6796b):
+        of uint32(0x1b03f006):
             var tmp = new ChannelParticipantLeft
             tmp.TLDecode(bytes)
             self = tmp
@@ -4621,7 +4656,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xf56ee2a8):
+        of uint32(0x9ab0feaf):
             var tmp = new ChannelsChannelParticipants
             tmp.TLDecode(bytes)
             self = tmp
@@ -4631,7 +4666,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0xd0d9b163):
+        of uint32(0xdfb80317):
             var tmp = new ChannelsChannelParticipant
             tmp.TLDecode(bytes)
             self = tmp
@@ -6551,7 +6586,7 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x55903081):
+        of uint32(0xc0c2052e):
             var tmp = new GroupCall
             tmp.TLDecode(bytes)
             self = tmp
@@ -6561,17 +6596,17 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x64c62a15):
+        of uint32(0x19adba89):
             var tmp = new GroupCallParticipant
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x66ab0bfc):
+        of uint32(0x9e727aad):
             var tmp = new PhoneGroupCall
             tmp.TLDecode(bytes)
             self = tmp
             return
-        of uint32(0x9cfeb92d):
+        of uint32(0xf47751b6):
             var tmp = new PhoneGroupParticipants
             tmp.TLDecode(bytes)
             self = tmp
@@ -6648,6 +6683,21 @@ proc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) =
             return
         of uint32(0xb69b72d7):
             var tmp = new MessagesChatAdminsWithInvites
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xa24de717):
+            var tmp = new MessagesCheckedHistoryImportPeer
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0xafe5623f):
+            var tmp = new PhoneJoinAsPeers
+            tmp.TLDecode(bytes)
+            self = tmp
+            return
+        of uint32(0x204bd158):
+            var tmp = new PhoneExportedGroupCallInvite
             tmp.TLDecode(bytes)
             self = tmp
             return

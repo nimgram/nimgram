@@ -620,6 +620,12 @@ type
 
     MessagesChatAdminsWithInvitesI* = ref object of TLObject
 
+    MessagesCheckedHistoryImportPeerI* = ref object of TLObject
+
+    PhoneJoinAsPeersI* = ref object of TLObject
+
+    PhoneExportedGroupCallInviteI* = ref object of TLObject
+
 include auth, photos, account, stats, help, messages, payments, phone, storage, contacts, updates, channels, upload
 type
     InputPeerEmpty* = ref object of InputPeerI
@@ -795,6 +801,10 @@ type
         stickerset*: InputStickerSetI
         volume_id*: int64
         local_id*: int32
+    InputGroupCallStream* = ref object of InputFileLocationI
+        call*: InputGroupCallI
+        time_ms*: int64
+        scale*: int32
     PeerUser* = ref object of PeerI
         user_id*: int32
     PeerChat* = ref object of PeerI
@@ -923,6 +933,7 @@ type
         folder_id*: Option[int32]
         call*: Option[InputGroupCallI]
         ttl_period*: Option[int32]
+        groupcall_default_join_as*: Option[PeerI]
     ChannelFull* = ref object of ChatFullI
         flags: int32
         can_view_participants*: bool
@@ -962,6 +973,7 @@ type
         call*: Option[InputGroupCallI]
         ttl_period*: Option[int32]
         pending_suggestions*: Option[seq[string]]
+        groupcall_default_join_as*: Option[PeerI]
     ChatParticipant* = ref object of ChatParticipantI
         user_id*: int32
         inviter_id*: int32
@@ -1339,7 +1351,7 @@ type
         action*: SendMessageActionI
     UpdateChatUserTyping* = ref object of UpdateI
         chat_id*: int32
-        user_id*: int32
+        from_id*: PeerI
         action*: SendMessageActionI
     UpdateChatParticipants* = ref object of UpdateI
         participants*: ChatParticipantsI
@@ -1624,7 +1636,7 @@ type
         flags: int32
         channel_id*: int32
         top_msg_id*: Option[int32]
-        user_id*: int32
+        from_id*: PeerI
         action*: SendMessageActionI
     UpdatePinnedMessages* = ref object of UpdateI
         flags: int32
@@ -1657,20 +1669,25 @@ type
         flags: int32
         chat_id*: int32
         date*: int32
+        actor_id*: int32
         user_id*: int32
         prev_participant*: Option[ChatParticipantI]
         new_participant*: Option[ChatParticipantI]
+        invite*: Option[ExportedChatInviteI]
         qts*: int32
     UpdateChannelParticipant* = ref object of UpdateI
         flags: int32
         channel_id*: int32
         date*: int32
+        actor_id*: int32
         user_id*: int32
         prev_participant*: Option[ChannelParticipantI]
         new_participant*: Option[ChannelParticipantI]
+        invite*: Option[ExportedChatInviteI]
         qts*: int32
     UpdateBotStopped* = ref object of UpdateI
         user_id*: int32
+        date*: int32
         stopped*: bool
         qts*: int32
     UpdatesTooLong* = ref object of UpdatesI
@@ -2247,12 +2264,12 @@ type
     ChannelParticipantBanned* = ref object of ChannelParticipantI
         flags: int32
         left*: bool
-        user_id*: int32
+        peer*: PeerI
         kicked_by*: int32
         date*: int32
         banned_rights*: ChatBannedRightsI
     ChannelParticipantLeft* = ref object of ChannelParticipantI
-        user_id*: int32
+        peer*: PeerI
     ChannelParticipantsRecent* = ref object of ChannelParticipantsFilterI
     ChannelParticipantsAdmins* = ref object of ChannelParticipantsFilterI
     ChannelParticipantsKicked* = ref object of ChannelParticipantsFilterI
@@ -3448,10 +3465,14 @@ type
         flags: int32
         join_muted*: bool
         can_change_join_muted*: bool
+        join_date_asc*: bool
         id*: int64
         access_hash*: int64
         participants_count*: int32
         params*: Option[DataJSONI]
+        title*: Option[string]
+        stream_dc_id*: Option[int32]
+        record_start_date*: Option[int32]
         version*: int32
     InputGroupCall* = ref object of InputGroupCallI
         id*: int64
@@ -3466,11 +3487,14 @@ type
         min*: bool
         muted_by_you*: bool
         volume_by_admin*: bool
-        user_id*: int32
+        self*: bool
+        peer*: PeerI
         date*: int32
         active_date*: Option[int32]
         source*: int32
         volume*: Option[int32]
+        about*: Option[string]
+        raise_hand_rating*: Option[int64]
     InlineQueryPeerTypeSameBotPM* = ref object of InlineQueryPeerTypeI
     InlineQueryPeerTypePM* = ref object of InlineQueryPeerTypeI
     InlineQueryPeerTypeChat* = ref object of InlineQueryPeerTypeI
@@ -3529,6 +3553,7 @@ method getTypeName*(self: InputPhotoFileLocation): string = "InputPhotoFileLocat
 method getTypeName*(self: InputPhotoLegacyFileLocation): string = "InputPhotoLegacyFileLocation"
 method getTypeName*(self: InputPeerPhotoFileLocation): string = "InputPeerPhotoFileLocation"
 method getTypeName*(self: InputStickerSetThumb): string = "InputStickerSetThumb"
+method getTypeName*(self: InputGroupCallStream): string = "InputGroupCallStream"
 method getTypeName*(self: PeerUser): string = "PeerUser"
 method getTypeName*(self: PeerChat): string = "PeerChat"
 method getTypeName*(self: PeerChannel): string = "PeerChannel"
@@ -4780,6 +4805,17 @@ method TLDecode*(self: InputStickerSetThumb, bytes: var ScalingSeq[uint8]) {.loc
     self.stickerset = cast[InputStickerSetI](tempObj)
     bytes.TLDecode(addr self.volume_id)
     bytes.TLDecode(addr self.local_id)
+method TLEncode*(self: InputGroupCallStream): seq[uint8] {.locks: "unknown".} =
+    result = TLEncode(uint32(0xbba51639))
+    result = result & TLEncode(self.call)
+    result = result & TLEncode(self.time_ms)
+    result = result & TLEncode(self.scale)
+method TLDecode*(self: InputGroupCallStream, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.call = cast[InputGroupCallI](tempObj)
+    bytes.TLDecode(addr self.time_ms)
+    bytes.TLDecode(addr self.scale)
 method TLEncode*(self: PeerUser): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x9db1bc6d))
     result = result & TLEncode(self.user_id)
@@ -5235,7 +5271,7 @@ method TLDecode*(self: ChannelForbidden, bytes: var ScalingSeq[uint8]) {.locks: 
         bytes.TLDecode(addr tempVal)
         self.until_date = some(tempVal)
 method TLEncode*(self: ChatFull): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xf06c4018))
+    result = TLEncode(uint32(0x8a1e2983))
     if self.can_set_username:
         self.flags = self.flags or 1 shl 7
     if self.has_scheduled:
@@ -5254,6 +5290,8 @@ method TLEncode*(self: ChatFull): seq[uint8] {.locks: "unknown".} =
         self.flags = self.flags or 1 shl 12
     if self.ttl_period.isSome():
         self.flags = self.flags or 1 shl 14
+    if self.groupcall_default_join_as.isSome():
+        self.flags = self.flags or 1 shl 15
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.about)
@@ -5273,6 +5311,8 @@ method TLEncode*(self: ChatFull): seq[uint8] {.locks: "unknown".} =
         result = result & TLEncode(self.call.get())
     if self.ttl_period.isSome():
         result = result & TLEncode(self.ttl_period.get())
+    if self.groupcall_default_join_as.isSome():
+        result = result & TLEncode(self.groupcall_default_join_as.get())
 method TLDecode*(self: ChatFull, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 7)) != 0:
@@ -5314,8 +5354,12 @@ method TLDecode*(self: ChatFull, bytes: var ScalingSeq[uint8]) {.locks: "unknown
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.ttl_period = some(tempVal)
+    if (self.flags and (1 shl 15)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.groupcall_default_join_as = some(tempVal.PeerI)
 method TLEncode*(self: ChannelFull): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x2548c037))
+    result = TLEncode(uint32(0x548c3f93))
     if self.can_view_participants:
         self.flags = self.flags or 1 shl 3
     if self.can_set_username:
@@ -5372,6 +5416,8 @@ method TLEncode*(self: ChannelFull): seq[uint8] {.locks: "unknown".} =
         self.flags = self.flags or 1 shl 24
     if self.pending_suggestions.isSome():
         self.flags = self.flags or 1 shl 25
+    if self.groupcall_default_join_as.isSome():
+        self.flags = self.flags or 1 shl 26
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.about)
@@ -5422,6 +5468,8 @@ method TLEncode*(self: ChannelFull): seq[uint8] {.locks: "unknown".} =
         result = result & TLEncode(self.ttl_period.get())
     if self.pending_suggestions.isSome():
         result = result & TLEncode(cast[seq[TL]](self.pending_suggestions.get()))
+    if self.groupcall_default_join_as.isSome():
+        result = result & TLEncode(self.groupcall_default_join_as.get())
 method TLDecode*(self: ChannelFull, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 3)) != 0:
@@ -5533,6 +5581,10 @@ method TLDecode*(self: ChannelFull, bytes: var ScalingSeq[uint8]) {.locks: "unkn
         self.ttl_period = some(tempVal)
     if (self.flags and (1 shl 25)) != 0:
         self.pending_suggestions = some(cast[seq[string]](bytes.TLDecodeSeq()))
+    if (self.flags and (1 shl 26)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.groupcall_default_join_as = some(tempVal.PeerI)
 method TLEncode*(self: ChatParticipant): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xc8d7493e))
     result = result & TLEncode(self.user_id)
@@ -6905,14 +6957,15 @@ method TLDecode*(self: UpdateUserTyping, bytes: var ScalingSeq[uint8]) {.locks: 
     tempObj.TLDecode(bytes)
     self.action = cast[SendMessageActionI](tempObj)
 method TLEncode*(self: UpdateChatUserTyping): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x9a65ea1f))
+    result = TLEncode(uint32(0x86cadb6c))
     result = result & TLEncode(self.chat_id)
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.from_id)
     result = result & TLEncode(self.action)
 method TLDecode*(self: UpdateChatUserTyping, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.chat_id)
-    bytes.TLDecode(addr self.user_id)
     var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.from_id = cast[PeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.action = cast[SendMessageActionI](tempObj)
 method TLEncode*(self: UpdateChatParticipants): seq[uint8] {.locks: "unknown".} =
@@ -7771,14 +7824,14 @@ method TLDecode*(self: UpdatePeerBlocked, bytes: var ScalingSeq[uint8]) {.locks:
     self.peer_id = cast[PeerI](tempObj)
     bytes.TLDecode(self.blocked)
 method TLEncode*(self: UpdateChannelUserTyping): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xff2abe9f))
+    result = TLEncode(uint32(0x6b171718))
     if self.top_msg_id.isSome():
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.channel_id)
     if self.top_msg_id.isSome():
         result = result & TLEncode(self.top_msg_id.get())
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.from_id)
     result = result & TLEncode(self.action)
 method TLDecode*(self: UpdateChannelUserTyping, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
@@ -7787,8 +7840,9 @@ method TLDecode*(self: UpdateChannelUserTyping, bytes: var ScalingSeq[uint8]) {.
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.top_msg_id = some(tempVal)
-    bytes.TLDecode(addr self.user_id)
     var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.from_id = cast[PeerI](tempObj)
     tempObj.TLDecode(bytes)
     self.action = cast[SendMessageActionI](tempObj)
 method TLEncode*(self: UpdatePinnedMessages): seq[uint8] {.locks: "unknown".} =
@@ -7873,24 +7927,30 @@ method TLDecode*(self: UpdatePeerHistoryTTL, bytes: var ScalingSeq[uint8]) {.loc
         bytes.TLDecode(addr tempVal)
         self.ttl_period = some(tempVal)
 method TLEncode*(self: UpdateChatParticipant): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x609a6ed4))
+    result = TLEncode(uint32(0xf3b3781f))
     if self.prev_participant.isSome():
         self.flags = self.flags or 1 shl 0
     if self.new_participant.isSome():
         self.flags = self.flags or 1 shl 1
+    if self.invite.isSome():
+        self.flags = self.flags or 1 shl 2
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.chat_id)
     result = result & TLEncode(self.date)
+    result = result & TLEncode(self.actor_id)
     result = result & TLEncode(self.user_id)
     if self.prev_participant.isSome():
         result = result & TLEncode(self.prev_participant.get())
     if self.new_participant.isSome():
         result = result & TLEncode(self.new_participant.get())
+    if self.invite.isSome():
+        result = result & TLEncode(self.invite.get())
     result = result & TLEncode(self.qts)
 method TLDecode*(self: UpdateChatParticipant, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.chat_id)
     bytes.TLDecode(addr self.date)
+    bytes.TLDecode(addr self.actor_id)
     bytes.TLDecode(addr self.user_id)
     if (self.flags and (1 shl 0)) != 0:
         var tempVal = new TL
@@ -7900,26 +7960,36 @@ method TLDecode*(self: UpdateChatParticipant, bytes: var ScalingSeq[uint8]) {.lo
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.new_participant = some(tempVal.ChatParticipantI)
+    if (self.flags and (1 shl 2)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.invite = some(tempVal.ExportedChatInviteI)
     bytes.TLDecode(addr self.qts)
 method TLEncode*(self: UpdateChannelParticipant): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x65d2b464))
+    result = TLEncode(uint32(0x7fecb1ec))
     if self.prev_participant.isSome():
         self.flags = self.flags or 1 shl 0
     if self.new_participant.isSome():
         self.flags = self.flags or 1 shl 1
+    if self.invite.isSome():
+        self.flags = self.flags or 1 shl 2
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.channel_id)
     result = result & TLEncode(self.date)
+    result = result & TLEncode(self.actor_id)
     result = result & TLEncode(self.user_id)
     if self.prev_participant.isSome():
         result = result & TLEncode(self.prev_participant.get())
     if self.new_participant.isSome():
         result = result & TLEncode(self.new_participant.get())
+    if self.invite.isSome():
+        result = result & TLEncode(self.invite.get())
     result = result & TLEncode(self.qts)
 method TLDecode*(self: UpdateChannelParticipant, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     bytes.TLDecode(addr self.channel_id)
     bytes.TLDecode(addr self.date)
+    bytes.TLDecode(addr self.actor_id)
     bytes.TLDecode(addr self.user_id)
     if (self.flags and (1 shl 0)) != 0:
         var tempVal = new TL
@@ -7929,14 +7999,20 @@ method TLDecode*(self: UpdateChannelParticipant, bytes: var ScalingSeq[uint8]) {
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.new_participant = some(tempVal.ChannelParticipantI)
+    if (self.flags and (1 shl 2)) != 0:
+        var tempVal = new TL
+        tempVal.TLDecode(bytes)
+        self.invite = some(tempVal.ExportedChatInviteI)
     bytes.TLDecode(addr self.qts)
 method TLEncode*(self: UpdateBotStopped): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x30ec6ebc))
+    result = TLEncode(uint32(0x7f9488a))
     result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.date)
     result = result & TLEncode(self.stopped)
     result = result & TLEncode(self.qts)
 method TLDecode*(self: UpdateBotStopped, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.user_id)
+    bytes.TLDecode(addr self.date)
     bytes.TLDecode(self.stopped)
     bytes.TLDecode(addr self.qts)
 method TLEncode*(self: UpdatesTooLong): seq[uint8] {.locks: "unknown".} =
@@ -9758,11 +9834,11 @@ method TLDecode*(self: ChannelParticipantAdmin, bytes: var ScalingSeq[uint8]) {.
     if (self.flags and (1 shl 2)) != 0:
         self.rank = some(cast[string](bytes.TLDecode()))
 method TLEncode*(self: ChannelParticipantBanned): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x1c0facaf))
+    result = TLEncode(uint32(0x50a1dfd6))
     if self.left:
         self.flags = self.flags or 1 shl 0
     result = result & TLEncode(self.flags)
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.peer)
     result = result & TLEncode(self.kicked_by)
     result = result & TLEncode(self.date)
     result = result & TLEncode(self.banned_rights)
@@ -9770,17 +9846,20 @@ method TLDecode*(self: ChannelParticipantBanned, bytes: var ScalingSeq[uint8]) {
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
         self.left = true
-    bytes.TLDecode(addr self.user_id)
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[PeerI](tempObj)
     bytes.TLDecode(addr self.kicked_by)
     bytes.TLDecode(addr self.date)
-    var tempObj = new TL
     tempObj.TLDecode(bytes)
     self.banned_rights = cast[ChatBannedRightsI](tempObj)
 method TLEncode*(self: ChannelParticipantLeft): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0xc3c6796b))
-    result = result & TLEncode(self.user_id)
+    result = TLEncode(uint32(0x1b03f006))
+    result = result & TLEncode(self.peer)
 method TLDecode*(self: ChannelParticipantLeft, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
-    bytes.TLDecode(addr self.user_id)
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[PeerI](tempObj)
 method TLEncode*(self: ChannelParticipantsRecent): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xde3f3c79))
 method TLDecode*(self: ChannelParticipantsRecent, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
@@ -13825,19 +13904,33 @@ method TLDecode*(self: GroupCallDiscarded, bytes: var ScalingSeq[uint8]) {.locks
     bytes.TLDecode(addr self.access_hash)
     bytes.TLDecode(addr self.duration)
 method TLEncode*(self: GroupCall): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x55903081))
+    result = TLEncode(uint32(0xc0c2052e))
     if self.join_muted:
         self.flags = self.flags or 1 shl 1
     if self.can_change_join_muted:
         self.flags = self.flags or 1 shl 2
+    if self.join_date_asc:
+        self.flags = self.flags or 1 shl 6
     if self.params.isSome():
         self.flags = self.flags or 1 shl 0
+    if self.title.isSome():
+        self.flags = self.flags or 1 shl 3
+    if self.stream_dc_id.isSome():
+        self.flags = self.flags or 1 shl 4
+    if self.record_start_date.isSome():
+        self.flags = self.flags or 1 shl 5
     result = result & TLEncode(self.flags)
     result = result & TLEncode(self.id)
     result = result & TLEncode(self.access_hash)
     result = result & TLEncode(self.participants_count)
     if self.params.isSome():
         result = result & TLEncode(self.params.get())
+    if self.title.isSome():
+        result = result & TLEncode(self.title.get())
+    if self.stream_dc_id.isSome():
+        result = result & TLEncode(self.stream_dc_id.get())
+    if self.record_start_date.isSome():
+        result = result & TLEncode(self.record_start_date.get())
     result = result & TLEncode(self.version)
 method TLDecode*(self: GroupCall, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
@@ -13845,6 +13938,8 @@ method TLDecode*(self: GroupCall, bytes: var ScalingSeq[uint8]) {.locks: "unknow
         self.join_muted = true
     if (self.flags and (1 shl 2)) != 0:
         self.can_change_join_muted = true
+    if (self.flags and (1 shl 6)) != 0:
+        self.join_date_asc = true
     bytes.TLDecode(addr self.id)
     bytes.TLDecode(addr self.access_hash)
     bytes.TLDecode(addr self.participants_count)
@@ -13852,6 +13947,16 @@ method TLDecode*(self: GroupCall, bytes: var ScalingSeq[uint8]) {.locks: "unknow
         var tempVal = new TL
         tempVal.TLDecode(bytes)
         self.params = some(tempVal.DataJSONI)
+    if (self.flags and (1 shl 3)) != 0:
+        self.title = some(cast[string](bytes.TLDecode()))
+    if (self.flags and (1 shl 4)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.stream_dc_id = some(tempVal)
+    if (self.flags and (1 shl 5)) != 0:
+        var tempVal: int32 = 0
+        bytes.TLDecode(addr tempVal)
+        self.record_start_date = some(tempVal)
     bytes.TLDecode(addr self.version)
 method TLEncode*(self: InputGroupCall): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0xd8aa840f))
@@ -13861,7 +13966,7 @@ method TLDecode*(self: InputGroupCall, bytes: var ScalingSeq[uint8]) {.locks: "u
     bytes.TLDecode(addr self.id)
     bytes.TLDecode(addr self.access_hash)
 method TLEncode*(self: GroupCallParticipant): seq[uint8] {.locks: "unknown".} =
-    result = TLEncode(uint32(0x64c62a15))
+    result = TLEncode(uint32(0x19adba89))
     if self.muted:
         self.flags = self.flags or 1 shl 0
     if self.left:
@@ -13878,18 +13983,28 @@ method TLEncode*(self: GroupCallParticipant): seq[uint8] {.locks: "unknown".} =
         self.flags = self.flags or 1 shl 9
     if self.volume_by_admin:
         self.flags = self.flags or 1 shl 10
+    if self.self:
+        self.flags = self.flags or 1 shl 12
     if self.active_date.isSome():
         self.flags = self.flags or 1 shl 3
     if self.volume.isSome():
         self.flags = self.flags or 1 shl 7
+    if self.about.isSome():
+        self.flags = self.flags or 1 shl 11
+    if self.raise_hand_rating.isSome():
+        self.flags = self.flags or 1 shl 13
     result = result & TLEncode(self.flags)
-    result = result & TLEncode(self.user_id)
+    result = result & TLEncode(self.peer)
     result = result & TLEncode(self.date)
     if self.active_date.isSome():
         result = result & TLEncode(self.active_date.get())
     result = result & TLEncode(self.source)
     if self.volume.isSome():
         result = result & TLEncode(self.volume.get())
+    if self.about.isSome():
+        result = result & TLEncode(self.about.get())
+    if self.raise_hand_rating.isSome():
+        result = result & TLEncode(self.raise_hand_rating.get())
 method TLDecode*(self: GroupCallParticipant, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
     bytes.TLDecode(addr self.flags)
     if (self.flags and (1 shl 0)) != 0:
@@ -13908,7 +14023,11 @@ method TLDecode*(self: GroupCallParticipant, bytes: var ScalingSeq[uint8]) {.loc
         self.muted_by_you = true
     if (self.flags and (1 shl 10)) != 0:
         self.volume_by_admin = true
-    bytes.TLDecode(addr self.user_id)
+    if (self.flags and (1 shl 12)) != 0:
+        self.self = true
+    var tempObj = new TL
+    tempObj.TLDecode(bytes)
+    self.peer = cast[PeerI](tempObj)
     bytes.TLDecode(addr self.date)
     if (self.flags and (1 shl 3)) != 0:
         var tempVal: int32 = 0
@@ -13919,6 +14038,12 @@ method TLDecode*(self: GroupCallParticipant, bytes: var ScalingSeq[uint8]) {.loc
         var tempVal: int32 = 0
         bytes.TLDecode(addr tempVal)
         self.volume = some(tempVal)
+    if (self.flags and (1 shl 11)) != 0:
+        self.about = some(cast[string](bytes.TLDecode()))
+    if (self.flags and (1 shl 13)) != 0:
+        var tempVal: int64 = 0
+        bytes.TLDecode(addr tempVal)
+        self.raise_hand_rating = some(tempVal)
 method TLEncode*(self: InlineQueryPeerTypeSameBotPM): seq[uint8] {.locks: "unknown".} =
     result = TLEncode(uint32(0x3081ed9d))
 method TLDecode*(self: InlineQueryPeerTypeSameBotPM, bytes: var ScalingSeq[uint8]) {.locks: "unknown".} = 
