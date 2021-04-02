@@ -7,6 +7,7 @@ import asyncdispatch
 import crypto/aes
 import stew/endians2
 import nimcrypto
+import utils/logging
 import math
 import updates
 import shared
@@ -32,6 +33,7 @@ type Session* = ref object
     serverSalt: seq[uint8]
     dcID: int
     activeReceiver: bool
+    logger: Logger
     sessionID: seq[uint8] 
     seqNo: int 
     callbackUpdates*: UpdatesCallback
@@ -48,7 +50,7 @@ proc messageID(self: Session): uint64 =
         result = self.maxMessageID + 4
     self.maxMessageID = result
 
-proc initSession*(connection: MTProtoNetwork, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], storageManager: NimgramStorage, config: NimgramConfig): Session =
+proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], storageManager: NimgramStorage, config: NimgramConfig): Session =
     result = new Session
     result.acks = newSeq[int64](0)
     result.connection = connection
@@ -128,8 +130,11 @@ proc startHandler*(self: Session) {.async.} =
         except:
             break
         if len(mdata) == 0:
+            self.logger.log(lvlError, &"Received 0 bytes from socket")
+
             break
         if len(mdata) == 4:
+            self.logger.log(lvlError, &"Error response from Telegram")
             #TODO: How i can handle this?
             raise newException(CatchableError, "invalid response: " & $(cast[int32](fromBytes(uint32, mdata))))
         var coreMessageDecrypted = self.decrypt(mdata)
@@ -161,6 +166,8 @@ proc startHandler*(self: Session) {.async.} =
                 continue
 
             if message.body of Bad_msg_notification:
+                var code = body.Bad_msg_notification.error_code
+                self.logger.log(lvlWarn, &"Received bad_msg_notification with code {code}")
                 msgID = body.Bad_msg_notification.bad_msg_id
 
             if message.body of Bad_server_salt:
@@ -194,6 +201,8 @@ proc startHandler*(self: Session) {.async.} =
 
     #We need to reopen the connection if this session is required
     if self.isRequired:
+        self.logger.log(lvlDebug, &"Trying to reconnect...")
+
         if not self.alreadyCalledDisconnected:
             self.callbackUpdates.processNetworkDisconnected()
             self.alreadyCalledDisconnected = true
@@ -215,6 +224,7 @@ proc startHandler*(self: Session) {.async.} =
                     await self.mtprotoInit()
                 except:
                     return
+                self.logger.log(lvlDebug, &"Sucessfully reconnected")
                 var responsesCopy = self.responses
                 for i, _ in responsesCopy:
                     self.responses[i].body = nil
@@ -263,6 +273,8 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
             raise newException(CatchableError, "Connection was lost while executing request")
         var response = self.responses[data.messageID.int64].body
         if response of Bad_server_salt:
+            self.logger.log(lvlDebug, &"Received bad_server_salt, changing salt")
+
             var badServerSalt = response.Bad_server_salt
             self.serverSalt = badServerSalt.new_server_salt.TLEncode()
             var info = await self.storageManager.GetSessionsInfo()
@@ -287,6 +299,8 @@ proc checkConnectionLoop*(self: Session) {.async.} =
         randomize()
         let pingID = int64(rand(9999))
         discard await self.send(Ping(ping_id: pingID), false, true)
+        self.logger.log(lvlDebug, &"Sending ping to Telegram")
+
 
 
 proc mtprotoInit(self: Session): Future[void] {.async.} =

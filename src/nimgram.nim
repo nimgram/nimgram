@@ -6,10 +6,10 @@ import nimgram/private/network/transports
 import asyncdispatch
 import tables
 import random
+import strformat
 import nimgram/private/shared
-import nimgram/private/utils/auth_key
 import nimgram/private/updates
-import nimgram/private/utils/binmanager
+import nimgram/private/utils/[binmanager, auth_key, logging]
 import nimgram/private/session
 export raw 
 import strutils
@@ -24,6 +24,7 @@ type InternalTableOptions = ref object
     original: Table[int, binmanager.DcOption]
 
 type NimgramClient* = ref object 
+    logger: Logger
     sessions: Table[int, Session]
     mainDc: int
     isMainAuthorized: bool
@@ -61,21 +62,25 @@ proc getConnection(connectionType: NetworkTypes, address: string, port: uint16):
         await connection.connect(address, port)
         result = connection.MTProtoNetwork
 
-proc getSession(keys: InternalTableOptions, dcID: int, connectionType: NetworkTypes, ipv6, test: bool = false, storageManager: NimgramStorage, config: NimgramConfig): Future[Session] {.async.} =
+proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, connectionType: NetworkTypes, ipv6, test: bool = false, storageManager: NimgramStorage, config: NimgramConfig): Future[Session] {.async.} =
     var ip = getIp(dcID, ipv6, test)
     if keys.original.hasKey(dcID):
         var connection = await getConnection(connectionType, ip, 443)
-        result = initSession(connection, dcID, keys.original[dcID].authKey, keys.original[dcID].salt, storageManager, config)
+        result = initSession(connection, self.logger, dcID, keys.original[dcID].authKey, keys.original[dcID].salt, storageManager, config)
     else:
+        self.logger.log(lvlDebug, &"Generating new session on DC{dcID}")
         var connection = await getConnection(connectionType, ip, 443)
         var gen = await generateAuthKey(connection)
         keys.original[dcID] = binmanager.DcOption(number: uint16(dcID), isAuthorized: false, isMain: false, authKey: gen[0], salt: gen[1])
         await storageManager.WriteSessionsInfo(keys.original)
-        result = initSession(connection, dcID, gen[0], gen[1], storageManager, config)
+        result = initSession(connection, self.logger, dcID, gen[0], gen[1], storageManager, config)
 
 
-proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: StorageTypes = StorageRam): Future[NimgramClient] {.async.} = 
-
+proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: StorageTypes = StorageRam, logLevel: int = 7): Future[NimgramClient] {.async.} = 
+    result = new NimgramClient
+    result.logger = initLogger(logLevel, true)
+    result.logger.log(lvlInfo, &"Starting Nimgram version {NIMGRAM_VERSION}, Copyright 2020 - 2021 Daniele Cortesi")
+    result.logger.log(lvlDebug, "Initializing storage")
     var driver: NimgramStorage
     if storageType == StorageSqlite:
         when compileOption("threads"): 
@@ -86,7 +91,8 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
     if storageType == StorageRam:
         driver = NimgramStorageRam().NimgramStorage
         driver.Init(NimgramStorageConfigRam(binfilename: dataBinFile))
-    result = new NimgramClient
+
+    result.logger.log(lvlDebug, "Loading sessions")
     result.config = config
     result.storageManager = driver
     var sessions = InternalTableOptions(original: await result.storageManager.GetSessionsInfo())
@@ -100,12 +106,12 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
             sessionMain = key
             break
     if found:
-        result.sessions[result.mainDc] = await getSession(sessions, result.mainDc, config.transportMode, config.useIpv6, config.testMode, result.storageManager, config)
+        result.sessions[result.mainDc] = await result.getSession(sessions, result.mainDc, config.transportMode, config.useIpv6, config.testMode, result.storageManager, config)
         result.sessions[result.mainDc].isRequired = true
     else:
         result.mainDc = 1
         result.isMainAuthorized = false
-        result.sessions[result.mainDc] = await getSession(sessions, 1, config.transportMode, config.useIpv6, config.testMode, result.storageManager, config)
+        result.sessions[result.mainDc] = await result.getSession(sessions, 1, config.transportMode, config.useIpv6, config.testMode, result.storageManager, config)
         result.sessions[result.mainDc].isRequired = true
         sessions.original[result.mainDc].isMain = true
         await result.storageManager.WriteSessionsInfo(sessions.original)
@@ -132,6 +138,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         result.sessions[result.mainDc].initDone = true
         result.sessions[result.mainDc].resumeConnectionWait.trigger()
         asyncCheck result.sessions[result.mainDc].checkConnectionLoop()
+
     except RPCException:
         raise
     except CatchableError:
@@ -158,7 +165,7 @@ proc resolveInputPeer*(self: NimgramClient, peer: PeerI): Future[InputPeerI] {.a
         return InputPeerChat(chat_id: peer.PeerChat.chat_id)
     #channel
     if peer of PeerChannel:
-        var channelpeer = await self.storageManager.GetPeer(("-100"& ($peer.PeerChannel.channel_id)).parseBiggestInt)
+        var channelpeer = await self.storageManager.GetPeer(("-100" & ($peer.PeerChannel.channel_id)).parseBiggestInt)
         return InputPeerChannel(channel_id: peer.PeerChannel.channel_id, access_hash: channelpeer.accessHash)
     #user
     if peer of PeerUser:
@@ -187,9 +194,10 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
             var msgerror = getCurrentExceptionMsg()
             if msgerror.startsWith("USER_MIGRATE_"):
                 var migrateDC = parseInt(getCurrentException().RPCException.errorMessage.split("_")[2])
+                self.logger.log(lvlNotice, &"Switching to DC{migrateDC}")
                 var sessions = InternalTableOptions(original: await self.storageManager.GetSessionsInfo())
                 #This will handle dh hankshake
-                self.sessions[migrateDC] = await getSession(sessions, migrateDC, self.config.transportMode, self.config.useIpv6, self.config.testMode, self.storageManager, self.config)
+                self.sessions[migrateDC] = await self.getSession(sessions, migrateDC, self.config.transportMode, self.config.useIpv6, self.config.testMode, self.storageManager, self.config)
                 self.sessions[migrateDC].isRequired = true
                 self.sessions[self.mainDc].isRequired = false
                 #Connection initialization

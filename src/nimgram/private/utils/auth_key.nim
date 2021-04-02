@@ -126,8 +126,8 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
             raise newException(CatchableError, "Wrong response from server")
         var serverDHParmasOk = cast[Server_DH_params_ok](response)
 
-        assert serverDHParmasOk.nonce == reqa.nonce 
-        assert serverDHParmasOk.server_nonce == resPQs.server_nonce
+        doAssert serverDHParmasOk.nonce == reqa.nonce 
+        doAssert serverDHParmasOk.server_nonce == resPQs.server_nonce
 
         var serverNonce = TLEncode(serverDHParmasOk.server_nonce, littleEndian)
         var newNonce = TLEncode(innerDataObj.new_nonce, littleEndian)
@@ -141,8 +141,8 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         if not(tmp of Server_DH_inner_data):
             raise newException(CatchableError, "Wrong response type: " & tmp.getTypeName())
         var serverDHInnerData = tmp.Server_DH_inner_data
-        assert serverDHInnerData.nonce == reqa.nonce 
-        assert serverDHInnerData.server_nonce == resPQs.server_nonce
+        doAssert serverDHInnerData.nonce == reqa.nonce 
+        doAssert serverDHInnerData.server_nonce == resPQs.server_nonce
         var dhPrime = fromBytes(StUint[2048], serverDHInnerData.dh_prime, bigEndian)
         var gA = fromBytes(StUint[2048], serverDHInnerData.g_a, bigEndian)
         var b = fromBytes(StUint[2048], urandom(256), bigEndian) 
