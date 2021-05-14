@@ -1,3 +1,16 @@
+## Nimgram
+## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+## This file is part of Nimgram, under the MIT License
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+## OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+#[
 import rpc/raw
 import asyncdispatch
 import storage
@@ -5,12 +18,15 @@ import shared
 import strformat
 import strutils
 import options 
+import types/message
+
 type UpdatesCallback* = ref object
     callback: Option[proc(updates: UpdatesI): Future[void] {.async.}]
     eventUpdateNewMessage: Option[proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}]
     eventNetworkReconnected: Option[proc(): Future[void] {.async.}]
     eventNetworkDisconnected: Option[proc(): Future[void] {.async.}]
     eventUpdateNewChannelMessage: Option[proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}]
+    eventMessage: Option[proc(message: message.Message): Future[void] {.async.}]
 
 
 proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.async.} = 
@@ -29,7 +45,7 @@ proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.a
 
 proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramStorage): Future[void] {.async.} =
     ## Process raw updates
-
+    
     if self.callback.isSome():
         asyncCheck self.callback.get()(updates)
 
@@ -41,10 +57,16 @@ proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramS
             if update of UpdateNewMessage:
                 if self.eventUpdateNewMessage.isSome():
                     asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
+                if update.UpdateNewMessage.message of raw.Message:
+                    if self.eventMessage.isSome():
+                        asyncCheck self.eventMessage.get()(parse(cast[raw.Message](update.UpdateNewMessage.message)))
         # Handle UpdateNewChannelMessage
             if update of UpdateNewChannelMessage:
                 if self.eventUpdateNewChannelMessage.isSome():
                     asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
+                if update.UpdateNewChannelMessage.message of raw.Message:
+                    if self.eventMessage.isSome():
+                        asyncCheck self.eventMessage.get()(parse(cast[raw.Message](update.UpdateNewChannelMessage.message)))
 
 
     if updates of UpdateShort:
@@ -54,11 +76,16 @@ proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramS
         if updateShort.update of UpdateNewMessage:
             if self.eventUpdateNewMessage.isSome():
                 asyncCheck self.eventUpdateNewMessage.get()(updateShort.update.UpdateNewMessage)
-        
+            if updateShort.update.UpdateNewMessage.message of raw.Message:
+                if self.eventMessage.isSome():
+                    asyncCheck self.eventMessage.get()(parse(cast[raw.Message](updateShort.update.UpdateNewMessage.message)))
         # Handle UpdateNewChannelMessage
         if updateShort.update of UpdateNewChannelMessage:
             if self.eventUpdateNewChannelMessage.isSome():
                 asyncCheck self.eventUpdateNewChannelMessage.get()(updateShort.update.UpdateNewChannelMessage)
+            if updateShort.update.UpdateNewChannelMessage.message of raw.Message:
+                if self.eventMessage.isSome():
+                    asyncCheck self.eventMessage.get()(parse(cast[raw.Message](updateShort.update.UpdateNewChannelMessage.message)))
 
     if updates of UpdatesCombined:
         var updatesCombined = updates.UpdatesCombined
@@ -69,11 +96,21 @@ proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramS
             if update of UpdateNewMessage:
                 if self.eventUpdateNewMessage.isSome():
                     asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
-
+                if update.UpdateNewMessage.message of raw.Message:
+                    if self.eventMessage.isSome():
+                        asyncCheck self.eventMessage.get()(parse(cast[raw.Message](update.UpdateNewMessage.message)))
             # Handle UpdateNewChannelMessage
             if update of UpdateNewChannelMessage:
                 if self.eventUpdateNewChannelMessage.isSome():
                     asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
+                if update.UpdateNewChannelMessage.message of raw.Message:
+                    if self.eventMessage.isSome():
+                        asyncCheck self.eventMessage.get()(parse(cast[raw.Message](update.UpdateNewChannelMessage.message)))
+
+proc onMessage*(self: UpdatesCallback, procedure: proc(message: message.Message): Future[void] {.async.}) =
+    ## Procedure to be called when a Message is received (high level)
+
+    self.eventMessage = some(procedure)
 
 proc processNetworkReconnected*(self: UpdatesCallback) = 
     # Procedure to be called to handle "onReconnection"

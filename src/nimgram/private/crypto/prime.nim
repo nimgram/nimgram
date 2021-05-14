@@ -5,6 +5,9 @@ import times
 import stint
 import strutils
 
+## NOTE: even if this module is inside "crypto", there isn't actually any type of cryptography in place
+## Random can be used safetly because this operation is only used as a POW (proof of work)
+## Ported from Python code
 
 proc brent*(n: Int128): Int128 =
   if n mod Int128(2.stint(128)) == Int128(0.stint(128)):

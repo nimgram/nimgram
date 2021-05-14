@@ -1,8 +1,22 @@
+## Nimgram
+## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+## This file is part of Nimgram, under the MIT License
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+## OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+
 import json
 import random
 
 # `nimble test` sets the $PWD to the project directory
 import src/nimgram
+import src/raw
 import asyncdispatch
 import typetraits
 import strutils
@@ -15,8 +29,8 @@ var mtprotoClient: NimgramClient
 proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
   let contents = message.message
   # Reacts only if the message is the actually message
-  if contents of Message:
-    let textMessage = contents.Message
+  if contents of raw.Message:
+    let textMessage = cast[raw.Message](contents)
 
     # The test program waits for the message "fff"
     if textMessage.message == "fff":
@@ -38,11 +52,18 @@ proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
       message: $(%*textMessage),
       random_id: int64(rand(2147483646))
     ))
+
+
+
+proc handleMessageHigh(message: nimgram.Message): Future[void] {.async.} =
+  echo %*message
+
+
 proc handleChannelMessage(message: UpdateNewChannelMessage): Future[void] {.async.} =
   let contents = message.message
   # Reacts only if the message is the actually message
-  if contents of Message:
-    let textMessage = contents.Message
+  if contents of raw.Message:
+    let textMessage = cast[raw.Message](contents)
     if textMessage.isout:
       return
     # The test program waits for the message "fff"
@@ -86,6 +107,7 @@ proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.}
   # Set the update handler
   mtprotoClient.onUpdateNewMessage(handleMessage)
   mtprotoClient.onUpdateNewChannelMessage(handleChannelMessage)
+  mtprotoClient.onMessage(handleMessageHigh)
 
   # Write text to console, now send `fff` to have the test succseeded
   echo "Client started, send `fff` to the bot"

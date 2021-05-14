@@ -1,3 +1,17 @@
+
+## Nimgram
+## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+## This file is part of Nimgram, under the MIT License
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+## OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+
 import nimgram/private/rpc/raw
 import nimgram/private/storage
 import nimgram/private/network/tcp/abridged
@@ -8,10 +22,8 @@ import tables
 import random
 import strformat
 import nimgram/private/shared
-import nimgram/private/updates
 import nimgram/private/utils/[binmanager, auth_key, logging]
 import nimgram/private/session
-export raw 
 import strutils
 export NetworkTypes
 export NimgramConfig
@@ -33,7 +45,7 @@ type NimgramClient* = ref object
 
 proc clearCache*(self: NimgramClient): Future[void] {.async.} =
     self.storageManager.ClearCache()
-
+#[
 proc onUpdates*(self: NimgramClient, procedure: proc(updates: UpdatesI): Future[void] {.async.}) =
     self.sessions[self.mainDc].callbackUpdates.onUpdates(procedure)
 
@@ -47,10 +59,15 @@ proc onReconnection*(self: NimgramClient, procedure: proc(): Future[void] {.asyn
     ## Call the specified procedure when client is reconnected successfully to network (Only main datacenter)
     self.sessions[self.mainDc].callbackUpdates.onReconnection(procedure)
 
+proc onMessage*(self: NimgramClient, procedure: proc(message: message.Message): Future[void] {.async.}) =
+    ## Procedure to be called when a Message is received (high level)
+    
+    self.sessions[self.mainDc].callbackUpdates.onMessage(procedure)
+
 proc onDisconnection*(self: NimgramClient, procedure: proc(): Future[void] {.async.}) =
     ## Call the specified procedure when client is disconnected from network (Only main datacenter)
     self.sessions[self.mainDc].callbackUpdates.onDisconnection(procedure)
-    
+    ]#
 proc getConnection(connectionType: NetworkTypes, address: string, port: uint16): Future[MTProtoNetwork] {.async.} =
     case connectionType:
     of NetTcpAbridged:
@@ -145,10 +162,14 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         #TODO: Sync response from automatic reconnection, but config now is unused, so not working on that currently
         discard
 proc send*(self: NimgramClient, function: TLFunction, waitFor: bool = true): Future[TL] {.async.} =
+    ## Send raw TL function
+
     result = await self.sessions[self.mainDc].send(function, waitFor)
 
 
 proc resolveInputPeer*(self: NimgramClient, id: int64): Future[InputPeerI] {.async.} =
+    ## Get a InputPeer object by resolving access hash on local database
+
     #chat
     if id < 0 and id > -1000000000000:
         return InputPeerChat(chat_id: int32(id))
@@ -160,6 +181,8 @@ proc resolveInputPeer*(self: NimgramClient, id: int64): Future[InputPeerI] {.asy
 
 
 proc resolveInputPeer*(self: NimgramClient, peer: PeerI): Future[InputPeerI] {.async.} =
+    ## Get a InputPeer object by resolving access hash on local database
+
     #chat
     if peer of PeerChat:
         return InputPeerChat(chat_id: peer.PeerChat.chat_id)
@@ -240,3 +263,18 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
 
             else:
                 raise
+
+## Using include instead of import because of recursive imports :(
+import options
+include nimgram/private/types/files/file_location
+include nimgram/private/types/chats/pic
+include nimgram/private/types/other
+include nimgram/private/types/chats/peer
+
+type Media* = ref object of RootObj
+include nimgram/private/types/messages/location
+include nimgram/private/types/messages/photo
+
+include nimgram/private/types/chats/user
+include nimgram/private/types/messages/message
+

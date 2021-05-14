@@ -1,3 +1,16 @@
+## Nimgram
+## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+## This file is part of Nimgram, under the MIT License
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+## OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+
 import asyncdispatch
 import tables
 import strutils
@@ -25,7 +38,7 @@ type NimgramStorage* = ref object of RootObj
 ## Storage using ram: Saves information on ram
 ## This might be helpful when creating scalable instances saving disk usage
 ## with the disavantage of consuming more ram over time. 
-## If you want to clear saved information, use the clearCache (TODO) method
+## If you want to clear saved information, use the clearCache method
 type NimgramStorageRam* = ref object of NimgramStorage
     binFileName: string
     peerStorage: Table[int64, StoragePeer]

@@ -1,3 +1,16 @@
+## Nimgram
+## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+## This file is part of Nimgram, under the MIT License
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+## OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+
 import network/transports
 import random/urandom
 import rpc/raw
@@ -9,13 +22,13 @@ import stew/endians2
 import nimcrypto
 import utils/logging
 import math
-import updates
 import shared
 import strformat
 import storage
 import times
 import random
 import tables
+
 type Response = ref object
     event: AsyncEvent
     body: TL
@@ -36,7 +49,7 @@ type Session* = ref object
     logger: Logger
     sessionID: seq[uint8] 
     seqNo: int 
-    callbackUpdates*: UpdatesCallback
+    #callbackUpdates*: UpdatesCallback
     acks: seq[int64]
     responses: Table[int64, Response]
     maxMessageID: uint64
@@ -62,7 +75,7 @@ proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey
     result.initDone = false
     result.alreadyCalledDisconnected = false
     result.serverSalt = serverSalt
-    result.callbackUpdates = UpdatesCallback()
+    #result.callbackUpdates = UpdatesCallback()
     result.seqNo = 5
     result.sessionID = urandom(8)
     result.clientConfig = config
@@ -192,7 +205,7 @@ proc startHandler*(self: Session) {.async.} =
             
             if body of UpdatesTooLong or body of UpdateShortMessage or body of UpdateShortChatMessage or body of UpdateShort or body of UpdatesCombined or body of raw.Updates:
                 self.seqNo = seqNo(body, self.seqNo)
-                asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI, self.storageManager)
+                #asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI, self.storageManager)
                 
 
             if len(self.acks) >= 8:
@@ -204,7 +217,7 @@ proc startHandler*(self: Session) {.async.} =
         self.logger.log(lvlDebug, &"Trying to reconnect...")
 
         if not self.alreadyCalledDisconnected:
-            self.callbackUpdates.processNetworkDisconnected()
+            #self.callbackUpdates.processNetworkDisconnected()
             self.alreadyCalledDisconnected = true
         while true:
             await sleepAsync(5000)
@@ -233,7 +246,7 @@ proc startHandler*(self: Session) {.async.} =
                 self.initDone = true
                 self.resumeConnectionWait.trigger()
                 self.alreadyCalledDisconnected = false
-                self.callbackUpdates.processNetworkReconnected()
+                #self.callbackUpdates.processNetworkReconnected()
                 self.isDead = false
                 break
     else:
