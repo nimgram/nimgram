@@ -44,7 +44,7 @@ type NimgramClient* = ref object
     storageManager: NimgramStorage
 
 proc clearCache*(self: NimgramClient): Future[void] {.async.} =
-    self.storageManager.ClearCache()
+    self.storageManager.clearCache()
 #[
 proc onUpdates*(self: NimgramClient, procedure: proc(updates: UpdatesI): Future[void] {.async.}) =
     self.sessions[self.mainDc].callbackUpdates.onUpdates(procedure)
@@ -89,7 +89,7 @@ proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, conn
         var connection = await getConnection(connectionType, ip, 443)
         var gen = await generateAuthKey(connection)
         keys.original[dcID] = binmanager.DcOption(number: uint16(dcID), isAuthorized: false, isMain: false, authKey: gen[0], salt: gen[1])
-        await storageManager.WriteSessionsInfo(keys.original)
+        await storageManager.writeSessionsInfo(keys.original)
         result = initSession(connection, self.logger, dcID, gen[0], gen[1], storageManager, config)
 
 
@@ -102,17 +102,17 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
     if storageType == StorageSqlite:
         when compileOption("threads"): 
             driver = NimgramStorageSqlite().NimgramStorage
-            driver.Init(NimgramStorageConfigSqlite(filename: databinFile, disableCache: config.disableCache))
+            driver.init(NimgramStorageConfigSqlite(filename: databinFile, disableCache: config.disableCache))
         else:
             raise newException(CatchableError, "Threads are disabled, cannot use sqlite")
     if storageType == StorageRam:
         driver = NimgramStorageRam().NimgramStorage
-        driver.Init(NimgramStorageConfigRam(binfilename: dataBinFile))
+        driver.init(NimgramStorageConfigRam(binfilename: dataBinFile))
 
     result.logger.log(lvlDebug, "Loading sessions")
     result.config = config
     result.storageManager = driver
-    var sessions = InternalTableOptions(original: await result.storageManager.GetSessionsInfo())
+    var sessions = InternalTableOptions(original: await result.storageManager.getSessionsInfo())
     var found = false
     var sessionMain: binmanager.DcOption
     for _, key in sessions.original:
@@ -131,14 +131,14 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         result.sessions[result.mainDc] = await result.getSession(sessions, 1, config.transportMode, config.useIpv6, config.testMode, result.storageManager, config)
         result.sessions[result.mainDc].isRequired = true
         sessions.original[result.mainDc].isMain = true
-        await result.storageManager.WriteSessionsInfo(sessions.original)
+        await result.storageManager.writeSessionsInfo(sessions.original)
 
     asyncCheck result.sessions[result.mainDc].startHandler()
     let pingID = int64(rand(9999))
     try:
         var ponger = await result.sessions[result.mainDc].send(Ping(ping_id: pingID), true, true)
         if not(ponger of Pong):
-            raise newException(CatchableError, "Ping failed with type " & ponger.getTypeName())
+            raise newException(CatchableError, "Ping failed!")
         doAssert ponger.Pong.ping_id == pingID
 
         #TODO: Use help_getConfig properly
@@ -151,7 +151,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
             lang_pack: config.langPack,
             lang_code: config.langCode,
             query: HelpGetConfig())), true, true)
-        doAssert config of Config, "Failed to get config, type is of " & config.getTypeName()
+        doAssert config of Config, "Failed to get config"
         result.sessions[result.mainDc].initDone = true
         result.sessions[result.mainDc].resumeConnectionWait.trigger()
         asyncCheck result.sessions[result.mainDc].checkConnectionLoop()
@@ -173,7 +173,7 @@ proc resolveInputPeer*(self: NimgramClient, id: int64): Future[InputPeerI] {.asy
     #chat
     if id < 0 and id > -1000000000000:
         return InputPeerChat(chat_id: int32(id))
-    var userpeer = await self.storageManager.GetPeer(id)
+    var userpeer = await self.storageManager.getPeer(id)
     if id < -1000000000000:
         return InputPeerChannel(channel_id: int32(($id).replace("-100", "").parseBiggestInt), access_hash: userpeer.accessHash)
     return InputPeerUser(user_id: int32(id), access_hash: userpeer.accessHash)
@@ -188,11 +188,11 @@ proc resolveInputPeer*(self: NimgramClient, peer: PeerI): Future[InputPeerI] {.a
         return InputPeerChat(chat_id: peer.PeerChat.chat_id)
     #channel
     if peer of PeerChannel:
-        var channelpeer = await self.storageManager.GetPeer(("-100" & ($peer.PeerChannel.channel_id)).parseBiggestInt)
+        var channelpeer = await self.storageManager.getPeer(("-100" & ($peer.PeerChannel.channel_id)).parseBiggestInt)
         return InputPeerChannel(channel_id: peer.PeerChannel.channel_id, access_hash: channelpeer.accessHash)
     #user
     if peer of PeerUser:
-        var userpeer = await self.storageManager.GetPeer(peer.PeerUser.user_id)
+        var userpeer = await self.storageManager.getPeer(peer.PeerUser.user_id)
         return InputPeerUser(user_id: peer.PeerUser.user_id, access_hash: userpeer.accessHash)
 
 
@@ -218,7 +218,7 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
             if msgerror.startsWith("USER_MIGRATE_"):
                 var migrateDC = parseInt(getCurrentException().RPCException.errorMessage.split("_")[2])
                 self.logger.log(lvlNotice, &"Switching to DC{migrateDC}")
-                var sessions = InternalTableOptions(original: await self.storageManager.GetSessionsInfo())
+                var sessions = InternalTableOptions(original: await self.storageManager.getSessionsInfo())
                 #This will handle dh hankshake
                 self.sessions[migrateDC] = await self.getSession(sessions, migrateDC, self.config.transportMode, self.config.useIpv6, self.config.testMode, self.storageManager, self.config)
                 self.sessions[migrateDC].isRequired = true
@@ -229,7 +229,7 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
 
                 try:
                     var ponger = await self.sessions[migrateDC].send(Ping(ping_id: pingID), true, true)
-                    doAssert ponger of Pong, "Ping failed with type " & ponger.getTypeName()
+                    doAssert ponger of Pong, "Ping failed"
                     doAssert ponger.Pong.ping_id == pingID
 
                     #TODO: Use help_getConfig properly
@@ -253,7 +253,7 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
                     self.mainDc = migrateDc
                     self.isMainAuthorized = true
                     sessions.original[migrateDc].isMain = true
-                    await self.storageManager.WriteSessionsInfo(sessions.original)
+                    await self.storageManager.writeSessionsInfo(sessions.original)
                     asyncCheck self.sessions[migrateDC].checkConnectionLoop()
                 except CatchableError:
                     #TODO: Sync response from automatic reconnection, but config now is unused, so not working on that currently
@@ -274,6 +274,7 @@ include nimgram/private/types/chats/peer
 type Media* = ref object of RootObj
 include nimgram/private/types/messages/location
 include nimgram/private/types/messages/photo
+include nimgram/private/types/messages/contact
 
 include nimgram/private/types/chats/user
 include nimgram/private/types/messages/message

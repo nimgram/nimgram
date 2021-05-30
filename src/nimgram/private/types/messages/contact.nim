@@ -11,29 +11,21 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
-type PeerType* = enum
-    TypeUser,
-    TypeChannel,
-    TypeChat
 
-type Peer* = ref object
-    id*: int32
-    `type`*: PeerType
+type Contact* = ref object of Media 
+    number*: string ## Phone number
+    firstName*: string ## Contact's first name 
+    lastName*: string ## Contact's last name
+    vcard*: string ## vcard of the contact
+    ID*: int32 ## ID of the contact (0 if not registered on Telegram)
 
-proc parse*(peer: raw.PeerI): Peer =
-    result = new Peer
-    if peer of PeerUser:
-        return Peer(
-            id: peer.PeerUser.user_id,
-            `type`: TypeUser
-        )
-    if peer of PeerChat:
-        return Peer(
-            id: peer.PeerChat.chat_id,
-            `type`: TypeUser
-        )
-    if peer of PeerChannel:
-        return Peer(
-            id: peer.PeerChannel.channel_id,
-            `type`: TypeUser
-        )
+
+proc parse*(contact: raw.MessageMediaContact): Contact =
+
+    return Contact(
+        number: contact.phone_number,
+        firstName: contact.first_name,
+        lastName: contact.last_name,
+        vcard: contact.vcard,
+        ID: contact.user_id
+    )

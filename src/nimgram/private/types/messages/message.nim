@@ -10,7 +10,6 @@
 ## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
-import locks
 import options
 type Message* = ref object ## A message 
     client: NimgramClient ## Nimgram instance, used for high level api calls
@@ -88,7 +87,9 @@ proc parse*(message: raw.Message, client: NimgramClient): Message =
         if message.media.get() of MessageMediaPhoto:
             result.media = cast[Option[Media]](message.media.get().MessageMediaPhoto.parse())
         if message.media.get() of MessageMediaGeo:
-            result.media = cast[Option[Media]](message.media.get().MessageMediaGeo.parse())
+            result.media = cast[Option[Media]](some(message.media.get().MessageMediaGeo.parse()))
+        if message.media.get() of MessageMediaContact:
+            result.media = cast[Option[Media]](some(message.media.get().MessageMediaContact.parse()))
 
     if message.restriction_reason.isSome():
         var restrictionTemp: seq[RestrictionReason]
@@ -96,12 +97,11 @@ proc parse*(message: raw.Message, client: NimgramClient): Message =
             restrictionTemp.add(parse(restrictions))
         result.restrictionReason = some(restrictionTemp)
 
-    case message.peer_id.getTypeName()
-    of "PeerUser":
+    if message.peer_id of PeerUser:
         result.chatID = message.peer_id.PeerUser.user_id.int64
-    of "PeerChat":
+    elif message.peer_id of PeerChat:
         result.chatID = parseBiggestInt("-" & $message.peer_id.PeerChat.chat_id)
-    of "PeerChannel":
+    elif message.peer_id of PeerChannel:
         result.chatID = parseBiggestInt("-100" & $message.peer_id.PeerChannel.channel_id)
 
     if message.from_id.isSome():

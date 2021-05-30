@@ -16,7 +16,6 @@ import random
 
 # `nimble test` sets the $PWD to the project directory
 import src/nimgram
-import src/raw
 import asyncdispatch
 import typetraits
 import strutils
@@ -25,6 +24,9 @@ import parsecfg
 # That variable holds the client instance
 var mtprotoClient: NimgramClient
 
+## Update handling currently not working until types are finished
+
+#[
 # Message handler. Called every time the client updates
 proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
   let contents = message.message
@@ -92,22 +94,22 @@ proc handleChannelMessage(message: UpdateNewChannelMessage): Future[void] {.asyn
 proc onReconnection() {.async.} =
   echo "Reconnected!"
   discard await mtprotoClient.send(UpdatesGetState())
-
+ ]#
 # Proc to launch the client instance
 proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.} =
   # Create the instance, all the data is inside of RAM
   mtprotoClient = await initNimgram("nimgram-session.bin",
     config, StorageRam)
   # Take the control over the bot
-  await mtprotoClient.botLogin(botToken)
+  #await mtprotoClient.botLogin(botToken)
   # Set the reconnection handler
-  mtprotoClient.onReconnection(onReconnection)
+ #mtprotoClient.onReconnection(onReconnection)
   # Tell the server we're ready
-  discard await mtprotoClient.send(UpdatesGetState())
+  #discard await mtprotoClient.send(UpdatesGetState())
   # Set the update handler
-  mtprotoClient.onUpdateNewMessage(handleMessage)
-  mtprotoClient.onUpdateNewChannelMessage(handleChannelMessage)
-  mtprotoClient.onMessage(handleMessageHigh)
+  #mtprotoClient.onUpdateNewMessage(handleMessage)
+  #mtprotoClient.onUpdateNewChannelMessage(handleChannelMessage)
+  #mtprotoClient.onMessage(handleMessageHigh)
 
   # Write text to console, now send `fff` to have the test succseeded
   echo "Client started, send `fff` to the bot"

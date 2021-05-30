@@ -156,7 +156,7 @@ proc generateAuthKey*(connection: MTProtoNetwork): Future[(seq[uint8], seq[uint8
         var tmp = new TL
         tmp.TLDecode(sbytes)
         if not(tmp of Server_DH_inner_data):
-            raise newException(CatchableError, "Wrong response type: " & tmp.getTypeName())
+            raise newException(CatchableError, "Wrong response type")
         var serverDHInnerData = tmp.Server_DH_inner_data
         doAssert serverDHInnerData.nonce == reqa.nonce 
         doAssert serverDHInnerData.server_nonce == resPQs.server_nonce

@@ -21,3 +21,9 @@ if dirExists("src") or dirExists("../src"):
     if dirExists("src/nimgram/private/rpc"):
         rmDir("src/nimgram/private/rpc")
     mvDir("rpc", "src/nimgram/private/rpc")
+
+task forcegen, "Force generation of the rpc directory":
+    selfExec("r -d:danger --opt:speed --hints:off tl/build.nim")
+    if dirExists("src/nimgram/private/rpc"):
+        rmDir("src/nimgram/private/rpc")
+    mvDir("rpc", "src/nimgram/private/rpc")

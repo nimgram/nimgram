@@ -57,18 +57,18 @@ proc parse*(user: raw.User, client: NimgramClient): User =
         result.restrictionReason = some(restrictionTemp)
 
     if user.status.isSome():
-        case user.status.get().getTypeName()
-        of "UserStatusOnline":
+        var status = user.status.get() 
+        if status of UserStatusOnline:
             result.status = Online
             result.nextOfflineDate = user.status.get().UserStatusOnline.expires.some()
-        of "UserStatusOffline":
+        elif status of UserStatusOffline:
             result.status = Offline
             result.lastOnlineDate = user.status.get().UserStatusOffline.was_online.some()
-        of "UserStatusRecently":
+        elif status of UserStatusRecently:
             result.status = Recently
-        of "UserStatusLastWeek":
+        elif status of UserStatusLastWeek:
             result.status = WithinWeek
-        of "UserStatusLastMonth":
+        elif status of UserStatusLastMonth:
             result.status = WithinMonth
         else:
             result.status = LongTimeAgo

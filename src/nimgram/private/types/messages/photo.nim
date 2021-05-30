@@ -57,3 +57,4 @@ proc parse*(photo: raw.MessageMediaPhoto): Option[Photo] =
     tempResult.size = photo.size
     tempResult.width = photo.w
     tempResult.height = photo.h
+    result = some(tempResult)

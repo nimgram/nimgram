@@ -290,9 +290,9 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
 
             var badServerSalt = response.Bad_server_salt
             self.serverSalt = badServerSalt.new_server_salt.TLEncode()
-            var info = await self.storageManager.GetSessionsInfo()
+            var info = await self.storageManager.getSessionsInfo()
             info[self.dcID].salt = self.serverSalt
-            await self.storageManager.WriteSessionsInfo(info)
+            await self.storageManager.writeSessionsInfo(info)
             return await self.send(tl, waitResponse, ignoreInitDone)
         if response of Rpc_error:
             var excp = RPCException(errorMessage: response.Rpc_error.error_message, errorCode: response.Rpc_error.error_code)
@@ -322,7 +322,7 @@ proc mtprotoInit(self: Session): Future[void] {.async.} =
 
     var ponger = await self.send(Ping(ping_id: pingID), true, true)
     if not(ponger of Pong):
-        raise newException(CatchableError, "Ping failed with type " & ponger.getTypeName())
+        raise newException(CatchableError, "Ping failed!")
     doAssert ponger.Pong.ping_id == pingID
     
     discard await self.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(

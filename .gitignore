@@ -1,3 +1,7 @@
 .vscode
 main
 .idea
+nimcache/
+nimblecache/
+htmldocs/
+src/nimgram/private/rpc
