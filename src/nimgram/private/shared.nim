@@ -53,7 +53,6 @@ proc getIP*(num: int, ipv6, test: bool = false): string =
         return IP_TEST.toTable[num]
     return IP_PROD.toTable[num]
 
-
 type NimgramConfig* = object
     testMode*: bool
     transportMode*: transports.NetworkTypes
@@ -71,3 +70,4 @@ type NimgramConfig* = object
 type StoragePeer* = object
     peerID*: int64
     accessHash*: int64
+

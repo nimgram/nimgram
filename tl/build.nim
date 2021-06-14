@@ -11,6 +11,11 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ## SOFTWARE.
 
+## This file is supposed to be executed when installing the library as a nimble package
+## Or by the forcegen task
+## 
+## To build the rpc directory use "nimble forcegen" on the root directory
+
 import tl2json
 import parser
 echo "Generating code from the TL Scheme"

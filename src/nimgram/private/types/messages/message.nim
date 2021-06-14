@@ -69,20 +69,12 @@ proc parse*(message: raw.Message, client: NimgramClient): Message =
             result.forwardSavedMessageID = some(fwdfrom.saved_from_msg_id.get())
         if fwdfrom.saved_from_peer.isSome():
             var peer = fwdfrom.saved_from_peer.get()
-            if peer of PeerUser:
-                result.forwardSavedFromID = some(peer.PeerUser.user_id.int64)
-            if peer of PeerChat:
-                result.forwardSavedFromID = some(parseBiggestInt("-" & $peer.PeerChat.chat_id))
-            if peer of PeerChannel:
-                result.forwardSavedFromID = some(parseBiggestInt("-100" & $peer.PeerChannel.channel_id))
+            result.forwardSavedFromID = some(getCorrectID(peer))
+
         if fwdfrom.from_id.isSome():
             var peer = fwdfrom.from_id.get()
-            if peer of PeerUser:
-                result.forwardFromID = some(peer.PeerUser.user_id.int64)
-            if peer of PeerChat:
-                result.forwardFromID = some(parseBiggestInt("-" & $peer.PeerChat.chat_id))
-            if peer of PeerChannel:
-                result.forwardFromID = some(parseBiggestInt("-100" & $peer.PeerChannel.channel_id))
+            result.forwardFromID = some(getCorrectID(peer))
+
     if message.media.isSome():
         if message.media.get() of MessageMediaPhoto:
             result.media = cast[Option[Media]](message.media.get().MessageMediaPhoto.parse())
@@ -90,6 +82,15 @@ proc parse*(message: raw.Message, client: NimgramClient): Message =
             result.media = cast[Option[Media]](some(message.media.get().MessageMediaGeo.parse()))
         if message.media.get() of MessageMediaContact:
             result.media = cast[Option[Media]](some(message.media.get().MessageMediaContact.parse()))
+        if message.media.get() of MessageMediaUnsupported:
+            result.media = cast[Option[Media]](UnsupportedMessage().some())
+        if message.media.get() of MessageMediaDocument:
+            result.media = cast[Option[Media]](message.media.get().MessageMediaDocument.parse())
+        if message.media.get() of MessageMediaWebPage:
+            result.media = cast[Option[Media]](message.media.get().MessageMediaWebPage.webpage.parse()) 
+        if message.media.get() of MessageMediaVenue: 
+            result.media = cast[Option[Media]](UnsupportedMessage().some())
+
 
     if message.restriction_reason.isSome():
         var restrictionTemp: seq[RestrictionReason]
@@ -97,12 +98,7 @@ proc parse*(message: raw.Message, client: NimgramClient): Message =
             restrictionTemp.add(parse(restrictions))
         result.restrictionReason = some(restrictionTemp)
 
-    if message.peer_id of PeerUser:
-        result.chatID = message.peer_id.PeerUser.user_id.int64
-    elif message.peer_id of PeerChat:
-        result.chatID = parseBiggestInt("-" & $message.peer_id.PeerChat.chat_id)
-    elif message.peer_id of PeerChannel:
-        result.chatID = parseBiggestInt("-100" & $message.peer_id.PeerChannel.channel_id)
+    result.chatID = getCorrectID(message.peer_id)
 
     if message.from_id.isSome():
         var fromIDRaw = message.from_id.get()

@@ -103,7 +103,7 @@ when compileOption("threads"):
 
     proc exec*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]) {.async.} =
         var event = newAsyncEvent()
-        var answerchn =  cast[ptr Channel[SqlResponse]](
+        var answerchn = cast[ptr Channel[SqlResponse]](
             allocShared0(sizeof(Channel[SqlResponse]))
         )
         answerchn[].open()

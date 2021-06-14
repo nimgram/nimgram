@@ -12,19 +12,5 @@
 ## SOFTWARE.
 
 
-type Contact* = ref object of Media 
-    number*: string ## Phone number
-    firstName*: string ## Contact's first name 
-    lastName*: string ## Contact's last name
-    vcard*: string ## vcard of the contact
-    ID*: int32 ## ID of the contact (0 if not registered on Telegram)
+type DocAttribute* = ref object
 
-
-proc parse*(contact: raw.MessageMediaContact): Contact =
-    return Contact(
-        number: contact.phone_number,
-        firstName: contact.first_name,
-        lastName: contact.last_name,
-        vcard: contact.vcard,
-        ID: contact.user_id
-    )

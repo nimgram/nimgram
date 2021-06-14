@@ -15,7 +15,7 @@ import json
 import random
 
 # `nimble test` sets the $PWD to the project directory
-import src/nimgram
+import ../src/nimgram
 import asyncdispatch
 import typetraits
 import strutils
@@ -120,7 +120,7 @@ when isMainModule:
   # Load the configurations.
   # Remember, for the `nimble test` $PWD is the project directory
   let
-    conf = loadConfig("tests/test.ini")
+    conf = loadConfig("test.ini")
     mtpc = "mtprotoClient"
 
   # c prefix stands for "configuration"
