@@ -1,20 +1,7 @@
-# Nimgram
-# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
-# This file is part of Nimgram, under the MIT License
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
-# OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-
-import system
-import sam
+import json
+import strformat
 import strutils
+
 
 # Module for converting the TL schema into a json structure
 
@@ -40,6 +27,8 @@ type TlSchema* = object
      methods: seq[TLMethod]
 proc getID(line: string): string =
     var Splitt = split(line, "#", 1)
+    if len(Splitt) <= 1:
+        raise newException(Exception, "failed splitting")
     var Split = Splitt[Splitt.high]
 
     Split = split(Split, " ", 1)[0]
@@ -62,9 +51,12 @@ proc getParameters(line: string): seq[TlParameter] =
         newParam.typeof = split(param, ":")[1]
         result = result & newParam
 
+
 proc getReturnType(line: string): string =
     var Splitt = split(line, "= ", 1)[1]
     result = split(Splitt, ";", 1)[0]
+
+
 
 proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
     var methodMode = false
@@ -98,13 +90,17 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
             meth.returnType = getReturnType(line)
             schema.methods = schema.methods & meth
             
-    result = parse($$schema)
+    result = %* schema
 
 
 proc TL2Json*(filename: string, debug: bool, findLayer: bool, layerVersion: int64 = -1): JsonNode =
     # Parses a jsonified TL schema
+
+    try:
         let TLData = split(readFile(filename), "\n")
         result = parseTL(TLData, debug, layerVersion)
-        if result["layer"].toInt() == -1 and findLayer:
+        if result["layer"].getInt() == -1 and findLayer:
             result = nil
             echo "Failed to get the layer version, please specify it using --layer=<layer>"
+    except IOError as ioError:
+        echo &"An error occurred while attempting to read '{filename}' -> {ioError.msg}"

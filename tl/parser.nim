@@ -15,7 +15,7 @@
 ## TL Parser Module
 
 import system
-import sam
+import json
 import strutils
 import os
 import strformat
@@ -133,11 +133,11 @@ proc parseParameters(params: JsonNode, genericTypesBlock: var string,
     # Parses TL objects constructor parameters
 
     for tlParam in params:
-        var typeOriginal = tlParam["typeof"].toStr()
+        var typeOriginal = tlParam["typeof"].getStr()
         if typeOriginal == "Type}":
             continue
 
-        var name = tlParam["name"].toStr()
+        var name = tlParam["name"].getStr()
 
         if typeOriginal == "!X":
             result = result & &"        {name}*: TL\n"
@@ -161,8 +161,8 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
     var useVectorVar = false
     var useObjVar = false
     for param in params:
-        var realType = param["typeof"].toStr()
-        var paramName = param["name"].toStr()
+        var realType = param["typeof"].getStr()
+        var paramName = param["name"].getStr()
         if paramName == "{X":
             continue
         if paramName == "out":
@@ -172,9 +172,9 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
         if paramName == "static":
             paramName = "isstatic"
 
-        if param["typeof"].toStr().startsWith("flags"):
-            var flagsNumber = param["typeof"].toStr().split("?")[0].split(".")[1]
-            realType = param["typeof"].toStr().split("?")[1]
+        if param["typeof"].getStr().startsWith("flags"):
+            var flagsNumber = param["typeof"].getStr().split("?")[0].split(".")[1]
+            realType = param["typeof"].getStr().split("?")[1]
             ok = true
             if realType == "Vector<bytes>":
                 result.add(&"        if (tempResult.flags and (1 shl {flagsNumber})) != 0:\n")
@@ -293,8 +293,8 @@ proc generateEncode(predicate: string, id: string, params: JsonNode): string =
     var flagsCode = ""
     var encodeBlock = ""
     for param in params:
-        var realType = param["typeof"].toStr()
-        var paramName = param["name"].toStr()
+        var realType = param["typeof"].getStr()
+        var paramName = param["name"].getStr()
         if paramName == "{X":
             continue
         if paramName == "out":
@@ -304,23 +304,23 @@ proc generateEncode(predicate: string, id: string, params: JsonNode): string =
         if paramName == "static":
             paramName = "isstatic"
 
-        if param["typeof"].toStr().startsWith("flags"):
-            var flagsNumber = param["typeof"].toStr().split("?")[0].split(".")[1]
-            realType = param["typeof"].toStr().split("?")[1]
+        if param["typeof"].getStr().startsWith("flags"):
+            var flagsNumber = param["typeof"].getStr().split("?")[0].split(".")[1]
+            realType = param["typeof"].getStr().split("?")[1]
             if realType == "true":
                 flagsCode.add(&"        if convertedObj.{paramName}:\n                convertedObj.flags = convertedObj.flags or 1 shl {flagsNumber}\n")
             else:
                 flagsCode.add(&"        if convertedObj.{paramName}.isSome():\n                convertedObj.flags = convertedObj.flags or 1 shl {flagsNumber}\n")
 
         if realType != "true":
-            if param["typeof"].toStr().contains("?"):
-                if param["typeof"].toStr().contains("Vector"):
+            if param["typeof"].getStr().contains("?"):
+                if param["typeof"].getStr().contains("Vector"):
                     encodeBlock.add(&"        if convertedObj.{paramName}.isSome():\n            result = result & TLEncode(cast[seq[TL]](convertedObj.{paramName}.get()))\n")
                 else:
                     encodeBlock.add(&"        if convertedObj.{paramName}.isSome():\n            result = result & TLEncode(convertedObj.{paramName}.get())\n")
             else:
-                if param["typeof"].toStr().startsWith("Vector"):
-                    var typ = param["typeof"].toStr()
+                if param["typeof"].getStr().startsWith("Vector"):
+                    var typ = param["typeof"].getStr()
 
                     if typ.replace("Vector<", "").replace(">", "") in @["int",
                             "long", "int128", "int256", "double", "float", "#"]:
@@ -340,21 +340,21 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     var encodeCode = "\n\nproc TLEncode*(self: TL): seq[uint8] =\n"
     var decodeCodeSecond = "    var id: uint32\n    bytes.TLDecode(addr id)\n    case id:\n"
     for methods in mtprotoJson["methods"]:
-        var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()),
+        var id = methods["id"].getStr()
+        encodeCode.add(generateEncode(fixTLType(methods["methodname"].getStr()),
                 id, methods["params"]))
     for methods in mtprotoJson["constructors"]:
-        var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()),
+        var id = methods["id"].getStr()
+        encodeCode.add(generateEncode(fixTLType(methods["predicate"].getStr()),
                 id, methods["params"]))
     for methods in apiJson["methods"]:
-        var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()),
+        var id = methods["id"].getStr()
+        encodeCode.add(generateEncode(fixTLType(methods["methodname"].getStr()),
                 id, methods["params"]))
 
     for methods in apiJson["constructors"]:
-        var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()),
+        var id = methods["id"].getStr()
+        encodeCode.add(generateEncode(fixTLType(methods["predicate"].getStr()),
                 id, methods["params"]))
 
     encodeCode.add("    if self of GZipPacked:\n        result = TLEncode(uint32(0x3072CFA1))\n        result.add(TLEncode(compress(self.GZipPacked.body.TLEncode())))")
@@ -363,44 +363,44 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
 
 
     for methods in mtprotoJson["methods"]:
-        var id = methods["id"].toStr()
-        var something = fixTLType(methods["methodname"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()),
+        var id = methods["id"].getStr()
+        var something = fixTLType(methods["methodname"].getStr())
+        decodeCode.add(generateDecode(fixTLType(methods["methodname"].getStr()),
                 id, methods["params"]))
 
         getTypeNameCode.add("        if self of " & fixTLType(methods[
-                "methodname"].toStr()) & ":\n            return \"" & fixTLType(
-                methods["methodname"].toStr()) & "\"\n")
+                "methodname"].getStr()) & ":\n            return \"" & fixTLType(
+                methods["methodname"].getStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in mtprotoJson["constructors"]:
-        var id = methods["id"].toStr()
-        var something = fixTLType(methods["predicate"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()),
+        var id = methods["id"].getStr()
+        var something = fixTLType(methods["predicate"].getStr())
+        decodeCode.add(generateDecode(fixTLType(methods["predicate"].getStr()),
                 id, methods["params"]))
         getTypeNameCode.add(&"        if self of " & fixTLType(methods[
-                "predicate"].toStr()) & ":\n            return \"" & fixTLType(
-                methods["predicate"].toStr()) & "\"\n")
+                "predicate"].getStr()) & ":\n            return \"" & fixTLType(
+                methods["predicate"].getStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["methods"]:
-        var id = methods["id"].toStr()
-        var something = fixTLType(methods["methodname"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()),
+        var id = methods["id"].getStr()
+        var something = fixTLType(methods["methodname"].getStr())
+        decodeCode.add(generateDecode(fixTLType(methods["methodname"].getStr()),
                 id, methods["params"]))
         getTypeNameCode.add(&"        if self of " & fixTLType(methods[
-                "methodname"].toStr()) & ":\n            return \"" & fixTLType(
-                methods["methodname"].toStr()) & "\"\n")
+                "methodname"].getStr()) & ":\n            return \"" & fixTLType(
+                methods["methodname"].getStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["constructors"]:
-        var id = methods["id"].toStr()
-        var something = fixTLType(methods["predicate"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()),
+        var id = methods["id"].getStr()
+        var something = fixTLType(methods["predicate"].getStr())
+        decodeCode.add(generateDecode(fixTLType(methods["predicate"].getStr()),
                 id, methods["params"]))
         getTypeNameCode.add(&"        if self of " & fixTLType(methods[
-                "predicate"].toStr()) & ":\n            return \"" & fixTLType(
-                methods["predicate"].toStr()) & "\"\n")
+                "predicate"].getStr()) & ":\n            return \"" & fixTLType(
+                methods["predicate"].getStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     decodeCode.add("    if self of FutureSalts:\n        var futureSalts = FutureSalts()\n        bytes.TLDecode(addr futureSalts.reqMsgID)\n        bytes.TLDecode(addr futureSalts.now)\n        var lenght: int32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, lenght):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            futureSalts.salts.add(tmp.FutureSalt)\n        self = futureSalts.TL\n        return\n")
@@ -416,7 +416,7 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     echo "generated types"
     decodeCode = "\nproc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = \n" &
             decodeCode & decodeCodeSecond & "        else:\n            raise newException(CatchableError, &\"Constructor {id} was not found\")"
-    var layerversion = apiJson["layer"].toInt()
+    var layerversion = apiJson["layer"].getInt()
     writeFile("rpc/raw.nim", typeUtilsFile &
             &"const LAYER_VERSION* = {layerversion}\n" & decodeCode &
             encodeCode & getTypeNameCode)
@@ -429,7 +429,7 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool,
         predicategetter = "predicate"
     for obj in jsonData:
         var sub = "base"
-        var predicate = obj[predicategetter].toStr()
+        var predicate = obj[predicategetter].getStr()
         if predicate.contains("."):
             sub = predicate.split(".")[0]
             predicate = predicate.split(".")[1]
@@ -442,12 +442,12 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool,
         if not code.contains(sub):
             code[sub] = Block()
         if generateTypes:
-            var pmr = getPmr(obj["typeof"].toStr())
+            var pmr = getPmr(obj["typeof"].getStr())
             if not interfaces.contains(pmr.toLower()):
                 genericTypesBlock = genericTypesBlock & &"    {pmr}I* = ref object of TLObject\n\n"
                 interfaces.add(pmr.toLower())
         if generateTypes:
-            var pmr = getPmr(obj["typeof"].toStr())
+            var pmr = getPmr(obj["typeof"].getStr())
             code[sub].typesBlock.add(&"    {predicate}* = ref object of {pmr}I\n" &
                     parseParameters(obj["params"], genericTypesBlock, interfaces))
         else:
