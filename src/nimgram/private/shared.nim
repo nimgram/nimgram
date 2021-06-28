@@ -1,7 +1,26 @@
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import tables
 import network/transports
 
-const NIMGRAM_VERSION* = 0.01
+const NIMGRAM_VERSION* = "0.1.0"
+
+const MIN_CHANNEL_ID* = -1002147483647
+const MAX_CHANNEL_ID* = -1000000000000
+const CHANNEL_RANGE* = MIN_CHANNEL_ID .. MAX_CHANNEL_ID
+const MIN_CHAT_ID* = -2147483647
+const MAX_USER_ID* = 2147483647
 
 const IP_TEST = {
     1: "149.154.175.10",
@@ -40,7 +59,6 @@ proc getIP*(num: int, ipv6, test: bool = false): string =
         return IP_TEST.toTable[num]
     return IP_PROD.toTable[num]
 
-
 type NimgramConfig* = object
     testMode*: bool
     transportMode*: transports.NetworkTypes
@@ -58,3 +76,4 @@ type NimgramConfig* = object
 type StoragePeer* = object
     peerID*: int64
     accessHash*: int64
+

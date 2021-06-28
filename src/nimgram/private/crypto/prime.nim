@@ -1,3 +1,17 @@
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 import random
 import algorithm
 import math
@@ -5,6 +19,9 @@ import times
 import stint
 import strutils
 
+## NOTE: even if this module is inside "crypto", there isn't actually any type of cryptography in place
+## Random can be used safetly because this operation is only used as a POW (proof of work)
+## Ported from Python code
 
 proc brent*(n: Int128): Int128 =
   if n mod Int128(2.stint(128)) == Int128(0.stint(128)):

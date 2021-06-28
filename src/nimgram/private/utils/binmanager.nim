@@ -1,3 +1,16 @@
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import asyncfile, asyncdispatch
 import ../rpc/decoding
 import nimcrypto
@@ -8,8 +21,8 @@ import os
 #This is an alternative way instead of sqlite to manage MTProto sessions by saving auth_keys/salt on a binary file
 
 #Bin Structure:
-#sha256 checksum of all bytes
-#Bin version (uint16)
+#sha256 checksum of all bytes (STATIC)
+#Bin version (uint16) (STATIC)
 #Array lenght (uint16)
 #DC options
 
@@ -72,15 +85,13 @@ proc loadBin*(filename: string): Future[Table[int, DcOption]] {.async.} =
         file.close()
         #Check if data is valid before reading everything
         var checksum = data[0..31]
-        if sha256.digest(data[32..(data.len-1)]).data[0..31] != checksum:
-            raise newException(CatchableError, "integrity check failed")
+        doAssert sha256.digest(data[32..(data.len-1)]).data[0..31] == checksum, "Integrity check failed, are you using the correct session file?"
         #Data is valid, continue
         var realdata = newScalingSeq(data[32..(data.len-1)])
         var fileBinVersion: uint16
         realdata.TLDecode(addr fileBinVersion)
-        if fileBinVersion != BIN_VERSION:
-            #Currently migrating bin version is not planned until minimum stability is reached
-            raise newException(CatchableError, "Unsupported bin version " & $fileBinVersion)
+        #Currently migrating bin version is not planned until minimum stability is reached
+        doAssert fileBinVersion == BIN_VERSION, "Cannot use different bin version, please recreate the session"
         var lenght: uint16
         realdata.TLDecode(addr lenght)
         for i in countup(1, int(lenght)):

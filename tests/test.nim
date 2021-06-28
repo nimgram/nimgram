@@ -1,76 +1,60 @@
-import json
-import random
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+# HOW TO TEST:
+# First, download the whole source, then change the values in test.ini (You can get the api key from https://my.telegram.org and the bot token from https://t.me/botfather)
+# Finally you can build this file by executing "nimble test" 
+
 
 # `nimble test` sets the $PWD to the project directory
-import src/nimgram
+import ../src/nimgram
 import asyncdispatch
 import typetraits
 import strutils
 import parsecfg
+import options
 
 # That variable holds the client instance
 var mtprotoClient: NimgramClient
 
-# Message handler. Called every time the client updates
-proc handleMessage(message: UpdateNewMessage): Future[void] {.async.} =
-  let contents = message.message
-  # Reacts only if the message is the actually message
-  if contents of Message:
-    let textMessage = contents.Message
+## Update handling currently not working until types are finished
 
-    # The test program waits for the message "fff"
-    if textMessage.message == "fff":
-      quit 0
+import strformat
 
-    var chatID: InputPeerI
+proc messageEvent(message: nimgram.Message): Future[void] {.async.} =
+  #discard
+  if message.outgoing:
+    return
+  echo fmt"Message from {message.chatID}: {message.text}"
+  echo fmt"Message has keyboard: {message.replyMarkup.isSome}"
+  echo fmt"Message was edited: {message.edited}"
 
-    var inputPeer = await mtprotoClient.resolveInputPeer(textMessage.peer_id)
-    # Preparing to throw the dice...
-    randomize()
+  var keyboard = InlineKeyboardMarkup(
+    rows: @[@[InlineKeyboardButton(
+      text: "test",
+      url: some("https://t.me/cagatemi")
+    )]]
+  )
 
-    # Send the message
-    discard await mtprotoClient.send(MessagesSendMessage(
-      no_webpage: true,
-      silent: false,
-      background: false,
-      clear_draft: false,
-      peer: inputPeer,
-      message: $(%*textMessage),
-      random_id: int64(rand(2147483646))
-    ))
-proc handleChannelMessage(message: UpdateNewChannelMessage): Future[void] {.async.} =
-  let contents = message.message
-  # Reacts only if the message is the actually message
-  if contents of Message:
-    let textMessage = contents.Message
-    if textMessage.isout:
-      return
-    # The test program waits for the message "fff"
-    if textMessage.message == "fff":
-      quit 0
+  discard await mtprotoClient.sendMessage(message.chatID, "hi", keyboard)
+  if message.replyMarkup.isSome:
+    if message.replyMarkup.get() of InlineKeyboardMarkup:
+      echo message.replyMarkup.get().InlineKeyboardMarkup.type
+      echo message.replyMarkup.get().InlineKeyboardMarkup.rows.type
+  elif message.text == "/quit":
+    quit()
 
-    var chatID: InputPeerI
-
-    var inputPeer = await mtprotoClient.resolveInputPeer(textMessage.peer_id)
-    echo %*inputPeer
-    # Preparing to throw the dice...
-    randomize()
-
-    # Send the message
-    discard await mtprotoClient.send(MessagesSendMessage(
-      no_webpage: true,
-      silent: false,
-      background: false,
-      clear_draft: false,
-      peer: inputPeer,
-      message: $(%*textMessage),
-      random_id: int64(rand(2147483646))
-    ))
-
-# Reconnection handler
-proc onReconnection() {.async.} =
-  echo "Reconnected!"
-  discard await mtprotoClient.send(UpdatesGetState())
 
 # Proc to launch the client instance
 proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.} =
@@ -79,16 +63,11 @@ proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.}
     config, StorageRam)
   # Take the control over the bot
   await mtprotoClient.botLogin(botToken)
-  # Set the reconnection handler
-  mtprotoClient.onReconnection(onReconnection)
-  # Tell the server we're ready
-  discard await mtprotoClient.send(UpdatesGetState())
   # Set the update handler
-  mtprotoClient.onUpdateNewMessage(handleMessage)
-  mtprotoClient.onUpdateNewChannelMessage(handleChannelMessage)
+  mtprotoClient.addOnMessageHandler(messageEvent)
 
   # Write text to console, now send `fff` to have the test succseeded
-  echo "Client started, send `fff` to the bot"
+  echo "Client started, send `/quit` to the bot"
 
 
 

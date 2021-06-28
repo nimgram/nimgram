@@ -1,3 +1,16 @@
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import network/transports
 import random/urandom
 import rpc/raw
@@ -9,38 +22,12 @@ import stew/endians2
 import nimcrypto
 import utils/logging
 import math
-import updates
 import shared
 import strformat
 import storage
 import times
 import random
 import tables
-type Response = ref object
-    event: AsyncEvent
-    body: TL
-
-type Session* = ref object 
-    isRequired*: bool
-    isDead*: bool
-    initDone*: bool
-    authKey: seq[uint8]
-    alreadyCalledDisconnected: bool
-    resumeConnectionWait*: AsyncEvent
-    authKeyID: seq[uint8]
-    storageManager: NimgramStorage
-    clientConfig: NimgramConfig
-    serverSalt: seq[uint8]
-    dcID: int
-    activeReceiver: bool
-    logger: Logger
-    sessionID: seq[uint8] 
-    seqNo: int 
-    callbackUpdates*: UpdatesCallback
-    acks: seq[int64]
-    responses: Table[int64, Response]
-    maxMessageID: uint64
-    connection: MTProtoNetwork
 
 proc messageID(self: Session): uint64 =
     result = uint64(now().toTime().toUnix()*2 ^ 32)
@@ -50,7 +37,9 @@ proc messageID(self: Session): uint64 =
         result = self.maxMessageID + 4
     self.maxMessageID = result
 
-proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], storageManager: NimgramStorage, config: NimgramConfig): Session =
+proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int,
+        authKey: seq[uint8], serverSalt: seq[uint8],
+        storageManager: NimgramStorage, config: NimgramConfig): Session =
     result = new Session
     result.acks = newSeq[int64](0)
     result.connection = connection
@@ -62,7 +51,7 @@ proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey
     result.initDone = false
     result.alreadyCalledDisconnected = false
     result.serverSalt = serverSalt
-    result.callbackUpdates = UpdatesCallback()
+
     result.seqNo = 5
     result.sessionID = urandom(8)
     result.clientConfig = config
@@ -78,10 +67,11 @@ proc encrypt*(self: Session, obj: seq[uint8], typeof: TL): EncryptedResult =
     self.seqNo = seqNumber
     var mesageeID = self.messageID()
     result.messageID = mesageeID
-    var payload = self.serverSalt &  self.sessionID &  mesageeID.TLEncode() & uint32(seqNumber).TLEncode() & uint32(len(data)).TLEncode() & data
-    payload.add(urandom((len(payload) + 12) mod 16 + 12) )
+    var payload = self.serverSalt & self.sessionID & mesageeID.TLEncode() &
+            uint32(seqNumber).TLEncode() & uint32(len(data)).TLEncode() & data
+    payload.add(urandom((len(payload) + 12) mod 16 + 12))
     while true:
-        if len(payload) mod 16 ==  0 and len(payload) mod 4 == 0:
+        if len(payload) mod 16 == 0 and len(payload) mod 4 == 0:
             break
         payload.add(1)
     var messageKey = sha256.digest(self.authKey[88..119] & payload).data[8..23]
@@ -90,7 +80,8 @@ proc encrypt*(self: Session, obj: seq[uint8], typeof: TL): EncryptedResult =
 
     var aesKey = a[0..7] & b[8..23] & a[24..31]
     var aesIV = b[0..7] & a[8..23] & b[24..31]
-    result.encryptedData = self.authKeyID & messageKey & aesIGE(aesKey, aesIV, payload, true)
+    result.encryptedData = self.authKeyID & messageKey & aesIGE(aesKey, aesIV,
+            payload, true)
 
 
 proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
@@ -113,11 +104,12 @@ proc decrypt(self: Session, data: seq[uint8]): CoreMessage =
     result = new CoreMessage
     result.TLDecode(splaintext)
 
-proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: bool = false): Future[TL] {.async.} 
+#proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: bool = false): Future[TL] {.async.}
 
-proc mtprotoInit(self: Session): Future[void] {.async.}
+proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.}
 
-proc startHandler*(self: Session) {.async.} = 
+proc startHandler*(self: Session, client: NimgramClient,
+        updateHandler: UpdateHandler) {.async.} =
     while not self.connection.isClosed():
         var mdata: seq[uint8]
         try:
@@ -126,7 +118,7 @@ proc startHandler*(self: Session) {.async.} =
             if not t:
                 break
             mdata = asyncReceive.waitFor
-            
+
         except:
             break
         if len(mdata) == 0:
@@ -136,7 +128,8 @@ proc startHandler*(self: Session) {.async.} =
         if len(mdata) == 4:
             self.logger.log(lvlError, &"Error response from Telegram")
             #TODO: How i can handle this?
-            raise newException(CatchableError, "invalid response: " & $(cast[int32](fromBytes(uint32, mdata))))
+            raise newException(CatchableError, "invalid response: " & $(cast[
+                    int32](fromBytes(uint32, mdata))))
         var coreMessageDecrypted = self.decrypt(mdata)
 
         var messages: seq[CoreMessage]
@@ -152,7 +145,7 @@ proc startHandler*(self: Session) {.async.} =
                     continue
                 else:
                     self.acks.add(message.msgID.int64)
-            
+
             var msgID = int64(0)
             self.seqNo = seqNo(body, self.seqNo)
             if message.body of Msg_detailed_info:
@@ -167,7 +160,8 @@ proc startHandler*(self: Session) {.async.} =
 
             if message.body of Bad_msg_notification:
                 var code = body.Bad_msg_notification.error_code
-                self.logger.log(lvlWarn, &"Received bad_msg_notification with code {code}")
+                self.logger.log(lvlWarn,
+                        &"Received bad_msg_notification with code {code}")
                 msgID = body.Bad_msg_notification.bad_msg_id
 
             if message.body of Bad_server_salt:
@@ -175,11 +169,11 @@ proc startHandler*(self: Session) {.async.} =
 
             if message.body of FutureSalts:
                 msgID = body.FutureSalts.reqMsgID.int64
-            
+
             if message.body of Rpc_result:
                 msgID = body.Rpc_result.req_msg_id
                 body = body.Rpc_result.result
-            
+
             if body of GZipPacked:
                 body = body.GZipPacked.body
 
@@ -189,11 +183,15 @@ proc startHandler*(self: Session) {.async.} =
             if self.responses.contains(msgID):
                 self.responses[msgID].body = body
                 self.responses[msgID].event.trigger()
-            
-            if body of UpdatesTooLong or body of UpdateShortMessage or body of UpdateShortChatMessage or body of UpdateShort or body of UpdatesCombined or body of raw.Updates:
+
+
+            if body of UpdatesTooLong or body of UpdateShortMessage or
+                    body of UpdateShortChatMessage or body of UpdateShort or
+                    body of UpdatesCombined or body of raw.Updates:
                 self.seqNo = seqNo(body, self.seqNo)
-                asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI, self.storageManager)
-                
+                asyncCheck updateHandler.sendUpdate(client, body.UpdatesI)
+                #asyncCheck self.callbackUpdates.processUpdates(body.UpdatesI, self.storageManager)
+
 
             if len(self.acks) >= 8:
                 discard await self.send(Msgs_ack(msg_ids: self.acks), false)
@@ -204,7 +202,7 @@ proc startHandler*(self: Session) {.async.} =
         self.logger.log(lvlDebug, &"Trying to reconnect...")
 
         if not self.alreadyCalledDisconnected:
-            self.callbackUpdates.processNetworkDisconnected()
+            #self.callbackUpdates.processNetworkDisconnected()
             self.alreadyCalledDisconnected = true
         while true:
             await sleepAsync(5000)
@@ -219,21 +217,21 @@ proc startHandler*(self: Session) {.async.} =
                 self.seqNo = 5
                 self.sessionID = urandom(8)
                 self.maxMessageID = 0
-                asyncCheck self.startHandler()
+                asyncCheck self.startHandler(client, updateHandler)
                 try:
-                    await self.mtprotoInit()
+                    await self.mtprotoInit(client)
                 except:
                     return
                 self.logger.log(lvlDebug, &"Sucessfully reconnected")
                 var responsesCopy = self.responses
                 for i, _ in responsesCopy:
                     self.responses[i].body = nil
-                    self.responses[i].event.trigger() 
+                    self.responses[i].event.trigger()
                 self.responses.clear()
                 self.initDone = true
                 self.resumeConnectionWait.trigger()
                 self.alreadyCalledDisconnected = false
-                self.callbackUpdates.processNetworkReconnected()
+                #self.callbackUpdates.processNetworkReconnected()
                 self.isDead = false
                 break
     else:
@@ -241,20 +239,21 @@ proc startHandler*(self: Session) {.async.} =
 
         for i, _ in responsesCopy:
             self.responses[i].body = nil
-            self.responses[i].event.trigger() 
+            self.responses[i].event.trigger()
             self.responses.clear()
         #inform this session is "dead"
         self.isDead = true
 
 proc waitEvent(ev: AsyncEvent): Future[void] =
-   var fut = newFuture[void]("waitEvent")
-   proc cb(fd: AsyncFD): bool = fut.complete(); return true
-   addEvent(ev, cb)
-   return fut
+    var fut = newFuture[void]("waitEvent")
+    proc cb(fd: AsyncFD): bool = fut.complete(); return true
+    addEvent(ev, cb)
+    return fut
 
 
 
-proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: bool = false): Future[TL] {.async.} =
+proc send*(self: Session, tl: TL, waitResponse: bool = true,
+        ignoreInitDone: bool = false): Future[TL] {.async.} =
     var data = self.encrypt(tl.TLEncode(), tl)
 
     if self.isDead:
@@ -266,7 +265,7 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
         raise newException(CatchableError, "Connection was lost")
     if waitResponse:
         self.responses[data.messageID.int64] = Response(event: newAsyncEvent())
-    
+
         #Wait for response of the worker
         await waitEvent(self.responses[data.messageID.int64].event)
         if not self.responses.hasKey(data.messageID.int64):
@@ -277,12 +276,13 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true, ignoreInitDone: boo
 
             var badServerSalt = response.Bad_server_salt
             self.serverSalt = badServerSalt.new_server_salt.TLEncode()
-            var info = await self.storageManager.GetSessionsInfo()
+            var info = await self.storageManager.getSessionsInfo()
             info[self.dcID].salt = self.serverSalt
-            await self.storageManager.WriteSessionsInfo(info)
+            await self.storageManager.writeSessionsInfo(info)
             return await self.send(tl, waitResponse, ignoreInitDone)
         if response of Rpc_error:
-            var excp = RPCException(errorMessage: response.Rpc_error.error_message, errorCode: response.Rpc_error.error_code)
+            var excp = RPCException(errorMessage: response.Rpc_error.error_message,
+                    errorCode: response.Rpc_error.error_code)
             excp.msg = response.Rpc_error.error_message
             raise excp
 
@@ -303,17 +303,17 @@ proc checkConnectionLoop*(self: Session) {.async.} =
 
 
 
-proc mtprotoInit(self: Session): Future[void] {.async.} =
+proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.} =
     randomize()
     let pingID = int64(rand(9999))
 
     var ponger = await self.send(Ping(ping_id: pingID), true, true)
     if not(ponger of Pong):
-        raise newException(CatchableError, "Ping failed with type " & ponger.getTypeName())
+        raise newException(CatchableError, "Ping failed!")
     doAssert ponger.Pong.ping_id == pingID
-    
-    discard await self.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(
-            api_id: self.clientConfig.apiID,
+
+    discard await self.send(InvokeWithLayer(layer: LAYER_VERSION,
+            query: InitConnection(api_id: self.clientConfig.apiID,
             device_model: self.clientConfig.deviceModel,
             system_version: self.clientConfig.systemVersion,
             app_version: self.clientConfig.appVersion,
@@ -322,3 +322,4 @@ proc mtprotoInit(self: Session): Future[void] {.async.} =
             lang_code: self.clientConfig.langCode,
             query: HelpGetConfig())), false, true)
     asyncCheck self.checkConnectionLoop()
+    await startHandler(client)

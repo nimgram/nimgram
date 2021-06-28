@@ -1,116 +1,78 @@
-import rpc/raw
-import asyncdispatch
-import storage
-import shared
-import strformat
-import strutils
-import options 
-type UpdatesCallback* = ref object
-    callback: Option[proc(updates: UpdatesI): Future[void] {.async.}]
-    eventUpdateNewMessage: Option[proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}]
-    eventNetworkReconnected: Option[proc(): Future[void] {.async.}]
-    eventNetworkDisconnected: Option[proc(): Future[void] {.async.}]
-    eventUpdateNewChannelMessage: Option[proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}]
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+ 
+#seq[proc(message: Message): Future[void] {.async.}]
 
+type NewMessageHandler* = ref object of FunctionHandler
+    message: seq[proc(message: Message): Future[void] {.async.}]
 
-proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.async.} = 
+proc newUpdateHandler(): UpdateHandler =
+    return UpdateHandler(
+        onMessageHandlers: NewMessageHandler(message: newSeq[proc(
+                message: Message): Future[void] {.async.}]())
+    )
+
+proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.async.} =
     for userGeneric in users:
-        if userGeneric of User:
-            let user = userGeneric.User
+        if userGeneric of raw.User:
+            let user = cast[raw.User](userGeneric)
             if user.access_hash.isSome():
-                await storage.AddPeer(StoragePeer(peerID: user.id, accessHash: user.access_hash.get()))
+                await storage.addPeer(StoragePeer(peerID: user.id,
+                        accessHash: user.access_hash.get()))
     for chatGeneric in chats:
         if chatGeneric of raw.Channel:
             let channel = cast[raw.Channel](chatGeneric)
             if channel.access_hash.isSome():
-                await storage.AddPeer(StoragePeer(peerID: (&"-100{channel.id}").parseBiggestInt, accessHash: channel.access_hash.get()))
+                await storage.addPeer(
+                    StoragePeer(
+                        peerID: getChannelId(channel.id),
+                        accessHash: channel.access_hash.get()
+                    )
+                )
 
+proc addOnMessageHandler*(client: NimgramClient, event: proc(
+        message: Message): Future[void] {.async.}) =
+    var handler = client.updateHandler.onMessageHandlers.NewMessageHandler
+    handler.message.add(event)
+    client.updateHandler.onMessageHandlers = handler
 
-
-proc processUpdates*(self: UpdatesCallback, updates: UpdatesI, storage: NimgramStorage): Future[void] {.async.} =
-    ## Process raw updates
-
-    if self.callback.isSome():
-        asyncCheck self.callback.get()(updates)
-
-    if updates of Updates:
-        var updatesType = updates.Updates
-        await storage.saveData(updatesType.users, updatesType.chats)
-        # Handle UpdateNewMessage
-        for update in updatesType.updates:
-            if update of UpdateNewMessage:
-                if self.eventUpdateNewMessage.isSome():
-                    asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
-        # Handle UpdateNewChannelMessage
+proc sendUpdate(self: UpdateHandler, client: NimgramClient,
+        gupdate: raw.UpdatesI) {.async.} =
+    if gupdate of raw.Updates:
+        let updates = cast[raw.Updates](gupdate)
+        await saveData(client.storageManager, updates.users, updates.chats)
+        for update in updates.updates:
+            if update of UpdateEditChannelMessage:
+                let message = parse(update.UpdateEditChannelMessage.message, client, true)
+                for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
+                    asyncCheck messageHandler(message) 
+            if update of UpdateEditMessage:
+                let message = parse(update.UpdateEditMessage.message, client, true)
+                for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
+                    asyncCheck messageHandler(message) 
             if update of UpdateNewChannelMessage:
-                if self.eventUpdateNewChannelMessage.isSome():
-                    asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
-
-
-    if updates of UpdateShort:
-        var updateShort = updates.UpdateShort
-
-        # Handle UpdateNewMessage
-        if updateShort.update of UpdateNewMessage:
-            if self.eventUpdateNewMessage.isSome():
-                asyncCheck self.eventUpdateNewMessage.get()(updateShort.update.UpdateNewMessage)
-        
-        # Handle UpdateNewChannelMessage
-        if updateShort.update of UpdateNewChannelMessage:
-            if self.eventUpdateNewChannelMessage.isSome():
-                asyncCheck self.eventUpdateNewChannelMessage.get()(updateShort.update.UpdateNewChannelMessage)
-
-    if updates of UpdatesCombined:
-        var updatesCombined = updates.UpdatesCombined
-        await storage.saveData(updatesCombined.users, updatesCombined.chats)
-        for update in updatesCombined.updates:
-            
-            # Handle UpdateNewMessage
+                let message = parse(update.UpdateNewChannelMessage.message, client)
+                for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
+                    asyncCheck messageHandler(message)
             if update of UpdateNewMessage:
-                if self.eventUpdateNewMessage.isSome():
-                    asyncCheck self.eventUpdateNewMessage.get()(update.UpdateNewMessage)
-
-            # Handle UpdateNewChannelMessage
-            if update of UpdateNewChannelMessage:
-                if self.eventUpdateNewChannelMessage.isSome():
-                    asyncCheck self.eventUpdateNewChannelMessage.get()(update.UpdateNewChannelMessage)
-
-proc processNetworkReconnected*(self: UpdatesCallback) = 
-    # Procedure to be called to handle "onReconnection"
-
-    if self.eventNetworkReconnected.isSome():
-        asyncCheck self.eventNetworkReconnected.get()()
-
-proc processNetworkDisconnected*(self: UpdatesCallback) = 
-    # Procedure to be called to handle "onDisconnection"
-
-    if self.eventNetworkDisconnected.isSome():
-        asyncCheck self.eventNetworkDisconnected.get()()
-        
-proc onReconnection*(self: UpdatesCallback, procedure: proc(): Future[void] {.async.}) =
-    ## Call the specified procedure when client is reconnected successfully to network (Only main datacenter)
-    
-    self.eventNetworkReconnected = some(procedure)
+                let message = parse(update.UpdateNewMessage.message, client)
+                for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
+                    asyncCheck messageHandler(message)
 
 
-proc onDisconnection*(self: UpdatesCallback, procedure: proc(): Future[void] {.async.}) =
-    ## Call the specified procedure when client is disconnected from network (Only main datacenter)
-    
-    self.eventNetworkDisconnected = some(procedure)
+proc startHandler(self: NimgramClient) {.async.} =
+    ## Initialize update handling
 
-proc onUpdateNewMessage*(self: UpdatesCallback, procedure: proc(updateNewMessage: UpdateNewMessage): Future[void] {.async.}) =
-    ## Call the specified procedure when UpdateNewMessage is received
-    
-    self.eventUpdateNewMessage = some(procedure)
-
-
-proc onUpdateNewChannelMessage*(self: UpdatesCallback, procedure: proc(updateNewChannelMessage: UpdateNewChannelMessage): Future[void] {.async.}) =
-    ## Call the specified procedure when UpdateNewChannelMessage is received
-    
-    self.eventUpdateNewChannelMessage = some(procedure)
-
-proc onUpdates*(self: UpdatesCallback, procedure: proc(updates: UpdatesI): Future[void] {.async.}) =
-    ## Call the specified procedure when UpdatesI is received.
-    ## You should use this if you want to handle low level updates
-    self.callback = some(procedure)
-
+    echo "Starting update handler"
+    # Currently the fastest way to get updates working is by sending get state
+    discard await self.sessions[self.mainDc].send(UpdatesGetState(), true)
