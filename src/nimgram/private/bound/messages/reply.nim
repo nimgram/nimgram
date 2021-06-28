@@ -10,14 +10,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-type FileLocation* = ref object ## Indicates the location of a photo
-    volumeID*: int64 ## Volume ID
-    localID*: int32 ## Local ID
-
-proc parse*(fileLoc: raw.FileLocationI): FileLocation =
-    var castFileLoc = cast[raw.FileLocationToBeDeprecated](fileLoc)
-    return FileLocation(
-        volumeID: castFileLoc.volume_id,
-        localID: castFileLoc.local_id
-    )
+#[
+proc reply(message: Message, text: string,
+    replyMarkup: KeyboardMarkup): Future[Message] {.async.}
+]#

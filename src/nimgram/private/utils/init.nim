@@ -1,19 +1,19 @@
-## Nimgram
-## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
-## This file is part of Nimgram, under the MIT License
-##
-## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
-## OF ANY KIND, EXPRESS OR
-## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-## SOFTWARE.
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-## Loaded by nimgram.nim
-## 
-## This file contains essentials procs/types to initialize Nimgram
+# Loaded by nimgram.nim
+#
+# This file contains essentials procs/types to initialize Nimgram
 
 type StorageTypes* = enum
     StorageSqlite
@@ -21,14 +21,6 @@ type StorageTypes* = enum
 
 type InternalTableOptions = ref object
     original: Table[int, binmanager.DcOption]
-
-type NimgramClient* = ref object 
-    logger: Logger
-    sessions: Table[int, Session]
-    mainDc: int
-    isMainAuthorized: bool
-    config: NimgramConfig
-    storageManager: NimgramStorage
 
 proc clearCache*(self: NimgramClient): Future[void] {.async.} =
     self.storageManager.clearCache()
@@ -44,6 +36,8 @@ proc getConnection(connectionType: NetworkTypes, address: string, port: uint16):
         await connection.connect(address, port)
         result = connection.MTProtoNetwork
 
+#proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], storageManager: NimgramStorage, config: NimgramConfig): Session
+
 proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, connectionType: NetworkTypes, ipv6, test: bool = false, storageManager: NimgramStorage, config: NimgramConfig): Future[Session] {.async.} =
     var ip = getIp(dcID, ipv6, test)
     if keys.original.hasKey(dcID):
@@ -57,6 +51,8 @@ proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, conn
         await storageManager.writeSessionsInfo(keys.original)
         result = initSession(connection, self.logger, dcID, gen[0], gen[1], storageManager, config)
 
+
+#proc startHandler*(self: Session, client: NimgramClient, updateHandler: UpdateHandler) {.async.} 
 
 proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: StorageTypes = StorageRam, logLevel: int = 7): Future[NimgramClient] {.async.} = 
     result = new NimgramClient
@@ -77,6 +73,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
     result.logger.log(lvlDebug, "Loading sessions")
     result.config = config
     result.storageManager = driver
+    result.updateHandler = newUpdateHandler()
     var sessions = InternalTableOptions(original: await result.storageManager.getSessionsInfo())
     var found = false
     var sessionMain: binmanager.DcOption
@@ -98,7 +95,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         sessions.original[result.mainDc].isMain = true
         await result.storageManager.writeSessionsInfo(sessions.original)
 
-    asyncCheck result.sessions[result.mainDc].startHandler()
+    asyncCheck result.sessions[result.mainDc].startHandler(result, result.updateHandler)
     let pingID = int64(rand(9999))
     try:
         var ponger = await result.sessions[result.mainDc].send(Ping(ping_id: pingID), true, true)
@@ -136,11 +133,11 @@ proc resolveInputPeer*(self: NimgramClient, id: int64): Future[InputPeerI] {.asy
     ## Get a InputPeer object by resolving access hash on local database
 
     #chat
-    if id < 0 and id > -1000000000000:
+    if id < 0 and id notin CHANNEL_RANGE:
         return InputPeerChat(chat_id: int32(id))
     var userpeer = await self.storageManager.getPeer(id)
-    if id < -1000000000000:
-        return InputPeerChannel(channel_id: int32(id + 1000000000000), access_hash: userpeer.accessHash)
+    if id in CHANNEL_RANGE:
+        return InputPeerChannel(channel_id: int32(revertChannelId(id)), access_hash: userpeer.accessHash)
     return InputPeerUser(user_id: int32(id), access_hash: userpeer.accessHash)
 
 
@@ -153,7 +150,7 @@ proc resolveInputPeer*(self: NimgramClient, peer: PeerI): Future[InputPeerI] {.a
         return InputPeerChat(chat_id: peer.PeerChat.chat_id)
     #channel
     if peer of PeerChannel:
-        var channelpeer = await self.storageManager.getPeer(-1000000000000 + peer.PeerChannel.channel_id)
+        var channelpeer = await self.storageManager.getPeer(getChannelId(peer.PeerChannel.channel_id))
         return InputPeerChannel(channel_id: peer.PeerChannel.channel_id, access_hash: channelpeer.accessHash)
     #user
     if peer of PeerUser:
@@ -189,7 +186,7 @@ proc botLogin*(self: NimgramClient, token: string) {.async.} =
                 self.sessions[migrateDC].isRequired = true
                 self.sessions[self.mainDc].isRequired = false
                 #Connection initialization
-                asyncCheck self.sessions[migrateDC].startHandler()
+                asyncCheck self.sessions[migrateDC].startHandler(self, self.updateHandler)
                 let pingID = int64(rand(9999))
 
                 try:

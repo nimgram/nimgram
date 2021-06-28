@@ -1,16 +1,16 @@
 
-## Nimgram
-## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
-## This file is part of Nimgram, under the MIT License
-##
-## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
-## OF ANY KIND, EXPRESS OR
-## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-## SOFTWARE.
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 ## TL Parser Module
 
@@ -25,7 +25,7 @@ type GenResult* = ref object
     constructorsResult: Table[string, string]
     functionsResult: Table[string, string]
 
-type Block = ref object   
+type Block = ref object
     encodeBlock: string
     decodeBlock: string
     typesBlock: string
@@ -42,14 +42,14 @@ proc getPmr(unpmr: string): string =
         result = unpmr
         result[0] = result.toUpper()[0]
         return result
-    var after= unpmr.split(".")[1]
+    var after = unpmr.split(".")[1]
     after[0] = after.toUpper()[0]
     var before = unpmr.split(".")[0]
     before[0] = before.toUpper()[0]
     return before & after
-    
+
 proc getRealType(tlType: string): string =
-    result = toLower(tlType) 
+    result = toLower(tlType)
     var stint = false
     if result == "int128":
         stint = true
@@ -67,7 +67,9 @@ proc getRealType(tlType: string): string =
         result = replace(result, "#", "int32")
         result = replace(result, "object", "TL")
 
-proc convertType(typee: string, genericTypesBlock: var string, interfaces: var seq[string], enableFlagsParse: bool = true, enableTrueToBool: bool = true): string =
+proc convertType(typee: string, genericTypesBlock: var string,
+        interfaces: var seq[string], enableFlagsParse: bool = true,
+        enableTrueToBool: bool = true): string =
     result = typee
     var tempFlags = ""
     var isVector = false
@@ -80,23 +82,27 @@ proc convertType(typee: string, genericTypesBlock: var string, interfaces: var s
             useOption = true
     if result.replace("vector<", "Vector<").startsWith("Vector<"):
         isVector = true
-        result = result.replace("vector<", "Vector<").split("Vector<", 1)[1].split(">", 1)[0]
+        result = result.replace("vector<", "Vector<").split("Vector<", 1)[
+                1].split(">", 1)[0]
     var pmr = getPmr(result)
-    if not interfaces.contains(toLower(pmr)) and not result.startsWith("flags") and not result.startsWith("Vector") and not (toLower(result) in @["string", "bool", "true", "int", "long", "double", "float", "bytes", "#", "int128", "object", "int256"]):
+    if not interfaces.contains(toLower(pmr)) and not result.startsWith(
+            "flags") and not result.startsWith("Vector") and not (toLower(
+            result) in @["string", "bool", "true", "int", "long", "double",
+            "float", "bytes", "#", "int128", "object", "int256"]):
         interfaces = interfaces & toLower(pmr)
         genericTypesBlock.add(&"    {pmr}I* = ref object of TLObject\n\n")
-    if interfaces.contains(toLower(pmr)): 
+    if interfaces.contains(toLower(pmr)):
         if isVector:
             if useOption:
                 return tempFlags & "Option[seq[" & pmr & "I]]"
-            return  tempFlags & "seq[" & pmr & "I]"
+            return tempFlags & "seq[" & pmr & "I]"
         else:
             if useOption:
-               return  tempFlags & "Option[" & pmr & "I]"
+                return tempFlags & "Option[" & pmr & "I]"
             return tempFlags & pmr & "I"
 
-    
-    result = toLower(result) 
+
+    result = toLower(result)
     var stint = false
     if result == "int128":
         stint = true
@@ -122,14 +128,15 @@ proc convertType(typee: string, genericTypesBlock: var string, interfaces: var s
         result = tempFlags & "Option[" & result & "]"
 
 
-proc parseParameters(params: JsonNode, genericTypesBlock: var string, interfaces: var seq[string]): string =
+proc parseParameters(params: JsonNode, genericTypesBlock: var string,
+        interfaces: var seq[string]): string =
     # Parses TL objects constructor parameters
 
     for tlParam in params:
         var typeOriginal = tlParam["typeof"].toStr()
         if typeOriginal == "Type}":
             continue
-        
+
         var name = tlParam["name"].toStr()
 
         if typeOriginal == "!X":
@@ -150,7 +157,7 @@ proc parseParameters(params: JsonNode, genericTypesBlock: var string, interfaces
 
 proc generateDecode(predicate: string, id: string, params: JsonNode): string =
     result = &"    if self of {predicate}: \n        var tempResult = new {predicate}\n"
-    var ok = false    
+    var ok = false
     var useVectorVar = false
     var useObjVar = false
     for param in params:
@@ -191,8 +198,10 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
                 result.add(&"        if (tempResult.flags and (1 shl {flagsNumber})) != 0:\n")
                 result.add(&"            var tempVal: {tempType}\n")
                 result.add(&"            bytes.TLDecode(tempVal)\n            tempResult.{paramName} = some(tempVal)\n")
-            elif realType.replace("Vector<", "").replace(">", "") in @["int", "long", "float", "double", "#", "Int128", "Int256"]:
-                var tempType = getRealType(realType.replace("Vector<", "").replace(">", "") )
+            elif realType.replace("Vector<", "").replace(">", "") in @["int",
+                    "long", "float", "double", "#", "Int128", "Int256"]:
+                var tempType = getRealType(realType.replace("Vector<",
+                        "").replace(">", ""))
                 result.add(&"        if (tempResult.flags and (1 shl {flagsNumber})) != 0:\n")
                 result.add(&"            var tempVal = newSeq[{tempType}]()\n")
                 result.add(&"            bytes.TLDecode(tempVal)\n            tempResult.{paramName} = some(tempVal)\n")
@@ -234,7 +243,8 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
         elif realType in @["Bool"]:
             ok = true
             result.add(&"        bytes.TLDecode(tempResult.{paramName})\n")
-        elif realType.replace("Vector<", "").replace(">", "") in @["int", "long", "float", "double", "#", "Int128", "Int256"]:
+        elif realType.replace("Vector<", "").replace(">", "") in @["int",
+                "long", "float", "double", "#", "Int128", "Int256"]:
             ok = true
             result.add(&"        bytes.TLDecode(tempResult.{paramName})\n")
         elif realType.startsWith("Vector<"):
@@ -250,7 +260,7 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
                 useObjVar = true
                 result.add("        var tempObj = new TL\n")
             var pmr = getPmr(realType)
-            result.add(&"        tempObj.TLDecode(bytes)\n        tempResult.{paramName} = cast[{pmr}I](tempObj)\n")
+            result.add(&"\n        tempObj = new TL\n        tempObj.TLDecode(bytes)\n        tempResult.{paramName} = cast[{pmr}I](tempObj)\n")
 
 
     result.add("        self = tempResult.TL\n        return\n")
@@ -258,13 +268,13 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
         result = &"    if self of {predicate}: \n        return\n"
 
 
-proc fixTLType(something: string): string = 
+proc fixTLType(something: string): string =
     var sub = "base"
     var predicate = something
     if predicate.contains("."):
         sub = predicate.split(".")[0]
         predicate = predicate.split(".")[1]
-            
+
     var subUpper = sub
     subUpper[0] = sub.toUpper()[0]
     predicate[0] = predicate.toUpper()[0]
@@ -275,11 +285,11 @@ proc fixTLType(something: string): string =
 
 
 proc generateEncode(predicate: string, id: string, params: JsonNode): string =
-    result.add(&"    if self of {predicate}:\n")  
+    result.add(&"    if self of {predicate}:\n")
     if params.len > 0:
-        result.add(&"        var convertedObj = self.{predicate}\n")    
+        result.add(&"        var convertedObj = self.{predicate}\n")
 
-    result.add(&"        result = TLEncode(uint32(0x{id}))\n")    
+    result.add(&"        result = TLEncode(uint32(0x{id}))\n")
     var flagsCode = ""
     var encodeBlock = ""
     for param in params:
@@ -312,7 +322,8 @@ proc generateEncode(predicate: string, id: string, params: JsonNode): string =
                 if param["typeof"].toStr().startsWith("Vector"):
                     var typ = param["typeof"].toStr()
 
-                    if typ.replace("Vector<", "").replace(">", "") in @["int", "long", "int128", "int256", "double", "float", "#"]:
+                    if typ.replace("Vector<", "").replace(">", "") in @["int",
+                            "long", "int128", "int256", "double", "float", "#"]:
                         encodeBlock.add(&"        result = result & TLEncode(convertedObj.{paramName})\n")
                     else:
                         encodeBlock.add(&"        result = result & TLEncode(cast[seq[TL]](convertedObj.{paramName}))\n")
@@ -324,21 +335,27 @@ proc generateEncode(predicate: string, id: string, params: JsonNode): string =
 proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     echo "generating raw file"
     var decodeCode = "\n"
+    var getTypeNameCode = "\n\nproc getTypeName*(self: TL): string =\n"
+
     var encodeCode = "\n\nproc TLEncode*(self: TL): seq[uint8] =\n"
     var decodeCodeSecond = "    var id: uint32\n    bytes.TLDecode(addr id)\n    case id:\n"
     for methods in mtprotoJson["methods"]:
         var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()), id, methods["params"]))
+        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()),
+                id, methods["params"]))
     for methods in mtprotoJson["constructors"]:
         var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()), id, methods["params"]))
+        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()),
+                id, methods["params"]))
     for methods in apiJson["methods"]:
         var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()), id, methods["params"]))
+        encodeCode.add(generateEncode(fixTLType(methods["methodname"].toStr()),
+                id, methods["params"]))
 
     for methods in apiJson["constructors"]:
         var id = methods["id"].toStr()
-        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()), id, methods["params"]))
+        encodeCode.add(generateEncode(fixTLType(methods["predicate"].toStr()),
+                id, methods["params"]))
 
     encodeCode.add("    if self of GZipPacked:\n        result = TLEncode(uint32(0x3072CFA1))\n        result.add(TLEncode(compress(self.GZipPacked.body.TLEncode())))")
     encodeCode.add("\n    if self of MessageContainer:\n        result = TLEncode(uint32(0x73F1F8DC))\n        result.add(TLEncode(uint32(len(self.MessageContainer.messages))))\n        for i in self.MessageContainer.messages:\n            result.add(TLEncode(i))")
@@ -348,26 +365,43 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     for methods in mtprotoJson["methods"]:
         var id = methods["id"].toStr()
         var something = fixTLType(methods["methodname"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()), id, methods["params"]))
+        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()),
+                id, methods["params"]))
 
-        
+        getTypeNameCode.add("        if self of " & fixTLType(methods[
+                "methodname"].toStr()) & ":\n            return \"" & fixTLType(
+                methods["methodname"].toStr()) & "\"\n")
+
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in mtprotoJson["constructors"]:
         var id = methods["id"].toStr()
         var something = fixTLType(methods["predicate"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()), id, methods["params"]))
+        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()),
+                id, methods["params"]))
+        getTypeNameCode.add(&"        if self of " & fixTLType(methods[
+                "predicate"].toStr()) & ":\n            return \"" & fixTLType(
+                methods["predicate"].toStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["methods"]:
         var id = methods["id"].toStr()
         var something = fixTLType(methods["methodname"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()), id, methods["params"]))
+        decodeCode.add(generateDecode(fixTLType(methods["methodname"].toStr()),
+                id, methods["params"]))
+        getTypeNameCode.add(&"        if self of " & fixTLType(methods[
+                "methodname"].toStr()) & ":\n            return \"" & fixTLType(
+                methods["methodname"].toStr()) & "\"\n")
 
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     for methods in apiJson["constructors"]:
         var id = methods["id"].toStr()
         var something = fixTLType(methods["predicate"].toStr())
-        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()), id, methods["params"]))
+        decodeCode.add(generateDecode(fixTLType(methods["predicate"].toStr()),
+                id, methods["params"]))
+        getTypeNameCode.add(&"        if self of " & fixTLType(methods[
+                "predicate"].toStr()) & ":\n            return \"" & fixTLType(
+                methods["predicate"].toStr()) & "\"\n")
+
         decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     decodeCode.add("    if self of FutureSalts:\n        var futureSalts = FutureSalts()\n        bytes.TLDecode(addr futureSalts.reqMsgID)\n        bytes.TLDecode(addr futureSalts.now)\n        var lenght: int32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, lenght):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            futureSalts.salts.add(tmp.FutureSalt)\n        self = futureSalts.TL\n        return\n")
     decodeCode.add("    if self of FutureSalt:\n        var salt = FutureSalt()\n        bytes.TLDecode(addr salt.validSince) \n        bytes.TLDecode(addr salt.validUntil)\n        bytes.TLDecode(addr salt.salt)  \n        self = salt.TL\n        return\n")
@@ -380,11 +414,15 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     decodeCodeSecond.add(&"        of uint32(2924480661):\n            var tmp = TL(new FutureSalts)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     decodeCodeSecond.add(&"        of uint32(155834844):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
     echo "generated types"
-    decodeCode = "\nproc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = \n" & decodeCode & decodeCodeSecond  & "        else:\n            raise newException(CatchableError, &\"Constructor {id} was not found\")"
+    decodeCode = "\nproc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = \n" &
+            decodeCode & decodeCodeSecond & "        else:\n            raise newException(CatchableError, &\"Constructor {id} was not found\")"
     var layerversion = apiJson["layer"].toInt()
-    writeFile("rpc/raw.nim", typeUtilsFile & &"const LAYER_VERSION* = {layerversion}\n" & decodeCode & encodeCode)
+    writeFile("rpc/raw.nim", typeUtilsFile &
+            &"const LAYER_VERSION* = {layerversion}\n" & decodeCode &
+            encodeCode & getTypeNameCode)
 
-proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool, genericTypesBlock: var string, interfaces: var seq[string])  =
+proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool,
+        genericTypesBlock: var string, interfaces: var seq[string]) =
     var code: Table[string, Block]
     var predicategetter = "methodname"
     if generateTypes:
@@ -395,7 +433,7 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool, genericTyp
         if predicate.contains("."):
             sub = predicate.split(".")[0]
             predicate = predicate.split(".")[1]
-            
+
         var subUpper = sub
         subUpper[0] = sub.toUpper()[0]
         predicate[0] = predicate.toUpper()[0]
@@ -410,9 +448,11 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool, genericTyp
                 interfaces.add(pmr.toLower())
         if generateTypes:
             var pmr = getPmr(obj["typeof"].toStr())
-            code[sub].typesBlock.add(&"    {predicate}* = ref object of {pmr}I\n" & parseParameters(obj["params"], genericTypesBlock, interfaces) )
+            code[sub].typesBlock.add(&"    {predicate}* = ref object of {pmr}I\n" &
+                    parseParameters(obj["params"], genericTypesBlock, interfaces))
         else:
-            code[sub].typesBlock.add(&"    {predicate}* = ref object of TLFunction\n" & parseParameters(obj["params"], genericTypesBlock, interfaces))
+            code[sub].typesBlock.add(&"    {predicate}* = ref object of TLFunction\n" &
+                    parseParameters(obj["params"], genericTypesBlock, interfaces))
     var subs = newSeq[string]()
     for sub, _ in code:
         if sub != "base":
@@ -432,12 +472,16 @@ proc tlParse*(jsonData: JsonNode, generateTypes: bool, useCore: bool, genericTyp
             createDir(&"rpc/{dirname}")
         if sub == "base":
             if generateTypes:
-                writeFile(&"rpc/{dirname}/{sub}.nim", license & imports & "\ntype\n" & genericTypesBlock & sectionimport & "\ntype\n" & blok.typesBlock & "\n" & "\n")
+                writeFile(&"rpc/{dirname}/{sub}.nim", license & imports &
+                        "\ntype\n" & genericTypesBlock & sectionimport &
+                        "\ntype\n" & blok.typesBlock & "\n" & "\n")
             else:
-                writeFile(&"rpc/{dirname}/{sub}.nim", license & imports & sectionimport & "\ntype\n" & blok.typesBlock & "\n")
+                writeFile(&"rpc/{dirname}/{sub}.nim", license & imports &
+                        sectionimport & "\ntype\n" & blok.typesBlock & "\n")
         else:
-            writeFile(&"rpc/{dirname}/{sub}.nim", license & imports & "type\n" & blok.typesBlock & "\n")
-        
+            writeFile(&"rpc/{dirname}/{sub}.nim", license & imports & "type\n" &
+                    blok.typesBlock & "\n")
+
         writeFile("rpc/encoding.nim", encodeFile)
         writeFile("rpc/decoding.nim", decodingFile)
 
@@ -448,8 +492,8 @@ proc parse*(jsonData: JsonNode, useCore: bool) =
         var genericTypesBlock = ""
         var interfaces = newSeq[string]()
         echo "- Parsing functions"
-        tlParse(jsonData["methods"], false, useCore, genericTypesBlock, interfaces)           
+        tlParse(jsonData["methods"], false, useCore, genericTypesBlock, interfaces)
         echo "- Parsing types"
-        tlParse(jsonData["constructors"], true, useCore, genericTypesBlock, interfaces)    
+        tlParse(jsonData["constructors"], true, useCore, genericTypesBlock, interfaces)
 
 

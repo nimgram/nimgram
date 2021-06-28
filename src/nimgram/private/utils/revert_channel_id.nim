@@ -11,13 +11,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-type FileLocation* = ref object ## Indicates the location of a photo
-    volumeID*: int64 ## Volume ID
-    localID*: int32 ## Local ID
+# This does the opposite of `get_channel_id.nim`
 
-proc parse*(fileLoc: raw.FileLocationI): FileLocation =
-    var castFileLoc = cast[raw.FileLocationToBeDeprecated](fileLoc)
-    return FileLocation(
-        volumeID: castFileLoc.volume_id,
-        localID: castFileLoc.local_id
-    )
+import ../shared
+
+proc revertChannelId*(id: int64): int64 =
+    if id notin CHANNEL_RANGE:
+        return id
+    return MAX_CHANNEL_ID + abs(id)
