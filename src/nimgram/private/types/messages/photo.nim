@@ -42,7 +42,7 @@ proc parse*(photo: raw.Photo): Photo =
             photos.add(size.PhotoSize)
         if size of PhotoSizeProgressive:
             let sizec = size.PhotoSizeProgressive
-            photos.add(PhotoSize(typeof: sizec.typeof, location: sizec.location,
+            photos.add(PhotoSize(typeof: sizec.typeof,
                     w: sizec.w, h: sizec.h, size: sizec.sizes[maxIndex(sizec.sizes)]))
 
     photos.sort(proc (x, y: PhotoSize): int =

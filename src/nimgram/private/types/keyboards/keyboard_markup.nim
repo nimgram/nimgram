@@ -23,6 +23,7 @@ type
         resize*: bool
         singleUse*: bool
         selective*: bool
+        placeHolder*: Option[string]
 
     ReplyKeyboardHide* = ref object of KeyboardMarkup
         selective*: bool
@@ -30,6 +31,7 @@ type
     ReplyKeyboardForceReply* = ref object of KeyboardMarkup
         selective*: bool
         singleUse*: bool
+        placeHolder*: Option[string]
 
 
 proc parse*(keyboard: KeyboardMarkup): raw.ReplyMarkupI =
@@ -99,6 +101,7 @@ proc parse*(keyboard: KeyboardMarkup): raw.ReplyMarkupI =
         let tmpResult = new raw.ReplyKeyboardMarkup
         tmpResult.resize = keyboard.ReplyKeyboardMarkup.resize
         tmpResult.selective = keyboard.ReplyKeyboardMarkup.selective
+        tmpResult.placeholder = keyboard.ReplyKeyboardForceReply.placeHolder
         tmpResult.single_use = keyboard.ReplyKeyboardMarkup.singleUse
         tmpResult.rows = newSeq[KeyboardButtonRowI]()
 
@@ -149,6 +152,7 @@ proc parse*(keyboard: KeyboardMarkup): raw.ReplyMarkupI =
         let tmpResult = new raw.ReplyKeyboardForceReply
         tmpResult.single_use = keyboard.ReplyKeyboardForceReply.singleUse
         tmpResult.selective = keyboard.ReplyKeyboardForceReply.selective
+        tmpResult.placeholder = keyboard.ReplyKeyboardForceReply.placeHolder
         return tmpResult
 
 
@@ -168,6 +172,7 @@ proc parse*(keyboard: raw.ReplyMarkupI, client: NimgramClient): KeyboardMarkup =
         tmpMarkup.resize = raw.ReplyKeyboardMarkup(keyboard).resize
         tmpMarkup.singleUse = raw.ReplyKeyboardMarkup(keyboard).single_use
         tmpMarkup.selective = raw.ReplyKeyboardMarkup(keyboard).selective
+        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(keyboard).placeholder
         tmpMarkup.rows = newSeq[seq[nimgram.ReplyKeyboardButton]]()
         for row in keyboard.ReplyInlineMarkup.rows:
             var tmpRow = newSeq[nimgram.ReplyKeyboardButton]()
@@ -180,6 +185,7 @@ proc parse*(keyboard: raw.ReplyMarkupI, client: NimgramClient): KeyboardMarkup =
         let tmpMarkup = new ReplyKeyboardForceReply
         tmpmarkup.singleUse = raw.ReplyKeyboardForceReply(keyboard).single_use
         tmpmarkup.selective = raw.ReplyKeyboardForceReply(keyboard).selective
+        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(keyboard).placeholder
         return tmpMarkup
     if keyboard of raw.ReplyKeyboardHide:
         let tmpMarkup = new ReplyKeyboardHide
