@@ -1,7 +1,7 @@
 import json
 import strformat
 import strutils
-
+import sequtils
 
 # Module for converting the TL schema into a json structure
 
@@ -41,9 +41,9 @@ proc getName(line: string): string =
 proc getParameters(line: string): seq[TlParameter] =
     var Split = split(line, " ", 1)[1]
     var params = split(Split, " =", 1)
-    params = params[..(params.high() - 1)]
-    if params.len() < 1:
+    if params.len() < 2:
         return
+    params.delete(params.maxIndex()+1)
     var paramss = split(params[0], " ")
     for param in paramss:
         var newParam = TlParameter()
