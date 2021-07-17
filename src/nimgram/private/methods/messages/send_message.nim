@@ -18,7 +18,7 @@ proc sendMessage*(self: NimgramClient, peer: int64, text: string, replyMarkup: K
     if replyMarkup != nil: markup = some(replyMarkup.parse()) 
 
     var peert = await self.resolveInputPeer(peer)
-
+    randomize()
     let tmpResult = await self.send(MessagesSendMessage(
       no_webpage: true,
       silent: false,

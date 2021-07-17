@@ -34,7 +34,6 @@ type Response = ref object
     event: AsyncEvent
     body: TL
 
-
 type Session* = ref object
     isRequired*: bool
     isDead*: bool
@@ -51,7 +50,6 @@ type Session* = ref object
     logger: Logger
     sessionID: seq[uint8]
     seqNo: int
-    #callbackUpdates*: UpdatesCallback
     acks: seq[int64]
     responses: Table[int64, Response]
     maxMessageID: uint64

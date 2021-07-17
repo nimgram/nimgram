@@ -42,12 +42,12 @@ proc messageEvent(message: nimgram.Message): Future[void] {.async.} =
 
   var keyboard = InlineKeyboardMarkup(
     rows: @[@[InlineKeyboardButton(
-      text: "test",
-      url: some("https://t.me/cagatemi")
+      text: "Nimgram!",
+      url: some("https://t.me/nimgramchat")
     )]]
   )
 
-  discard await mtprotoClient.sendMessage(message.chatID, "hi", keyboard)
+  discard await mtprotoClient.sendMessage(message.chatID, "🥳 Welcome to Nimgram!", keyboard)
   if message.replyMarkup.isSome:
     if message.replyMarkup.get() of InlineKeyboardMarkup:
       echo message.replyMarkup.get().InlineKeyboardMarkup.type

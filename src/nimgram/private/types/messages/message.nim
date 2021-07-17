@@ -12,8 +12,6 @@
 # SOFTWARE.
 
 
-import options
-
 type Message* = ref object                 ## A message
     empty*: bool                           ## Whether this is a empty message
     edited*: bool                          ## Whether this is a edited message

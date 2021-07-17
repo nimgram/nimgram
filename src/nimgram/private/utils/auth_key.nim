@@ -17,7 +17,6 @@ import ../rpc/encoding
 import ../rpc/decoding
 import ../rpc/raw
 import ../crypto/prime
-import ../network/transports
 import ../crypto/rsa
 import ../crypto/aes
 import ../crypto/exp

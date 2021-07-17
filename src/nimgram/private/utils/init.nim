@@ -36,8 +36,6 @@ proc getConnection(connectionType: NetworkTypes, address: string, port: uint16):
         await connection.connect(address, port)
         result = connection.MTProtoNetwork
 
-#proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int, authKey: seq[uint8], serverSalt: seq[uint8], storageManager: NimgramStorage, config: NimgramConfig): Session
-
 proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, connectionType: NetworkTypes, ipv6, test: bool = false, storageManager: NimgramStorage, config: NimgramConfig): Future[Session] {.async.} =
     var ip = getIp(dcID, ipv6, test)
     if keys.original.hasKey(dcID):
@@ -51,8 +49,6 @@ proc getSession(self: NimgramClient, keys: InternalTableOptions, dcID: int, conn
         await storageManager.writeSessionsInfo(keys.original)
         result = initSession(connection, self.logger, dcID, gen[0], gen[1], storageManager, config)
 
-
-#proc startHandler*(self: Session, client: NimgramClient, updateHandler: UpdateHandler) {.async.} 
 
 proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: StorageTypes = StorageRam, logLevel: int = 7): Future[NimgramClient] {.async.} = 
     result = new NimgramClient
@@ -124,7 +120,7 @@ proc initNimgram*(databinFile: string, config: NimgramConfig, storageType: Stora
         #TODO: Sync response from automatic reconnection, but config now is unused, so not working on that currently
         discard
 proc send*(self: NimgramClient, function: TLFunction, waitFor: bool = true): Future[TL] {.async.} =
-    ## Send raw TL function
+    ## Send a raw TL function
 
     result = await self.sessions[self.mainDc].send(function, waitFor)
 

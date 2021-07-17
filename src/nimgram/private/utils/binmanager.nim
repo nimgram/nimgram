@@ -17,24 +17,24 @@ import nimcrypto
 import endians
 import tables
 import os
-#What is this?
-#This is an alternative way instead of sqlite to manage MTProto sessions by saving auth_keys/salt on a binary file
 
-#Bin Structure:
-#sha256 checksum of all bytes (STATIC)
-#Bin version (uint16) (STATIC)
-#Array lenght (uint16)
-#DC options
+## This is an alternative way instead of sqlite to manage MTProto sessions by saving auth_keys/salt on a binary file
 
-#DC Options structure:
-#DC Number (uint16)
-#Is authorized bool (uint8, if > 0: true)
-#Is main bool (uint8, if > 0: true)
-#bytes len (uin16) + Auth_key
-#bytes len (uin16) + Salt
+## Bin Structure:
+## - sha256 checksum of all bytes (STATIC)
+## - Bin version (uint16) (STATIC)
+## - Array lenght (uint16)
+## - DC options (see below)
+
+## DC Options structure:
+## - DC Number (uint16)
+## - Is authorized bool (uint8, if > 0: true)
+## - Is main bool (uint8, if > 0: true)
+## - bytes len (uin16) + Auth_key
+## - bytes len (uin16) + Salt
 
 
-#Note: The client rewrites the entire binary file everytime data is updated, so it is not recommended to use a single file on multiple session at the same time
+## Note: The client rewrites the entire binary file everytime data is updated, so it is not recommended to use a single file on multiple session at the same time
 
 #Current bin version
 const BIN_VERSION = uint16(1)

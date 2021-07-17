@@ -73,6 +73,5 @@ proc sendUpdate(self: UpdateHandler, client: NimgramClient,
 proc startHandler(self: NimgramClient) {.async.} =
     ## Initialize update handling
 
-    echo "Starting update handler"
     # Currently the fastest way to get updates working is by sending get state
     discard await self.sessions[self.mainDc].send(UpdatesGetState(), true)
