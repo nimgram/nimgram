@@ -152,6 +152,11 @@ proc startHandler*(self: Session, client: NimgramClient,
                 continue
 
             if message.body of New_session_created:
+                if not self.initDone:
+                    continue
+                self.logger.log(lvlDebug, &"Got New_session_created on DC" & $self.dcID & ", Initializing again" )
+
+                await mtprotoInit(self, client)
                 continue
 
             if message.body of Bad_msg_notification:
@@ -214,6 +219,7 @@ proc startHandler*(self: Session, client: NimgramClient,
                 #TODO: Handle session-id regeneration if Telegram forgets the current one
                 self.logger.log(lvlDebug, &"Sucessfuly reconnected to DC" & $self.dcID )
                 asyncCheck self.startHandler(client, updateHandler)
+                self.sessionID = urandom(8)
 
                 await startHandler(client)
 
@@ -222,6 +228,7 @@ proc startHandler*(self: Session, client: NimgramClient,
                     self.responses[i].body = nil
                     self.responses[i].event.trigger()
                 self.responses.clear()
+
                 self.initDone = true
                 self.resumeConnectionWait.trigger()
                 self.alreadyCalledDisconnected = false
@@ -320,14 +327,13 @@ proc checkConnectionLoop*(self: Session) {.async.} =
 
 
 proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.} =
-    randomize()
-    let pingID = int64(rand(9999))
+    #randomize()
+    #let pingID = int64(rand(9999))
 
-    var ponger = await self.send(Ping(ping_id: pingID), true, true)
-    if not(ponger of Pong):
-        raise newException(CatchableError, "Ping failed!")
-    doAssert ponger.Pong.ping_id == pingID
-
+    #var ponger = await self.send(Ping(ping_id: pingID), true, true)
+    #if not(ponger of Pong):
+    #    raise newException(CatchableError, "Ping failed!")
+    #doAssert ponger.Pong.ping_id == pingID
     discard await self.send(InvokeWithLayer(layer: LAYER_VERSION,
             query: InitConnection(api_id: self.clientConfig.apiID,
             device_model: self.clientConfig.deviceModel,
@@ -337,5 +343,5 @@ proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.} =
             lang_pack: self.clientConfig.langPack,
             lang_code: self.clientConfig.langCode,
             query: HelpGetConfig())), false, true)
-    asyncCheck self.checkConnectionLoop()
-    await startHandler(client)
+    #asyncCheck self.checkConnectionLoop()
+    #await startHandler(client)
