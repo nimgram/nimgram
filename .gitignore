@@ -1,7 +1,7 @@
 .vscode
 main
-src/nimgram/private/rpc
 .idea
+src/nimgram/private/rpc
 nimcache/
 nimblecache/
 htmldocs/

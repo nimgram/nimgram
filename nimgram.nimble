@@ -15,15 +15,22 @@ requires "stint >= 0.0.1"
 requires "gmp >= 0.2.5"
 requires "https://github.com/dadadani/nim-random#master"
 
-# Generate code from tl scheme
-if dirExists("src") or dirExists("../src"):
-    selfExec("r -d:danger --opt:speed --hints:off tl/build.nim")
-    if dirExists("src/nimgram/private/rpc"):
-        rmDir("src/nimgram/private/rpc")
-    mvDir("rpc", "src/nimgram/private/rpc")
+var continueGen: bool = true
 
 task forcegen, "Force generation of the rpc directory":
     selfExec("r -d:danger --opt:speed --hints:off tl/build.nim")
     if dirExists("src/nimgram/private/rpc"):
         rmDir("src/nimgram/private/rpc")
     mvDir("rpc", "src/nimgram/private/rpc")
+    continueGen = false
+
+if continueGen:
+    # Generate code from tl scheme
+    if dirExists("src") or dirExists("../src"):
+        if not dirExists("src/nimgram/private/rpc"):
+            selfExec("r -d:danger --opt:speed --hints:off tl/build.nim")
+            if dirExists("src/nimgram/private/rpc"):
+                rmDir("src/nimgram/private/rpc")
+            mvDir("rpc", "src/nimgram/private/rpc")
+            var nimblefile = readFile("nimgram.nimble")
+            writeFile("nimgram.nimble", nimblefile & "\n\n\ndiscard #code to force re-generation on new install")
