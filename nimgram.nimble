@@ -5,6 +5,7 @@ author        = "dadadani"
 description   = "MTProto client written in Nim"
 license       = "MIT"
 srcDir        = "src"
+installDirs   = "tl"
 # Dependencies
 
 requires "nim >= 1.2.0"
