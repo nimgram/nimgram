@@ -69,10 +69,10 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
 
         if line.isEmptyOrWhitespace() or ($line[0] == "/" and $line[1] == "/"):
             continue
-        if line == "---types---":
+        if line.contains("---types---"):
             methodMode = false
             continue
-        if line == "---functions---":
+        if line.contains("---functions---"):
             methodMode = true
             continue
         if not methodMode:
