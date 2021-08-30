@@ -36,7 +36,7 @@ import strformat
 const typeUtilsFile = staticRead("static/typeutils.nim")
 const encodeFile = staticRead("static/encoding.nim")
 const decodingFile = staticRead("static/decoding.nim")
-let license = &"## Nimgram\n## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>\n## This file is part of Nimgram, under the MIT License\n##\n## THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY\n## OF ANY KIND, EXPRESS OR\n## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n## SOFTWARE.\n\n## This file was generated automatically by the TL Parser (built at {now()})\n"
+let license = &"# Nimgram\n# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>\n# This file is part of Nimgram, under the MIT License\n#\n# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY\n## OF ANY KIND, EXPRESS OR\n## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n# SOFTWARE.\n\n# This file was generated automatically by the TL Parser (built at {now()})\n"
 proc getPmr(unpmr: string): string =
     if unpmr.split(".").len == 1:
         result = unpmr
