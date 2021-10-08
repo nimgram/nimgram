@@ -56,6 +56,9 @@ type
         seqNo*: uint32
         lenght*: uint32
         body*: TL
+    TLTrue* = ref object of TLObject
+    TLFalse* = ref object of TLObject
+
     MessageContainer* = ref object of TLObject
         messages*: seq[CoreMessage]
 
@@ -100,7 +103,7 @@ proc TLDecode*(self: var seq[TL], bytes: var ScalingSeq[uint8]) =
 
 proc seqNo*(self: TL, currentInt: int): int =
     var related = 1
-    if self of MessageContainer or self of Ping or self of Msgs_ack:
+    if self of MessageContainer or self of Ping or self of Pong:
         related = 0
-    var fdasfd = currentInt + (2 * related)
-    return fdasfd
+    var seqno = currentInt + (2 * related)
+    return seqno

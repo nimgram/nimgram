@@ -1,4 +1,3 @@
-
 # Nimgram
 # Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
@@ -36,7 +35,7 @@ import strformat
 const typeUtilsFile = staticRead("static/typeutils.nim")
 const encodeFile = staticRead("static/encoding.nim")
 const decodingFile = staticRead("static/decoding.nim")
-let license = &"## Nimgram\n## Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>\n## This file is part of Nimgram, under the MIT License\n##\n## THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY\n## OF ANY KIND, EXPRESS OR\n## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n## SOFTWARE.\n\n## This file was generated automatically by the TL Parser (built at {now()})\n"
+let license = &"# Nimgram\n# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>\n# This file is part of Nimgram, under the MIT License\n#\n# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY\n# OF ANY KIND, EXPRESS OR\n# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n# SOFTWARE.\n\n# This file was generated automatically by the TL Parser (built at {now()})\n"
 proc getPmr(unpmr: string): string =
     if unpmr.split(".").len == 1:
         result = unpmr
@@ -58,14 +57,9 @@ proc getRealType(tlType: string): string =
         stint = true
         result = "Int256"
     if not stint:
-        result = replace(result, "vector t", "seq")
-        result = replace(result, "int", "int32")
-        result = replace(result, "long", "int64")
-        result = replace(result, "float", "float32")
-        result = replace(result, "double", "float64")
-        result = replace(result, "bytes", "seq[uint8]")
-        result = replace(result, "#", "int32")
-        result = replace(result, "object", "TL")
+        result = multiReplace(result, ("vector t", "seq"), ("int", "int32"), (
+                "long", "int64"), ("float", "float32"), ("double", "float64"), (
+                "bytes", "seq[uint8]"), ("#", "int32"), ("object", "TL"))
 
 proc convertType(typee: string, genericTypesBlock: var string,
         interfaces: var seq[string], enableFlagsParse: bool = true,
@@ -111,16 +105,11 @@ proc convertType(typee: string, genericTypesBlock: var string,
         stint = true
         result = "Int256"
     if not stint:
-        result = replace(result, "vector t", "seq")
-        result = replace(result, "int", "int32")
+        result = multiReplace(result, ("vector t", "seq"), ("int", "int32"), (
+                "long", "int64"), ("float", "float32"), ("double", "float64"), (
+                "bytes", "seq[uint8]"), ("#", "int32"), ("object", "TL"))
         if enableTrueToBool:
             result = replace(result, "true", "bool")
-        result = replace(result, "long", "int64")
-        result = replace(result, "float", "float32")
-        result = replace(result, "double", "float64")
-        result = replace(result, "bytes", "seq[uint8]")
-        result = replace(result, "#", "int32")
-        result = replace(result, "object", "TL")
 
     if isVector:
         result = tempFlags & "seq[" & result & "]"
@@ -155,8 +144,10 @@ proc parseParameters(params: JsonNode, genericTypesBlock: var string,
         else:
             result = result & &"        {name}*: {paramType}\n"
 
-proc generateDecode(predicate: string, id: string, params: JsonNode): string =
-    result = &"    if self of {predicate}: \n        var tempResult = new {predicate}\n"
+proc generateDecode(predicate: string, id: string, params: JsonNode,
+        useElif: bool = true): string =
+    var ifKeyword = if useElif: "elif" else: "if"
+    result = &"    {ifKeyword} self of {predicate}: \n        var tempResult = new {predicate}\n"
     var ok = false
     var useVectorVar = false
     var useObjVar = false
@@ -263,9 +254,9 @@ proc generateDecode(predicate: string, id: string, params: JsonNode): string =
             result.add(&"\n        tempObj = new TL\n        tempObj.TLDecode(bytes)\n        tempResult.{paramName} = cast[{pmr}I](tempObj)\n")
 
 
-    result.add("        self = tempResult.TL\n        return\n")
+    result.add("        self = tempResult.TL\n")
     if not ok:
-        result = &"    if self of {predicate}: \n        return\n"
+        result = &"    elif self of {predicate}: \n        discard\n"
 
 
 proc fixTLType(something: string): string =
@@ -338,7 +329,7 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     var getTypeNameCode = "\n\nproc getTypeName*(self: TL): string =\n"
 
     var encodeCode = "\n\nproc TLEncode*(self: TL): seq[uint8] =\n"
-    var decodeCodeSecond = "    var id: uint32\n    bytes.TLDecode(addr id)\n    case id:\n"
+    var decodeCodeSecond = "        var id: uint32\n        bytes.TLDecode(addr id)\n        case id:\n"
     for methods in mtprotoJson["methods"]:
         var id = methods["id"].getStr()
         encodeCode.add(generateEncode(fixTLType(methods["methodname"].getStr()),
@@ -361,18 +352,20 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
     encodeCode.add("\n    if self of MessageContainer:\n        result = TLEncode(uint32(0x73F1F8DC))\n        result.add(TLEncode(uint32(len(self.MessageContainer.messages))))\n        for i in self.MessageContainer.messages:\n            result.add(TLEncode(i))")
 
 
-
+    var useElif = false
     for methods in mtprotoJson["methods"]:
         var id = methods["id"].getStr()
         var something = fixTLType(methods["methodname"].getStr())
         decodeCode.add(generateDecode(fixTLType(methods["methodname"].getStr()),
-                id, methods["params"]))
+                id, methods["params"], useElif))
 
         getTypeNameCode.add("        if self of " & fixTLType(methods[
-                "methodname"].getStr()) & ":\n            return \"" & fixTLType(
+                "methodname"].getStr()) & ":\n            return \"" &
+                        fixTLType(
                 methods["methodname"].getStr()) & "\"\n")
 
-        decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        decodeCodeSecond.add(&"            of uint32(0x{id}):\n                var tmp = TL(new {something})\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
+        useElif = true
     for methods in mtprotoJson["constructors"]:
         var id = methods["id"].getStr()
         var something = fixTLType(methods["predicate"].getStr())
@@ -382,17 +375,18 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
                 "predicate"].getStr()) & ":\n            return \"" & fixTLType(
                 methods["predicate"].getStr()) & "\"\n")
 
-        decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        decodeCodeSecond.add(&"            of uint32(0x{id}):\n                var tmp = TL(new {something})\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
     for methods in apiJson["methods"]:
         var id = methods["id"].getStr()
         var something = fixTLType(methods["methodname"].getStr())
         decodeCode.add(generateDecode(fixTLType(methods["methodname"].getStr()),
                 id, methods["params"]))
         getTypeNameCode.add(&"        if self of " & fixTLType(methods[
-                "methodname"].getStr()) & ":\n            return \"" & fixTLType(
+                "methodname"].getStr()) & ":\n            return \"" &
+                        fixTLType(
                 methods["methodname"].getStr()) & "\"\n")
 
-        decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+        decodeCodeSecond.add(&"            of uint32(0x{id}):\n                var tmp = TL(new {something})\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
     for methods in apiJson["constructors"]:
         var id = methods["id"].getStr()
         var something = fixTLType(methods["predicate"].getStr())
@@ -402,20 +396,20 @@ proc generateRawFile*(mtprotoJson, apiJson: JsonNode) =
                 "predicate"].getStr()) & ":\n            return \"" & fixTLType(
                 methods["predicate"].getStr()) & "\"\n")
 
-        decodeCodeSecond.add(&"        of uint32(0x{id}):\n            var tmp = TL(new {something})\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
-    decodeCode.add("    if self of FutureSalts:\n        var futureSalts = FutureSalts()\n        bytes.TLDecode(addr futureSalts.reqMsgID)\n        bytes.TLDecode(addr futureSalts.now)\n        var lenght: int32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, lenght):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            futureSalts.salts.add(tmp.FutureSalt)\n        self = futureSalts.TL\n        return\n")
-    decodeCode.add("    if self of FutureSalt:\n        var salt = FutureSalt()\n        bytes.TLDecode(addr salt.validSince) \n        bytes.TLDecode(addr salt.validUntil)\n        bytes.TLDecode(addr salt.salt)  \n        self = salt.TL\n        return\n")
-    decodeCode.add("    if self of MessageContainer:\n        var container = MessageContainer()\n        var lenght: uint32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, int(lenght)):\n            var tmp = new CoreMessage\n            tmp.TLDecode(bytes)\n            container.messages.add(tmp)\n        self = container.TL\n        return\n")
-    decodeCode.add("    if self of GZipPacked:\n        var data = newScalingSeq(uncompress(bytes.TLDecode()))\n        var packed = GZipPacked()\n        packed.body.TLDecode(data)\n        self = TL(packed)\n        return\n")
+        decodeCodeSecond.add(&"            of uint32(0x{id}):\n                var tmp = TL(new {something})\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
+    decodeCode.add("    elif self of FutureSalts:\n        var futureSalts = FutureSalts()\n        bytes.TLDecode(addr futureSalts.reqMsgID)\n        bytes.TLDecode(addr futureSalts.now)\n        var lenght: int32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, lenght):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            futureSalts.salts.add(tmp.FutureSalt)\n        self = futureSalts.TL\n")
+    decodeCode.add("    elif self of FutureSalt:\n        var salt = FutureSalt()\n        bytes.TLDecode(addr salt.validSince) \n        bytes.TLDecode(addr salt.validUntil)\n        bytes.TLDecode(addr salt.salt)  \n        self = salt.TL\n")
+    decodeCode.add("    elif self of MessageContainer:\n        var container = MessageContainer()\n        var lenght: uint32\n        bytes.TLDecode(addr lenght)\n        for _ in countup(1, int(lenght)):\n            var tmp = new CoreMessage\n            tmp.TLDecode(bytes)\n            container.messages.add(tmp)\n        self = container.TL\n")
+    decodeCode.add("    elif self of GZipPacked:\n        var data = newScalingSeq(uncompress(bytes.TLDecode()))\n        var packed = GZipPacked()\n        packed.body.TLDecode(data)\n        self = TL(packed)\n    else:\n")
 
-
-    decodeCodeSecond.add(&"        of uint32(812830625):\n            var tmp = TL(new GZipPacked)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
-    decodeCodeSecond.add(&"        of uint32(1945237724):\n            var tmp = TL(new MessageContainer)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
-    decodeCodeSecond.add(&"        of uint32(2924480661):\n            var tmp = TL(new FutureSalts)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
-    decodeCodeSecond.add(&"        of uint32(155834844):\n            var tmp = TL(new FutureSalt)\n            tmp.TLDecode(bytes)\n            self = tmp\n            return\n")
+    decodeCodeSecond.add(&"            of uint32(0x997275b5):\n                self = TL(TLTrue())\n                return\n            of uint32(0xbc799737):\n                self = TL(TLFalse())\n                return\n")
+    decodeCodeSecond.add(&"            of uint32(812830625):\n                var tmp = TL(new GZipPacked)\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
+    decodeCodeSecond.add(&"            of uint32(1945237724):\n                var tmp = TL(new MessageContainer)\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
+    decodeCodeSecond.add(&"            of uint32(2924480661):\n                var tmp = TL(new FutureSalts)\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
+    decodeCodeSecond.add(&"            of uint32(155834844):\n                var tmp = TL(new FutureSalt)\n                tmp.TLDecode(bytes)\n                self = tmp\n                return\n")
     echo "generated types"
     decodeCode = "\nproc TLDecode*(self: var TL, bytes: var ScalingSeq[uint8]) = \n" &
-            decodeCode & decodeCodeSecond & "        else:\n            raise newException(CatchableError, &\"Constructor {id} was not found\")"
+            decodeCode & decodeCodeSecond & "            else:\n                raise newException(CatchableError, &\"Constructor {id} was not found\")"
     var layerversion = apiJson["layer"].getInt()
     writeFile("rpc/raw.nim", typeUtilsFile &
             &"const LAYER_VERSION* = {layerversion}\n" & decodeCode &

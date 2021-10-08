@@ -11,8 +11,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
  
-#seq[proc(message: Message): Future[void] {.async.}]
-
 type NewMessageHandler* = ref object of FunctionHandler
     message: seq[proc(message: Message): Future[void] {.async.}]
 
@@ -22,16 +20,17 @@ proc newUpdateHandler(): UpdateHandler =
                 message: Message): Future[void] {.async.}]())
     )
 
-proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[ChatI]) {.async.} =
+proc saveData(storage: NimgramStorage, users: seq[UserI], chats: seq[
+        ChatI]) {.async.} =
     for userGeneric in users:
         if userGeneric of raw.User:
-            let user = cast[raw.User](userGeneric)
+            let user = (raw.User)(userGeneric)
             if user.access_hash.isSome():
                 await storage.addPeer(StoragePeer(peerID: user.id,
                         accessHash: user.access_hash.get()))
     for chatGeneric in chats:
         if chatGeneric of raw.Channel:
-            let channel = cast[raw.Channel](chatGeneric)
+            let channel = (raw.Channel)(chatGeneric)
             if channel.access_hash.isSome():
                 await storage.addPeer(
                     StoragePeer(
@@ -49,17 +48,18 @@ proc addOnMessageHandler*(client: NimgramClient, event: proc(
 proc sendUpdate(self: UpdateHandler, client: NimgramClient,
         gupdate: raw.UpdatesI) {.async.} =
     if gupdate of raw.Updates:
-        let updates = cast[raw.Updates](gupdate)
+        let updates = (raw.Updates)(gupdate)
         await saveData(client.storageManager, updates.users, updates.chats)
         for update in updates.updates:
             if update of UpdateEditChannelMessage:
-                let message = parse(update.UpdateEditChannelMessage.message, client, true)
+                let message = parse(update.UpdateEditChannelMessage.message,
+                        client, true)
                 for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
-                    asyncCheck messageHandler(message) 
+                    asyncCheck messageHandler(message)
             if update of UpdateEditMessage:
                 let message = parse(update.UpdateEditMessage.message, client, true)
                 for messageHandler in self.onMessageHandlers.NewMessageHandler.message:
-                    asyncCheck messageHandler(message) 
+                    asyncCheck messageHandler(message)
             if update of UpdateNewChannelMessage:
                 let message = parse(update.UpdateNewChannelMessage.message, client)
                 for messageHandler in self.onMessageHandlers.NewMessageHandler.message:

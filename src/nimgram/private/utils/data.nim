@@ -11,20 +11,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+proc send*(self: NimgramClient, function: TLFunction,
+        waitFor: bool = true): Future[TL] {.async.} =
+    ## Send a raw TL function
 
-type Contact* = ref object of Media
-    number*: string    ## Phone number
-    firstName*: string ## Contact's first name
-    lastName*: string  ## Contact's last name
-    vcard*: string     ## vcard of the contact
-    ID*: int64         ## ID of the contact (0 if not registered on Telegram)
+    result = await self.sessions[self.mainDc].send(function, waitFor)
 
 
-proc parse*(contact: raw.MessageMediaContact): Contact =
-    return Contact(
-        number: contact.phone_number,
-        firstName: contact.first_name,
-        lastName: contact.last_name,
-        vcard: contact.vcard,
-        ID: contact.user_id
-    )
+
+
+

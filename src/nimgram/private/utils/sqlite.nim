@@ -26,7 +26,7 @@ when compileOption("threads"):
         rowResponse: Row
         seqResponse: seq[Row]
 
-    type SqlRequest = ref object 
+    type SqlRequest = ref object
         queryType: string
         query: SqlQuery
         args: seq[string]
@@ -39,7 +39,7 @@ when compileOption("threads"):
         chn: ptr Channel[SqlRequest]
         execute: bool
 
-    proc worker(self: SqlManager) {.thread.} = 
+    proc worker(self: SqlManager) {.thread.} =
         while self.execute:
             var request = self.chn[].recv()
             var response = SqlResponse(success: true)
@@ -94,7 +94,7 @@ when compileOption("threads"):
         result.sql.exec(sql"create table if not exists dcoptions( number int constraint table_name_pk primary key, isAuthorized int, isMain int, authKey TEXT, salt TEXT);")
         result.sql.exec(sql"create table if not exists peerdata ( id int constraint peerdata_pk primary key, access_hash int );")
         createThread(result.worker, worker, result)
- 
+
     proc waitEvent(ev: AsyncEvent): Future[void] =
         var fut = newFuture[void]("waitEvent")
         proc cb(fd: AsyncFD): bool = fut.complete(); return true
@@ -107,64 +107,71 @@ when compileOption("threads"):
             allocShared0(sizeof(Channel[SqlResponse]))
         )
         answerchn[].open()
-        var request = SqlRequest(queryType: "exec", query: query, args: argss, event: event, chnanswer: answerchn)
+        var request = SqlRequest(queryType: "exec", query: query, args: argss,
+                event: event, chnanswer: answerchn)
         self.chn[].send(request)
         await waitEvent(event)
         var response = answerchn[].recv()
         answerchn[].close()
-        deallocShared(answerchn) 
+        deallocShared(answerchn)
         if not response.success:
             raise response.exception
-    
-    proc getValue*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[string] {.async.} =
+
+    proc getValue*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[
+            string] {.async.} =
         var event = newAsyncEvent()
-        var answerchn =  cast[ptr Channel[SqlResponse]](
+        var answerchn = cast[ptr Channel[SqlResponse]](
             allocShared0(sizeof(Channel[SqlResponse]))
         )
         answerchn[].open()
-        var request = SqlRequest(queryType: "getValue", query: query, args: argss, event: event, chnanswer: answerchn)
+        var request = SqlRequest(queryType: "getValue", query: query,
+                args: argss, event: event, chnanswer: answerchn)
         self.chn[].send(request)
         await waitEvent(event)
         var response = answerchn[].recv()
         answerchn[].close()
-        deallocShared(answerchn) 
+        deallocShared(answerchn)
         if not response.success:
             raise response.exception
         return response.response
 
-    proc getAllRows*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[seq[Row]] {.async.} =
+    proc getAllRows*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[
+            seq[Row]] {.async.} =
         var event = newAsyncEvent()
-        var answerchn =  cast[ptr Channel[SqlResponse]](
+        var answerchn = cast[ptr Channel[SqlResponse]](
             allocShared0(sizeof(Channel[SqlResponse]))
         )
         answerchn[].open()
-        var request = SqlRequest(queryType: "getAllRows", query: query, args: argss, event: event, chnanswer: answerchn)
+        var request = SqlRequest(queryType: "getAllRows", query: query,
+                args: argss, event: event, chnanswer: answerchn)
         self.chn[].send(request)
         await waitEvent(event)
         var response = answerchn[].recv()
         answerchn[].close()
-        deallocShared(answerchn) 
+        deallocShared(answerchn)
         if not response.success:
             raise response.exception
         return response.seqResponse
 
-    proc getRow*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[Row] {.async.} =
+    proc getRow*(self: SqlManager, query: SqlQuery, argss: seq[string] = @[]): Future[
+            Row] {.async.} =
         var event = newAsyncEvent()
-        var answerchn =  cast[ptr Channel[SqlResponse]](
+        var answerchn = cast[ptr Channel[SqlResponse]](
             allocShared0(sizeof(Channel[SqlResponse]))
         )
         answerchn[].open()
-        var request = SqlRequest(queryType: "getRow", query: query, args: argss, event: event, chnanswer: answerchn)
+        var request = SqlRequest(queryType: "getRow", query: query, args: argss,
+                event: event, chnanswer: answerchn)
         self.chn[].send(request)
         await waitEvent(event)
         var response = answerchn[].recv()
         answerchn[].close()
-        deallocShared(answerchn) 
+        deallocShared(answerchn)
         if not response.success:
             raise response.exception
         return response.rowResponse
 
-    proc close*(self: SqlManager) = 
+    proc close*(self: SqlManager) =
         self.execute = false
         self.chn[].close()
         deallocShared(self.chn)

@@ -13,27 +13,57 @@
 
 
 type UserStatus* = enum ## User's Last Seen & Online status
-    None, ## No status available, usually for bots
-    Online, ## User is online right now
-    Offline, ## User is currently offline
-    Recently, ## user with hidden last seen time who was online between 1 second and 2-3 days ago.
-    WithinWeek, ## user with hidden last seen time who was online between 2-3 and seven days ago.
-    WithinMonth, ## user with hidden last seen time who was online between 6-7 days and a month ago.
+    None,               ## No status available, usually for bots
+    Online,             ## User is online right now
+    Offline,            ## User is currently offline
+    Recently,  ## user with hidden last seen time who was online between 1 second and 2-3 days ago.
+    WithinWeek,  ## user with hidden last seen time who was online between 2-3 and seven days ago.
+    WithinMonth,  ## user with hidden last seen time who was online between 6-7 days and a month ago.
     LongTimeAgo ## blocked user or user with hidden last seen time who was online more than a month ago.
 
 
 type UnsupportedMessage* = ref object of Media ## Current version of the client does not support this media type.
 
+type EmptyMedia* = ref object of Media ## Empty Media
+
 type RestrictionReason* = ref object ## Contains the reason why access to a certain object must be restricted. Clients are supposed to deny access to the channel if the platform field is equal to all or to the current platform (ios, android, wp, etc.). Platforms can be concatenated (ios-android, ios-wp), unknown platforms are to be ignored. The text is the error message that should be shown to the user.
-    
+
     platform*: string ## Platform identifier (ios, android, wp, all, etc.), can be concatenated with a dash as separator (android-ios, ios-wp, etc)
     reason*: string ## Restriction reason (porno, terms, etc.)
-    text*: string ## Error message to be shown to the user
+    text*: string   ## Error message to be shown to the user
 
 proc parse*(restriction: raw.RestrictionReasonI): RestrictionReason =
-    var restrictionReal = cast[raw.RestrictionReason](restriction)
+    var restrictionReal = (raw.RestrictionReason)(restriction)
     return RestrictionReason(
         platform: restrictionReal.platform,
         reason: restrictionReal.reason,
         text: restrictionReal.text
     )
+
+proc parse*(media: raw.MessageMediaI): Media =
+    if media of MessageMediaPhoto:
+        let parse = media.MessageMediaPhoto.parse()
+        result = if parse.isSome(): parse.get() else: EmptyMedia()
+    if media of MessageMediaGeo:
+        result = media.MessageMediaGeo.parse()
+    if media of MessageMediaContact:
+        result = media.MessageMediaContact.parse()
+    if media of MessageMediaUnsupported:
+        result = UnsupportedMessage()
+    if media of MessageMediaDocument:
+        let parse = media.MessageMediaDocument.parse()
+        result = if parse.isSome(): parse.get() else: EmptyMedia()
+    if media of MessageMediaWebPage:
+        let parse = media.MessageMediaWebPage.webpage.parse()
+        result = if parse.isSome(): parse.get() else: EmptyMedia()
+    if media of MessageMediaVenue:
+        result = media.MessageMediaVenue.parse()
+    if media of MessageMediaGame:
+        result = cast[raw.Game](
+                media.MessageMediaGame.game).parse()
+    if media of MessageMediaInvoice:
+        result = UnsupportedMessage()
+    if media of MessageMediaPoll:
+        result = UnsupportedMessage()
+    if media of MessageMediaDice:
+        result = media.MessageMediaDice.parse()

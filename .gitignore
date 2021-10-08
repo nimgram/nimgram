@@ -5,3 +5,6 @@ src/nimgram/private/rpc
 nimcache/
 nimblecache/
 htmldocs/
+.devcontainer
+nimgram-session.bin
+tests/test

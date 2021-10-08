@@ -30,7 +30,7 @@ proc messageID(self: Session): uint64 =
 
 proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int,
         authKey: seq[uint8], serverSalt: seq[uint8],
-        storageManager: NimgramStorage, config: NimgramConfig): Session =
+        storageManager: NimgramStorage, config: NimgramConfig, disableNewSessionCheck: bool = false): Session =
     result = new Session
     result.acks = newSeq[int64](0)
     result.connection = connection
@@ -40,6 +40,7 @@ proc initSession*(connection: MTProtoNetwork, logger: Logger, dcID: int,
     result.authKeyID = sha1.digest(authKey).data[12..19]
     result.storageManager = storageManager
     result.initDone = false
+    result.disableNewSessionCheck = disableNewSessionCheck
     result.alreadyCalledDisconnected = false
     result.serverSalt = serverSalt
     result.logger = logger
@@ -100,21 +101,21 @@ proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.}
 
 proc startHandler*(self: Session, client: NimgramClient,
         updateHandler: UpdateHandler) {.async.} =
-    self.logger.log(lvlDebug, &"Initalizing handler on DC" & $self.dcID )
+    self.logger.log(lvlDebug, &"Initalizing handler on DC" & $self.dcID)
 
-    while not self.connection.isClosed():
+    while not self.connection.isClosed(self.connection):
         var mdata: seq[uint8]
         try:
-            var asyncReceive = self.connection.receive()
+            var asyncReceive = self.connection.receive(self.connection)
             var t = await withTimeout(asyncReceive, 11000)
             if not t:
-                self.logger.log(lvlDebug, &"Timeout from Telegram on DC" & $self.dcID )
+                self.logger.log(lvlDebug, &"Timeout from Telegram on DC" & $self.dcID)
 
                 break
             mdata = asyncReceive.waitFor
 
         except:
-            self.logger.log(lvlDebug, &"Disconnected from Telegram on DC" & $self.dcID )
+            self.logger.log(lvlDebug, &"Disconnected from Telegram on DC" & $self.dcID)
 
             break
         if len(mdata) == 0:
@@ -144,6 +145,7 @@ proc startHandler*(self: Session, client: NimgramClient,
 
             var msgID = int64(0)
             self.seqNo = seqNo(body, self.seqNo)
+
             if message.body of Msg_detailed_info:
                 self.acks.add(body.Msg_detailed_info.answer_msg_id)
                 continue
@@ -152,9 +154,10 @@ proc startHandler*(self: Session, client: NimgramClient,
                 continue
 
             if message.body of New_session_created:
-                if not self.initDone:
+                if not self.initDone or self.disableNewSessionCheck:
                     continue
-                self.logger.log(lvlDebug, &"Got New_session_created on DC" & $self.dcID & ", Initializing again" )
+                self.logger.log(lvlDebug, &"Got New_session_created on DC" &
+                        $self.dcID & ", Initializing again")
 
                 await mtprotoInit(self, client)
                 continue
@@ -195,29 +198,29 @@ proc startHandler*(self: Session, client: NimgramClient,
             if len(self.acks) >= 8:
                 discard await self.send(Msgs_ack(msg_ids: self.acks), false)
                 self.acks.setLen(0)
-    self.logger.log(lvlDebug, &"Handler exited on DC" & $self.dcID )
+    self.logger.log(lvlDebug, &"Handler exited on DC" & $self.dcID)
 
     #We need to reopen the connection if this session is required
     if self.isRequired:
-        self.connection.close()
+        self.connection.close(self.connection)
 
         self.logger.log(lvlDebug, &"Trying to reconnect...")
 
         if not self.alreadyCalledDisconnected:
-            #self.callbackUpdates.processNetworkDisconnected() #TODO: implement this again 
+            #self.callbackUpdates.processNetworkDisconnected() #TODO: implement this again
             self.alreadyCalledDisconnected = true
         while true:
             await sleepAsync(5000)
 
             try:
-                await self.connection.reopen()
+                await self.connection.reopen(self.connection)
             except:
                 await sleepAsync(5000)
                 continue
             await sleepAsync(1000)
-            if not self.connection.isClosed():
-                #TODO: Handle session-id regeneration if Telegram forgets the current one
-                self.logger.log(lvlDebug, &"Sucessfuly reconnected to DC" & $self.dcID )
+            if not self.connection.isClosed(self.connection):
+                #TODO: Handle session-id regeneration if Telegram forgets the current one (PARTIALLY DONE)
+                self.logger.log(lvlDebug, &"Sucessfuly reconnected to DC" & $self.dcID)
                 asyncCheck self.startHandler(client, updateHandler)
                 self.sessionID = urandom(8)
 
@@ -255,21 +258,20 @@ proc waitEvent(ev: AsyncEvent): Future[void] =
 proc send*(self: Session, tl: TL, waitResponse: bool = true,
         ignoreInitDone: bool = false): Future[TL] {.async.} =
 
-    
-
     var data = self.encrypt(tl.TLEncode(), tl)
 
     if self.isDead:
-        raise newException(CatchableError, "Connection was lost")
-    if self.connection.isClosed(): #or (not self.initDone and not ignoreInitDone):
+        return
+    if self.connection.isClosed(self.connection): 
         self.responses[data.messageID.int64] = Response(event: newAsyncEvent())
         await waitEvent(self.responses[data.messageID.int64].event)
         return await self.send(tl, waitResponse, ignoreInitDone)
     try:
-        await self.connection.write(data.encryptedData)
+        await self.connection.write(self.connection, data.encryptedData)
     except Exception:
-        if self.connection.isClosed():
-            self.responses[data.messageID.int64] = Response(event: newAsyncEvent())
+        if self.connection.isClosed(self.connection):
+            self.responses[data.messageID.int64] = Response(
+                    event: newAsyncEvent())
             await waitEvent(self.responses[data.messageID.int64].event)
             return await self.send(tl, waitResponse, ignoreInitDone)
         else:
@@ -287,6 +289,7 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true,
                 return await self.send(tl, waitResponse, ignoreInitDone)
 
         var response = self.responses[data.messageID.int64].body
+
         if response of Bad_server_salt:
             self.logger.log(lvlDebug, &"Received bad_server_salt, changing salt")
 
@@ -296,7 +299,7 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true,
             info[self.dcID].salt = self.serverSalt
             await self.storageManager.writeSessionsInfo(info)
             return await self.send(tl, waitResponse, ignoreInitDone)
-        
+
         self.responses.del(data.messageID.int64)
 
         if response of Rpc_error:
@@ -312,28 +315,29 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true,
         return response
 
 proc checkConnectionLoop*(self: Session) {.async.} =
-    self.logger.log(lvlDebug, &"Starting checkConnectionLoop DC" & $self.dcID )
+    self.logger.log(lvlDebug, &"Starting checkConnectionLoop DC" & $self.dcID)
 
-    while not self.connection.isClosed():
+    while not self.connection.isClosed(self.connection):
         await sleepAsync(10000)
         randomize()
         let pingID = int64(rand(9999))
         try:
+            if self.isDead:
+                return
             discard await self.send(Ping(ping_id: pingID), false, true)
         except:
             return
-        self.logger.log(lvlDebug, &"Sending ping to Telegram")
 
-
+proc stop*(self: Session) {.async.} =
+    self.isDead = true
+    self.isRequired = false
+    self.activeReceiver = false
+    self.responses.clear()
+    self.connection.close(self.connection)
+    
 
 proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.} =
-    #randomize()
-    #let pingID = int64(rand(9999))
 
-    #var ponger = await self.send(Ping(ping_id: pingID), true, true)
-    #if not(ponger of Pong):
-    #    raise newException(CatchableError, "Ping failed!")
-    #doAssert ponger.Pong.ping_id == pingID
     discard await self.send(InvokeWithLayer(layer: LAYER_VERSION,
             query: InitConnection(api_id: self.clientConfig.apiID,
             device_model: self.clientConfig.deviceModel,
@@ -343,5 +347,3 @@ proc mtprotoInit(self: Session, client: NimgramClient): Future[void] {.async.} =
             lang_pack: self.clientConfig.langPack,
             lang_code: self.clientConfig.langCode,
             query: HelpGetConfig())), false, true)
-    #asyncCheck self.checkConnectionLoop()
-    #await startHandler(client)

@@ -16,10 +16,10 @@
 
 type
     Dice* = ref object of Media
-        value: int32 ## Dice value
+        value: int32     ## Dice value
         emoticon: string ## The emoji
         slot: Option[SlotMachine]
-    
+
     Reel* = enum
         bar
         berries

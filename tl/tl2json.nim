@@ -1,30 +1,46 @@
+
+# Nimgram
+# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# This file is part of Nimgram, under the MIT License
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
+# OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+
 import json
 import strformat
 import strutils
 import sequtils
 
-# Module for converting the TL schema into a json structure
+## Module for converting the TL schema into a json structure
 
 type TlParameter = object
     name: string
     typeof: string
 
 type TlConstructor* = object
-     id: string
-     predicate: string
-     params: seq[TlParameter]
-     typeof: string
+    id: string
+    predicate: string
+    params: seq[TlParameter]
+    typeof: string
 
 type TLMethod* = object
-     id: string
-     methodname: string
-     params: seq[TlParameter]
-     returnType: string
+    id: string
+    methodname: string
+    params: seq[TlParameter]
+    returnType: string
 
 type TlSchema* = object
-     layer: int64
-     constructors: seq[TlConstructor]
-     methods: seq[TLMethod]
+    layer: int64
+    constructors: seq[TlConstructor]
+    methods: seq[TLMethod]
 proc getID(line: string): string =
     var Splitt = split(line, "#", 1)
     if len(Splitt) <= 1:
@@ -58,13 +74,14 @@ proc getReturnType(line: string): string =
 
 
 
-proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
+proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode =
     var methodMode = false
     var schema = TlSchema()
     schema.layer = layerVersion
     for line in lines:
         if line.startsWith("// LAYER") and schema.layer == -1:
-            schema.layer = line.replace("// LAYER", "").replace(" ", "").parseBiggestInt()
+            schema.layer = line.replace("// LAYER", "").replace(" ",
+                    "").parseBiggestInt()
             echo "Using layer version ", schema.layer
 
         if line.isEmptyOrWhitespace() or ($line[0] == "/" and $line[1] == "/"):
@@ -89,11 +106,12 @@ proc parseTL(lines: seq[string], debug: bool, layerVersion: int64): JsonNode  =
             meth.params = getParameters(line)
             meth.returnType = getReturnType(line)
             schema.methods = schema.methods & meth
-            
+
     result = %* schema
 
 
-proc TL2Json*(filename: string, debug: bool, findLayer: bool, layerVersion: int64 = -1): JsonNode =
+proc TL2Json*(filename: string, debug: bool, findLayer: bool,
+        layerVersion: int64 = -1): JsonNode =
     # Parses a jsonified TL schema
 
     try:

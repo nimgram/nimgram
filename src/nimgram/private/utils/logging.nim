@@ -17,8 +17,8 @@ import std / [
 
 
 type Logger* = object
-    enableColors: bool
-    level: int
+  enableColors: bool
+  level: int
 
 type
   LogLevel* = enum
@@ -30,23 +30,25 @@ type
     lvlFatal = "FATAL"
 
 type LevelInfo = object
-    color: ForegroundColor
-    level: int
+  color: ForegroundColor
+  level: int
 
 const infoLevels: array[LogLevel, LevelInfo] = [
-  LevelInfo(color: fgWhite, level: 6), LevelInfo(color: fgGreen, level: 5), LevelInfo(color: fgCyan, level: 4), LevelInfo(color: fgYellow, level: 3), LevelInfo(color: fgRed, level: 2), LevelInfo(color: fgRed, level: 1)
+  LevelInfo(color: fgWhite, level: 6), LevelInfo(color: fgGreen, level: 5),
+      LevelInfo(color: fgCyan, level: 4), LevelInfo(color: fgYellow, level: 3),
+      LevelInfo(color: fgRed, level: 2), LevelInfo(color: fgRed, level: 1)
 ]
 
 
 proc initLogger*(loggingLevel: int = 0, enableColors: bool): Logger =
-    result.enableColors = enableColors
-    result.level = loggingLevel
+  result.enableColors = enableColors
+  result.level = loggingLevel
 
 proc log*(self: Logger, level: LogLevel, msg: string) =
-    var info = infoLevels[level]
-    if info.level < self.level:
-        if self.enableColors:
-            setForegroundColor(stdout, info.color)
-        echo &"[{$level}] {msg}"
-        if self.enableColors:
-            resetAttributes()
+  var info = infoLevels[level]
+  if info.level < self.level:
+    if self.enableColors:
+      setForegroundColor(stdout, info.color)
+    echo &"[{$level}] {msg}"
+    if self.enableColors:
+      resetAttributes()

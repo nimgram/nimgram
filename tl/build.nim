@@ -13,7 +13,7 @@
 
 ## This file is supposed to be executed when installing the library as a nimble package
 ## Or by the forcegen task
-## 
+##
 ## To build the rpc directory use "nimble forcegen" on the root directory
 
 import tl2json

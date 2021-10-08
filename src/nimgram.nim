@@ -14,9 +14,8 @@
 
 import nimgram/private/rpc/raw
 import nimgram/private/storage
-import nimgram/private/network/tcp/abridged
-import nimgram/private/network/tcp/intermediate
 import nimgram/private/network/transports
+import nimgram/private/network/generator
 import asyncdispatch
 import tables
 import random
@@ -42,6 +41,7 @@ type Session* = ref object
     alreadyCalledDisconnected: bool
     resumeConnectionWait*: AsyncEvent
     authKeyID: seq[uint8]
+    disableNewSessionCheck: bool
     storageManager: NimgramStorage
     clientConfig: NimgramConfig
     serverSalt: seq[uint8]
@@ -85,10 +85,9 @@ proc getCorrectID*(peer: PeerI): int64 =
         result = getChannelId(peer.PeerChannel.channel_id)
 
 
+include nimgram/private/types/files/input_file
 
-include nimgram/private/types/files/file_location
 include nimgram/private/types/chats/pic
-include nimgram/private/types/other
 include nimgram/private/types/chats/peer
 
 include nimgram/private/types/keyboards/keyboard_button
@@ -101,6 +100,7 @@ include nimgram/private/types/messages/contact
 include nimgram/private/types/messages/venue
 include nimgram/private/types/messages/game
 include nimgram/private/types/messages/dice
+include nimgram/private/types/other
 
 
 
@@ -111,14 +111,55 @@ proc send*(self: Session, tl: TL, waitResponse: bool = true,
         ignoreInitDone: bool = false): Future[TL] {.async.}
 proc checkConnectionLoop*(self: Session) {.async.}
 
+proc sendMTProtoInit(self: Session, startCheck: bool, triggerDone: bool = false,
+        miniInit: bool = false) {.async.}
+
 include nimgram/private/updates
 
 include nimgram/private/session
 
+proc sendMTProtoInit(self: Session, startCheck: bool, triggerDone: bool = false,
+        miniInit: bool = false) {.async.} =
+    ## Used to initialize a connection to MTProto correctly
+    ## `miniInit` is useful for example on session used by workers to get the fastest initialization possible
+
+    let pingID = int64(rand(9999))
+    let pong = await self.send(Ping(ping_id: pingID), not(miniInit), true)
+    if not miniInit:
+        doAssert pong of Pong
+        doAssert pong.Pong.ping_id == pingID
+    let config = await self.send(InvokeWithLayer(layer: LAYER_VERSION,
+            query: InitConnection(api_id: self.clientConfig.apiID,
+            device_model: self.clientConfig.deviceModel,
+            system_version: self.clientConfig.systemVersion,
+            app_version: self.clientConfig.appVersion,
+            system_lang_code: self.clientConfig.systemLangCode,
+            lang_pack: self.clientConfig.langPack,
+            lang_code: self.clientConfig.langCode,
+            query: HelpGetConfig())), not(miniInit), true)
+    if not miniInit:
+        doAssert config of Config
+    if triggerDone:
+        self.initDone = true
+        self.resumeConnectionWait.trigger()
+    if startCheck:
+        asyncCheck self.checkConnectionLoop()
+
+
+
 include nimgram/private/utils/init
+include nimgram/private/utils/login
+include nimgram/private/utils/peers
+include nimgram/private/utils/data
+
+
+include nimgram/private/methods/files/upload_file
+
 
 include nimgram/private/methods/messages/send_message
+include nimgram/private/methods/messages/send_document
+
 
 
 when isMainModule:
-  {.fatal: "Hey! This is the main module file of Nimgram, please import the library instead of running it directly".}
+    {.fatal: "Hey! This is the main module file of Nimgram, please import the library instead of running it directly".}

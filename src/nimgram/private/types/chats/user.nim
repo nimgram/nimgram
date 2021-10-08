@@ -11,40 +11,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-type User* = ref object ## A user
-    client: NimgramClient ## Nimgram instance, used for high level api calls
-    self*: bool ## Whether this user indicates the currently logged in user
-    contact*: bool ## Whether this user is a contact
-    mutualContact*: bool ## Whether this user is a mutual contact
-    deleted*: bool ## Whether the account of this user was deleted
-    bot*: bool ## Is this user a bot?
-    botChatHistory*: bool ## Can the bot see all messages in groups?
-    botNoChats*: bool ## Can the bot be added to groups?
-    verified*: bool ## Whether this user is verified
+type User* = ref object           ## A user
+    client: NimgramClient         ## Nimgram instance, used for high level api calls
+    self*: bool                   ## Whether this user indicates the currently logged in user
+    contact*: bool                ## Whether this user is a contact
+    mutualContact*: bool          ## Whether this user is a mutual contact
+    deleted*: bool                ## Whether the account of this user was deleted
+    bot*: bool                    ## Is this user a bot?
+    botChatHistory*: bool         ## Can the bot see all messages in groups?
+    botNoChats*: bool             ## Can the bot be added to groups?
+    verified*: bool               ## Whether this user is verified
     restricted*: bool ## Access to this user must be restricted for the reason specified in restriction_reason
-    min*: bool ## Min constructor
-    botInlineGeo*: bool ## Whether the bot can request our geolocation in inline mode
-    support*: bool ## Whether this is an official support user
-    scam*: bool ## This may be a scam user
+    min*: bool                    ## Min constructor
+    botInlineGeo*: bool           ## Whether the bot can request our geolocation in inline mode
+    support*: bool                ## Whether this is an official support user
+    scam*: bool                   ## This may be a scam user
     applyMinPhoto*: bool ## If set, the profile picture for this user should be refetched
-    fake*: bool ## This may be a fake user
-    userID*: int32 ## ID of the user 
-    accessHash*: Option[int64] ## Access hash of the user
-    firstName*: string ## First name
-    lastName*: string ## Last name
-    username*: string ## Username
+    fake*: bool                   ## This may be a fake user
+    userID*: int64                ## ID of the user
+    accessHash*: Option[int64]    ## Access hash of the user
+    firstName*: string            ## First name
+    lastName*: string             ## Last name
+    username*: string             ## Username
     nextOfflineDate: Option[int32] ## Date when the user will be considered automatically offline
     lastOnlineDate: Option[int32] ## Date when the user was last seen
-    phone*: Option[string] ## Phone number
-    photo*: Option[ChatPhoto] ## Profile picture of user
-    status*: UserStatus ## Online status of user
+    phone*: Option[string]        ## Phone number
+    photo*: Option[ChatPhoto]     ## Profile picture of user
+    status*: UserStatus           ## Online status of user
     botInfoVersion*: Option[int32] ## Version of the bot_info field in userFull, incremented every time it changes
     restrictionReason*: Option[seq[RestrictionReason]] ## Contains the reason why access to this user must be restricted.
     botInlinePlaceholder*: Option[string] ## Inline placeholder for this inline bot
-    langCode*: Option[string] ## Language code of the user
+    langCode*: Option[string]     ## Language code of the user
 
 
-proc parse*(user: raw.User, client: NimgramClient): User = 
+proc parse*(user: raw.User, client: NimgramClient): User =
     result = new User
 
     if user.photo.isSome():
@@ -57,7 +57,7 @@ proc parse*(user: raw.User, client: NimgramClient): User =
         result.restrictionReason = some(restrictionTemp)
 
     if user.status.isSome():
-        var status = user.status.get() 
+        var status = user.status.get()
         if status of UserStatusOnline:
             result.status = Online
             result.nextOfflineDate = user.status.get().UserStatusOnline.expires.some()
@@ -86,7 +86,7 @@ proc parse*(user: raw.User, client: NimgramClient): User =
     result.self = user.self
     result.contact = user.contact
     result.mutualContact = user.mutual_contact
-    result.deleted = user.deleted 
+    result.deleted = user.deleted
     result.bot = user.bot
     result.botChatHistory = user.bot_chat_history
     result.botNoChats = user.bot_nochats

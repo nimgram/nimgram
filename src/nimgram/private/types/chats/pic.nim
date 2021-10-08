@@ -13,9 +13,9 @@
 
 
 type ChatPhoto* = ref object ## Photo of a user/bot/chat/channel/supergroup
-    hasVideo*: bool ## Whether an animated profile picture is available for this user
-    photoID*: int64 ## Identifier of the respective photo
-    dcID*: int32 ## DC ID where the photo is stored
+    hasVideo*: bool          ## Whether an animated profile picture is available for this user
+    photoID*: int64          ## Identifier of the respective photo
+    dcID*: int32             ## DC ID where the photo is stored
 
 proc parse(profilePhoto: raw.UserProfilePhotoI): ChatPhoto =
     result = new ChatPhoto

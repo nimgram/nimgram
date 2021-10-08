@@ -133,53 +133,44 @@ proc init*(self: NimgramStorage, config: NimgramStorageConfig) =
     raise newException(CatchableError, "Unable to resolve type")
 
 proc writeSessionsInfo*(self: NimgramStorage, dcOptions: Table[int, DcOption]) {.async.} =
+    if self of NimgramStorageRam:
+        await self.NimgramStorageRam.writeSessionsInfo(dcOptions)
+        
     when compileOption("threads"):
         if self of NimgramStorageSqlite:
             await self.NimgramStorageSqlite.writeSessionsInfo(dcOptions)
-            return
-    if self of NimgramStorageRam:
-        await self.NimgramStorageRam.writeSessionsInfo(dcOptions)
-        return
-    raise newException(CatchableError, "Unable to resolve type")
+            
 
 
 proc clearCache*(self: NimgramStorage) = 
+    if self of NimgramStorageRam:
+        self.NimgramStorageRam.clearCache()
     when compileOption("threads"):
         if self of NimgramStorageSqlite:
             self.NimgramStorageSqlite.clearCache()
-            return
-    if self of NimgramStorageRam:
-        self.NimgramStorageRam.clearCache()
-        return
-    raise newException(CatchableError, "Unable to resolve type")
 
 
 proc getSessionsInfo*(self: NimgramStorage): Future[Table[int, DcOption]] {.async.} = 
-    when compileOption("threads"):
-        if self of NimgramStorageSqlite:
-            return await returnself.NimgramStorageSqlite.getSessionsInfo()
             
     if self of NimgramStorageRam:
         return await self.NimgramStorageRam.getSessionsInfo()
-    raise newException(CatchableError, "Unable to resolve type")
+    when compileOption("threads"):
+        if self of NimgramStorageSqlite:
+            return await self.NimgramStorageSqlite.getSessionsInfo()
    
 
 
 proc addPeer*(self: NimgramStorage, user: StoragePeer) {.async.} =
-    when compileOption("threads"):
-        if self of NimgramStorageSqlite:
-            self.NimgramStorageSqlite.addPeer(user)
-            return
     if self of NimgramStorageRam:
         await self.NimgramStorageRam.addPeer(user)
-        return
-    raise newException(CatchableError, "Unable to resolve type")
-
-proc getPeer*(self: NimgramStorage, user: int64): Future[StoragePeer] {.async.} = 
     when compileOption("threads"):
         if self of NimgramStorageSqlite:
-            return await returnself.NimgramStorageSqlite.getPeer(user)
-            
+            await self.NimgramStorageSqlite.addPeer(user)
+
+proc getPeer*(self: NimgramStorage, user: int64): Future[StoragePeer] {.async.} = 
+    
     if self of NimgramStorageRam:
         return await self.NimgramStorageRam.getPeer(user)
-    raise newException(CatchableError, "Unable to resolve type")
+    when compileOption("threads"):
+        if self of NimgramStorageSqlite:
+            return await self.NimgramStorageSqlite.getPeer(user)

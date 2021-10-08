@@ -34,40 +34,32 @@ OR (if l >= 127)
 +-+---+----...----+
 ]#
 
-type TcpAbridged* = ref object of MTProtoNetwork
-    socket: AsyncSocket
-    address: string
-    port: uint16
 
-method connect*(self: TcpAbridged, address: string, port: uint16) {.async.} =
+proc connect*(self: MTProtoNetwork, address: string, port: uint16) {.async.} =
     self.socket = await asyncnet.dial(address, port.Port)
-    var initialBuffer = uint8(0xEF)
-    await self.socket.send(addr initialBuffer, 1)
+    await self.socket.send("\xEF")
     self.address = address
     self.port = port
 
-method write*(self: TcpAbridged, data: seq[uint8]) {.async.} = 
+proc write*(self: MTProtoNetwork, data: seq[uint8]) {.async.} = 
     var lenght = uint32(len(data)/4)
     if lenght >= 127:
-        var finalbuffer = @[uint8(0x7F)] & toBytes(lenght)[0..2] & data
-        await self.socket.send(addr finalbuffer[0], len(finalbuffer))
+        await self.socket.send(cast[string](uint8(0x7F) & toBytes(lenght)[0..2] & data))
     else:
-        var finalbuffer = @[uint8(lenght)] & data
-        await self.socket.send(addr finalbuffer[0], len(finalbuffer))
+        await self.socket.send(cast[string](uint8(lenght) & data))
 
-method receive*(self: TcpAbridged): Future[seq[uint8]] {.async.} = 
+proc receive*(self: MTProtoNetwork): Future[seq[uint8]] {.async.} = 
     var lenght = cast[seq[uint8]](await self.socket.recv(1))
     var realLenght = 0
     if lenght[0] == 0x7F:
         lenght = cast[seq[uint8]](await self.socket.recv(3))
     copyMem(addr realLenght, addr lenght[0], len(lenght))
-    result = cast[seq[uint8]](await self.socket.recv(realLenght * 4 ))
+    result = cast[seq[uint8]](await self.socket.recv(realLenght * 4))
 
-method isClosed*(self: TcpAbridged): bool = self.socket.isClosed()
+proc isClosed*(self: MTProtoNetwork): bool = self.socket.isClosed()
 
-method close*(self: TcpAbridged) = self.socket.close()
+proc close*(self: MTProtoNetwork) = self.socket.close()
 
-method reopen*(self: TcpAbridged) {.async.} = 
+proc reopen*(self: MTProtoNetwork) {.async.} = 
     self.socket = await asyncnet.dial(self.address, self.port.Port)
-    var initialBuffer = uint8(0xEF)
-    await self.socket.send(addr initialBuffer, 1)
+    await self.socket.send("\xEF")

@@ -30,9 +30,9 @@ proc exp*(sa, se, sm: StUint[2048]): StUint[2048] =
         mpz_init(m)
         mpz_init(r)
 
-        discard mpz_set_str(a, sa.toString(), cint(10))
-        discard mpz_set_str(e, se.toString(), cint(10))
-        discard mpz_set_str(m, sm.toString(), cint(10))
+        discard mpz_set_str(a, cstring(sa.toString()), cint(10))
+        discard mpz_set_str(e, cstring(se.toString()), cint(10))
+        discard mpz_set_str(m, cstring(sm.toString()), cint(10))
 
         mpz_powm_sec(r, a, e, m)
 

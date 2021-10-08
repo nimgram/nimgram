@@ -61,7 +61,7 @@ proc parse*(photo: raw.MessageMediaPhoto): Option[Photo] =
     let photoInternal = photo.photo.get()
     if not (photoInternal of raw.Photo):
         return
-    var tempResult = parse(cast[raw.Photo](photoInternal))
+    var tempResult = parse((raw.Photo)(photoInternal))
     tempResult.ttlSeconds = photo.ttl_seconds
 
     result = some(tempResult)

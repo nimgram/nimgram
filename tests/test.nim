@@ -46,21 +46,31 @@ proc messageEvent(message: nimgram.Message): Future[void] {.async.} =
       url: some("https://t.me/nimgramchat")
     )]]
   )
+  if message.text == "/circle":
+    let document = await mtprotoClient.uploadFile("tests/circle.png", message.chatID)
+    discard await mtprotoClient.sendDocument(message.chatID, document, "Welcome to the circle")
+    #discard await mtprotoClient.sendDocument(message.chatID, "tests/circle.png", "Welcome to the circle")
+    return
 
-  discard await mtprotoClient.sendMessage(message.chatID, "🥳 Welcome to Nimgram!", keyboard)
+  discard await mtprotoClient.sendMessage(message.chatID, &"🥳 Welcome to Nimgram!\nRunning on Nim {NimVersion}\n\nWant a circle? Type /circle", replyMarkup = keyboard)
   if message.replyMarkup.isSome:
     if message.replyMarkup.get() of InlineKeyboardMarkup:
       echo message.replyMarkup.get().InlineKeyboardMarkup.type
       echo message.replyMarkup.get().InlineKeyboardMarkup.rows.type
   elif message.text == "/quit":
     quit()
+  #elif message.text == "/logout":
+    #discard await mtprotoClient.sendMessage(message.chatID, &"bye")
+    #await mtprotoClient.logout()
+
+
 
 
 # Proc to launch the client instance
 proc runClient*(config: NimgramConfig, botToken: string): Future[void] {.async.} =
   # Create the instance, all the data is inside of RAM
   mtprotoClient = await initNimgram("nimgram-session.bin",
-    config, StorageRam)
+    config, StorageRam, 7)
   # Take the control over the bot
   await mtprotoClient.botLogin(botToken)
   # Set the update handler
@@ -75,7 +85,7 @@ when isMainModule:
   # Load the configurations.
   # Remember, for the `nimble test` $PWD is the project directory
   let
-    conf = loadConfig("tests/test.ini")
+    conf = loadConfig("../test.ini")
     mtpc = "mtprotoClient"
 
   # c prefix stands for "configuration"

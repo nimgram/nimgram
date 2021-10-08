@@ -17,7 +17,7 @@ type PeerType* = enum
     TypeChat
 
 type Peer* = ref object
-    id*: int32
+    id*: int64
     `type`*: PeerType
 
 proc parse*(peer: raw.PeerI): Peer =

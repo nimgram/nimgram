@@ -15,7 +15,7 @@
 type Message* = ref object                 ## A message
     empty*: bool                           ## Whether this is a empty message
     edited*: bool                          ## Whether this is a edited message
-    deleted*: bool                          ## Wheter this is a deleted message
+    deleted*: bool                         ## Wheter this is a deleted message
     service*: bool                         ## Whether this is a service message
     action*: Option[MessageActionI] ## For service messages, the event connected with the service message
 
@@ -47,7 +47,7 @@ type Message* = ref object                 ## A message
     forwardSavedMessageID*: Option[int32] ## For forwarded messages sent to saved messages, the original message id where it was sent
     forwardSavedFromID*: Option[int64] ## For forwarded messages sent to saved messages, the original chat where it was sent
 
-    viaBotID*: Option[int32]               ## ID of the inline bot that generated the message
+    viaBotID*: Option[int64]               ## ID of the inline bot that generated the message
 
     # TODO: Directly get message info instead of giving just the id
     replyToMessageID*: Option[int32]       ## ID of message to which this message is replying
@@ -73,7 +73,8 @@ type Message* = ref object                 ## A message
     # TODO: webpage: Option[Webpage]
 
 
-proc parse*(message: raw.Message, client: NimgramClient, edited: bool = false, deleted: bool = false): Message =
+proc parse*(message: raw.Message, client: NimgramClient, edited: bool = false,
+        deleted: bool = false): Message =
     result = new Message
     if edited:
         result.edited = true
@@ -108,29 +109,7 @@ proc parse*(message: raw.Message, client: NimgramClient, edited: bool = false, d
 
 
     if message.media.isSome():
-        if message.media.get() of MessageMediaPhoto:
-            result.media = cast[Option[Media]](message.media.get().MessageMediaPhoto.parse())
-        if message.media.get() of MessageMediaGeo:
-            result.media = cast[Option[Media]](some(message.media.get().MessageMediaGeo.parse()))
-        if message.media.get() of MessageMediaContact:
-            result.media = cast[Option[Media]](some(message.media.get().MessageMediaContact.parse()))
-        if message.media.get() of MessageMediaUnsupported:
-            result.media = cast[Option[Media]](UnsupportedMessage().some())
-        if message.media.get() of MessageMediaDocument:
-            result.media = cast[Option[Media]](message.media.get().MessageMediaDocument.parse())
-        if message.media.get() of MessageMediaWebPage:
-            result.media = cast[Option[Media]](message.media.get().MessageMediaWebPage.webpage.parse())
-        if message.media.get() of MessageMediaVenue:
-            result.media = cast[Option[Media]](some(message.media.get().MessageMediaVenue.parse()))
-        if message.media.get() of MessageMediaGame:
-            result.media = cast[Option[Media]](some(cast[raw.Game](
-                    message.media.get().MessageMediaGame.game).parse()))
-        if message.media.get() of MessageMediaInvoice:
-            result.media = cast[Option[Media]](UnsupportedMessage().some())
-        if message.media.get() of MessageMediaPoll:
-            result.media = cast[Option[Media]](UnsupportedMessage().some())
-        if message.media.get() of MessageMediaDice:
-            result.media = cast[Option[Media]](some(message.media.get().MessageMediaDice.parse()))
+        result.media = some(message.media.get().parse())
 
 
     if message.restriction_reason.isSome():
@@ -170,11 +149,12 @@ proc parse*(message: raw.Message, client: NimgramClient, edited: bool = false, d
     result.groupedID = message.grouped_id
     result.ttlPeriod = message.ttl_period
 
-proc parse*(message: raw.MessageI, client: NimgramClient, edited: bool = false, deleted: bool = false): Message =
+proc parse*(message: raw.MessageI, client: NimgramClient, edited: bool = false,
+        deleted: bool = false): Message =
     if message of raw.Message:
-        return parse(cast[raw.Message](message), client, edited, deleted)
+        return parse((raw.Message)(message), client, edited, deleted)
     elif message of raw.MessageEmpty:
-        let messageEmpty = cast[raw.MessageEmpty](message)
+        let messageEmpty = (raw.MessageEmpty)(message)
         var chatID = int64(0)
         if messageEmpty.peer_id.isSome():
             chatID = getCorrectID(messageEmpty.peer_id.get())
@@ -186,10 +166,10 @@ proc parse*(message: raw.MessageI, client: NimgramClient, edited: bool = false, 
             messageID: messageEmpty.id
         )
     elif message of raw.MessageService:
-        let messageService = cast[raw.MessageService](message)
+        let messageService = (raw.MessageService)(message)
         result = new Message
         result.service = true
-        if edited: 
+        if edited:
             result.edited = true
         if deleted:
             result.deleted = true

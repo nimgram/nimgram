@@ -14,9 +14,10 @@
 
 import nimcrypto
 
-# Since Nimcrypto does not have an implementation of IGE, here's one made by me 
+# Since Nimcrypto does not have an implementation of IGE, here's one made by me
 
-proc xorBlock(destination: array[16, uint8], source: array[16, uint8]): array[16, uint8] =
+proc xorBlock(destination: array[16, uint8], source: array[16, uint8]): array[
+        16, uint8] =
     var i = 0
     for _ in destination:
         result[i] = source[i] xor destination[i]
@@ -38,7 +39,8 @@ proc aesIGE*(key, iv, message: seq[uint8], doEncrypt: bool): seq[uint8] =
     cipher.init(key)
 
     if message.len mod 16 != 0:
-        raise newException(CatchableError, "data lenght must be a multiple of 16 bytes, instead is " & $message.len)
+        raise newException(CatchableError,
+                "data lenght must be a multiple of 16 bytes, instead is " & $message.len)
 
     var ivp = iv[0..15].blockAsArray()
     var ivp2 = iv[16..31].blockAsArray()
@@ -56,10 +58,10 @@ proc aesIGE*(key, iv, message: seq[uint8], doEncrypt: bool): seq[uint8] =
             ivp2 = outdata
             ciphered.add(outdata)
         else:
-            var xored = xorBlock(message[i..i+15].blockAsArray(),  ivp)
+            var xored = xorBlock(message[i..i+15].blockAsArray(), ivp)
             var encryptedXored: array[16, uint8]
             cipher.encrypt(xored, encryptedXored)
-            
+
             var outdata = xorBlock(encryptedXored, ivp2)
             ivp = outdata
             ivp2 = message[i..i+15].blockAsArray()

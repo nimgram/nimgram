@@ -14,15 +14,15 @@
 
 
 type Game* = ref object of Media
-    id*: int64 ## ID of the game
-    accessHash*: int64 ## Access hash of the game
-    shortName*: string ## Short name for the game
-    title*: string ## Title of the game
-    description*: string ## Game description
-    photo*: Photo ## Game preview
+    id*: int64                  ## ID of the game
+    accessHash*: int64          ## Access hash of the game
+    shortName*: string          ## Short name for the game
+    title*: string              ## Title of the game
+    description*: string        ## Game description
+    photo*: Photo               ## Game preview
     document*: Option[Document] ## Optional attached document
 
-proc parse(game: raw.Game): Game =  
+proc parse(game: raw.Game): Game =
     result = new Game
 
     result.id = game.id
@@ -31,9 +31,9 @@ proc parse(game: raw.Game): Game =
     result.title = game.title
     result.description = game.description
     if game.photo of raw.Photo:
-        let photo = cast[raw.Photo](game.photo)
+        let photo = (raw.Photo)(game.photo)
         result.photo = parse(photo)
     if game.document.isSome():
         if game.document.get() of raw.Document:
-            let document = cast[raw.Document](game.document.get())
+            let document = (raw.Document)(game.document.get())
             result.document = some(parse(document))

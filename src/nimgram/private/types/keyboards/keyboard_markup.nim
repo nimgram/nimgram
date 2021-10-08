@@ -172,7 +172,8 @@ proc parse*(keyboard: raw.ReplyMarkupI, client: NimgramClient): KeyboardMarkup =
         tmpMarkup.resize = raw.ReplyKeyboardMarkup(keyboard).resize
         tmpMarkup.singleUse = raw.ReplyKeyboardMarkup(keyboard).single_use
         tmpMarkup.selective = raw.ReplyKeyboardMarkup(keyboard).selective
-        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(keyboard).placeholder
+        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(
+                keyboard).placeholder
         tmpMarkup.rows = newSeq[seq[nimgram.ReplyKeyboardButton]]()
         for row in keyboard.ReplyInlineMarkup.rows:
             var tmpRow = newSeq[nimgram.ReplyKeyboardButton]()
@@ -185,7 +186,8 @@ proc parse*(keyboard: raw.ReplyMarkupI, client: NimgramClient): KeyboardMarkup =
         let tmpMarkup = new ReplyKeyboardForceReply
         tmpmarkup.singleUse = raw.ReplyKeyboardForceReply(keyboard).single_use
         tmpmarkup.selective = raw.ReplyKeyboardForceReply(keyboard).selective
-        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(keyboard).placeholder
+        tmpmarkup.placeHolder = raw.ReplyKeyboardForceReply(
+                keyboard).placeholder
         return tmpMarkup
     if keyboard of raw.ReplyKeyboardHide:
         let tmpMarkup = new ReplyKeyboardHide

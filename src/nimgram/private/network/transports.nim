@@ -14,6 +14,7 @@
 
 import asyncdispatch
 import endians
+import asyncnet
 
 proc toBytes*(x: uint32) : array[0..3, uint8] =
     if cpuEndian != littleEndian:
@@ -26,17 +27,15 @@ type NetworkTypes* = enum
     NetTcpAbridged
     NetTcpIntermediate
 
+type MTProtoNetwork* = ref object
+    socket*: AsyncSocket
+    address*: string
+    port*: uint16
+    write*: proc (self: MTProtoNetwork, data: seq[uint8]) {.async.}
+    receive*: proc (self: MTProtoNetwork):  Future[seq[uint8]]  {.async.}
+    isClosed*: proc (self: MTProtoNetwork): bool
+    close*: proc (self: MTProtoNetwork) {.locks: "unknown".}
+    reopen*: proc (self: MTProtoNetwork) {.async.}
 
-type MTProtoNetwork* = ref object of RootObj
 
-method connect*(self: MTProtoNetwork, address: string, port: uint16) {.async, base.} = discard
 
-method write*(self: MTProtoNetwork, data: seq[uint8]) {.async, base.} = discard
-
-method receive*(self: MTProtoNetwork):  Future[seq[uint8]]  {.async, base.} = discard
-
-method isClosed*(self: MTProtoNetwork): bool {.base.} = true
-
-method close*(self: MTProtoNetwork) {.base,  locks: "unknown".} = discard
-
-method reopen*(self: MTProtoNetwork) {.async, base.} = discard
