@@ -30,8 +30,6 @@ type Block = ref object
     typesBlock: string
     interfaces: seq[string]
 
-import strformat
-
 const typeUtilsFile = staticRead("static/typeutils.nim")
 const encodeFile = staticRead("static/encoding.nim")
 const decodingFile = staticRead("static/decoding.nim")
