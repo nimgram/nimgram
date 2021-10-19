@@ -30,10 +30,10 @@ proc parse*(peer: raw.PeerI): Peer =
     if peer of PeerChat:
         return Peer(
             id: peer.PeerChat.chat_id,
-            `type`: TypeUser
+            `type`: TypeChat
         )
     if peer of PeerChannel:
         return Peer(
             id: peer.PeerChannel.channel_id,
-            `type`: TypeUser
+            `type`: TypeChannel
         )
