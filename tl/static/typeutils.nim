@@ -103,7 +103,7 @@ proc TLDecode*(self: var seq[TL], bytes: var ScalingSeq[uint8]) =
 
 proc seqNo*(self: TL, currentInt: int): int =
     var related = 1
-    if self of MessageContainer or self of Ping or self of Pong:
+    if self of MessageContainer or self of Ping or self of Msgs_ack:
         related = 0
-    var seqno = currentInt + (2 * related)
+    var seqno = currentInt + abs(2 * not related)
     return seqno
