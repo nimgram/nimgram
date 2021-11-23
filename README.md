@@ -1,5 +1,5 @@
 
-<p align="center"><a  href="https://github.com/nimgram/nimgram"><img  src="https://i.lorena.best/nimgram.png"  alt="Nimgram - MTProto client written in Nim"></a></p>
+<p align="center"><a  href="https://github.com/nimgram/nimgram"><img  src="https://i.imgur.com/SHBITwC.png"  alt="Nimgram - MTProto client written in Nim"></a></p>
 
   
 
@@ -40,7 +40,7 @@ If you just want to git-clone the repository, remember to generate the rpc direc
 
 - The [Nim compiler](https://github.com/nim-lang/nim) (>1.2.0)
 
--  [GMP](https://gmplib.org/) (NOT REQUIRED: You can build Nimgram without GMP by passing `-d:disablegmp` as a compilation parameter)
+-  [GMP](https://gmplib.org/) (Optional: You can build Nimgram without GMP by passing `-d:disablegmp` as a compilation parameter)
 
   
 
