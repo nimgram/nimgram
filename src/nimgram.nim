@@ -1,4 +1,3 @@
-
 # Nimgram
 # Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
