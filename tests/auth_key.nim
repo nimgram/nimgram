@@ -1,9 +1,8 @@
 # Nimgram
-# Copyright (C) 2020-2021 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY
-# OF ANY KIND, EXPRESS OR
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -11,11 +10,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# This does the opposite of `get_channel_id.nim`
+include ../src/nimgram/private/mtproto/auth_key_gen
 
-import ../shared
-
-proc revertChannelId*(id: int64): int64 =
-    if id notin CHANNEL_RANGE:
-        return id
-    return MAX_CHANNEL_ID + abs(id)
+when isMainModule:
+    echo "Running testAuthKeyGeneration..."
+    testAuthKeyGeneration().waitFor()
