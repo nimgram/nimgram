@@ -15,3 +15,4 @@ include ../src/nimgram/private/mtproto/auth_key_gen
 when isMainModule:
     echo "Running testAuthKeyGeneration..."
     testAuthKeyGeneration().waitFor()
+    echo "testAuthKeyGeneration PASSED"
