@@ -15,4 +15,4 @@ requires "https://github.com/dadadani/bigints#master"
 requires "nimcrypto#a5742a9"
 
 task test, "Runs the test suite":
-  selfExec("r -d:release --mm:orc tests/auth_key.nim")
+  selfExec("r -d:release --gc:orc tests/auth_key.nim")
