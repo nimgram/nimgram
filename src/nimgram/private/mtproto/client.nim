@@ -10,9 +10,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include ../src/nimgram/private/mtproto/auth_key_gen
+## Module implementing a low-level client object
 
-when isMainModule:
-    echo "Running testAuthKeyGeneration..."
-    testAuthKeyGeneration().waitFor()
-    echo "testAuthKeyGeneration PASSED"
+import std/options
+import types
+
+
+type MTProtoClient* = ref object
+  connectionInfo: ConnectionInfo

@@ -14,6 +14,11 @@ import std / asyncdispatch
 
 
 type
+  ConnectionType* = enum
+    TCPAbridged,
+    TCPIntermediate,
+    #Dummy
+  
   NetworkInterface* = object
     connect*: proc(self: MTProtoNetwork) {.async.}
     write*: proc(self: MTProtoNetwork, data: seq[uint8]) {.async.}
@@ -22,9 +27,9 @@ type
     close*: proc(self: MTProtoNetwork) {.async.}
     reopen*: proc(self: MTProtoNetwork) {.async.}
 
-
   MTProtoNetwork* = ref object of RootObj
     procs*: NetworkInterface
+
 
 proc connect*(self: MTProtoNetwork) {.async.} =
   await self.procs.connect(self)

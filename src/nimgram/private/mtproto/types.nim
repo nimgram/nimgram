@@ -10,9 +10,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include ../src/nimgram/private/mtproto/auth_key_gen
+import network/transports
+import std/[asyncdispatch, options, times, math, sysrand, tables]
+import pkg/tltypes, pkg/tltypes/[decode, encode]
+import crypto/ige
+import ../utils/[exceptions]
+import pkg/nimcrypto/[sha, sha2]
 
-when isMainModule:
-    echo "Running testAuthKeyGeneration..."
-    testAuthKeyGeneration().waitFor()
-    echo "testAuthKeyGeneration PASSED"
+
+type Salt* = object
+        validUntil*: uint64
+        salt*: seq[uint8]
+
+
+type ConnectionInfo* = ref object
+  apiID*: uint32
+  deviceModel*: string
+  systemVersion*: string
+  appVersion*: string
+  systemLangCode*: string
+  langPack*: string
+  langCode*: string
+  proxy*: Option[(string, uint32)]
+  connectionType*: ConnectionType
+  ipv6*: bool
+

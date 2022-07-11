@@ -10,9 +10,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-include ../src/nimgram/private/mtproto/auth_key_gen
+type NimgramError* = object of CatchableError
+  ## Exceptions raised by Nimgram
 
-when isMainModule:
-    echo "Running testAuthKeyGeneration..."
-    testAuthKeyGeneration().waitFor()
-    echo "testAuthKeyGeneration PASSED"
+type BadMessageError* = object of CatchableError
+  code*: uint32
+
+type RPCError* = object of NimgramError
+  ## RPC Errors that are raised externally by Telegram
+  errorCode*: uint32
+  errorMessage*: string
+
+type TimeoutError* = object of NimgramError
+  ## Raised when too much time has elapsed from the request
+

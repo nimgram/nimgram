@@ -12,7 +12,7 @@
 
 ## Module implementing generation of an auth key
 
-import std/[sysrand, asyncdispatch, tables], ../utils/[
+import std/[sysrand, asyncdispatch, tables, logging], ../utils/[
         message_id], network/[transports, dummy], crypto/[pow, ige]
 import pkg/[tltypes, stint, bigints, nimcrypto/sha], pkg/tltypes/[encode, decode]
 
@@ -67,7 +67,7 @@ proc computeRSA(data: seq[uint8], n: BigInt, e: BigInt): seq[uint8] =
 
 proc stage1(self: MTProtoNetwork, nonce: UInt128): Future[ResPQ] {.async.} =
     ## Execute the first stage of the authkey generation
-
+    
     let rsp = await self.send(setConstructorID(Req_pq_multi(nonce: nonce)))
     doAssert rsp of ResPQ, "Expecting ResPQ as response to Req_pq_multi, got a different type"
 
@@ -78,7 +78,8 @@ proc stage1(self: MTProtoNetwork, nonce: UInt128): Future[ResPQ] {.async.} =
 proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
         Server_DH_params_ok] {.async.} =
     ## Execute the second stage of the authkey generation
-
+    
+    debug("[AUTHKEY] Checking for key fingerprints...")
     var n, e: BigInt
     var key = uint64(0)
     for keyy in pq.server_public_key_fingerprints:
@@ -89,8 +90,9 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
         except:
             continue
     if key == 0: raise newException(CatchableError, "Unable to find a valid RSA key")
-
+       
     let ipq = fromBytesBE(cast[seq[uint8]](pq.pq))
+    debug("[AUTHKEY] Decomposing factors...")
     let (p, q) = factors(ipq)
     let innerData = setConstructorID(P_q_inner_data(p: cast[string](toBytesBE(
             p)), q: cast[string](toBytesBE(q)), nonce: pq.nonce,
@@ -105,6 +107,7 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
             p)), q: cast[string](toBytesBE(q)), nonce: pq.nonce,
                     server_nonce: pq.server_nonce, public_key_fingerprint: key,
                             encrypted_data: cast[string](cipherData)))
+    debug("[AUTHKEY] Sending Req_DH_params...")
     let sentDh = await self.send(dhParams)
 
     doAssert not(sentDh of Server_DH_params_fail), "Got Server_DH_params_fail, this is not expected"
@@ -119,7 +122,7 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
         newNonce: UInt256, nonce: UInt128, serverNonce: UInt128, b: seq[
                 uint8]): Future[(BigInt, BigInt, BigInt)] {.async.} =
     ## Execute the third stage of the authkey generation
-
+    
     doAssert dhParams.nonce == nonce
     doAssert dhParams.server_nonce == serverNonce
 
@@ -131,7 +134,7 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     let tempAesIV = sha1.digest(serverNonceBytes & newNonceBytes).data[12..19] &
             sha1.digest(newNonceBytes & newNonceBytes).data[0..19] &
                     newNonceBytes[0..3]
-
+    debug("[AUTHKEY] Decrypting dhParams.encrypted_answer...")
     let decrypted = aesIGE(tempAesKey, tempAesIV,
             cast[seq[uint8]](dhParams.encrypted_answer), false)
     let decryptedStream = newTLStream(decrypted[20..(decrypted.high)])
@@ -142,13 +145,14 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     let serverDH = decryptedTL.Server_DH_inner_data
     doAssert serverDH.nonce == nonce
     doAssert serverDH.server_nonce == serverNonce
-
+    
+    debug("[AUTHKEY] Computing dhPrime, gA, b and gB...")
     let dhPrime = fromBytesBE(cast[seq[uint8]](serverDH.dh_prime))
     let gA = fromBytesBE(cast[seq[uint8]](serverDH.g_a))
     let b = fromBytesBE(b)
     let gB = powmod(initBigInt(serverDH.g), b, dhPrime)
     #let gAb = powmod(gA, b, dhPrime)
-
+    
     const one = initBigInt(1)
     rangeCheck initBigInt(serverDH.g), one, (dhPrime - one)
     rangeCheck gA, one, (dhPrime - one)
@@ -157,7 +161,8 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     const safeRange = initBigInt(1 shl (2048 - 64))
     rangeCheck gA, safeRange, (dh_prime - safeRange)
     rangeCheck gB, safeRange, (dh_prime - safeRange)
-
+    
+    debug("[AUTHKEY] Preparing Client_DH_inner_data...")
     var data = setConstructorID(Client_DH_inner_data(
         nonce: serverDH.nonce,
         server_nonce: serverDH.server_nonce,
@@ -167,6 +172,8 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     data = sha1.digest(data).data[0..19] & data
     while len(data) mod 16 != 0: data.add(0)
     data = aesIGE(tempAesKey, tempAesIV, data, true)
+    
+    debug("[AUTHKEY] Sending Set_client_DH_params...")
     let dhGenResponse = await self.send(Set_client_DH_params(
                 nonce: serverDH.nonce,
                 server_nonce: serverDH.server_nonce,
@@ -183,25 +190,35 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
 proc createAuthKeySalt(gA: BigInt, b: BigInt, dhPrime: BigInt, newNonce: seq[
         uint8], serverNonce: seq[uint8]): (BigInt, uint64) =
     ## Compute auth key and the first salt to be used
+    
+    debug("[AUTHKEY] Computing AuthKey...")
     result[0] = powmod(gA, b, dhPrime)
+    debug("[AUTHKEY] Computing first salt...")
     result[1] = fromBytes(uint64, newNonce[0..7], bigEndian) xor fromBytes(
             uint64, serverNonce[0..7], bigEndian)
 
 proc executeAuthKeyGeneration*(self: MTProtoNetwork): Future[(seq[uint8], array[
         0..7, byte])] {.async.} =
     ## Execute auth key generation on the specified connection
+    
+    debug("[AUTHKEY] Generating a new auth key")
+    debug("[AUTHKEY] Executing stage1..")
     let nonce = cast[UInt128](urandom(16))
     let pq = await self.stage1(nonce)
-
+   
+    debug("[AUTHKEY] Executing stage2...")
     let newNonce = cast[UInt256](urandom(32))
     let dhParams = await self.stage2(pq, newNonce)
-
+    
+    debug("[AUTHKEY] Executing stage3...")
     let (gA, b, dhPrime) = await self.stage3(dhParams, newNonce, pq.nonce,
             pq.server_nonce, urandom(256))
-
+   
+    debug("[AUTHKEY] Finalizing AuthKey creation...")
     let (authKey, salt) = createAuthKeySalt(gA, b, dhPrime, toBytes(newNonce,
             bigEndian)[0..31], toBytes(dhParams.server_nonce, bigEndian)[0..15])
-
+    
+    debug("[AUTHKEY] AuthKey generated successfully")
     return (authKey.toBytesBE(), salt.toBytes(bigEndian))
 
 
@@ -217,7 +234,10 @@ proc testAuthKeyGeneration() {.async, used.} =
             95, 118, 135, 0, 0, 0, 21, 196, 181, 28, 3, 0, 0, 0, 2, 159, 75,
             161, 109, 16, 146, 150, 33, 107, 232, 108, 2, 43, 180, 195, 3, 38,
             141, 32, 223, 152, 88, 178])
+    
+    echo "Executing stage1"
     let pq = await dummyNet.stage1(nonce)
+    
     doAssert dummyNet.receiveServerDummy() == @[uint8(0), 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 128, 20, 0, 0, 0, 241, 142, 126, 190, 16, 0, 0,
                     0, 0, 0, 0, 0, 64, 192,
@@ -273,6 +293,8 @@ proc testAuthKeyGeneration() {.async, used.} =
             89, 47, 114, 177, 100, 91, 8, 239, 128, 120, 207, 135, 26, 223, 116,
             91, 0, 172, 125, 239, 47, 55, 166, 81, 80, 143, 224, 194, 62, 16,
             251, 181, 226, 86])
+    echo "Executing stage2"
+
     let dhParams = await dummyNet.stage2(pq, newNonce)
     doAssert dummyNet.receiveServerDummy() == @[uint8(0), 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 128, 64, 1, 0, 0, 190, 228, 18, 215, 16, 0, 0,
@@ -347,6 +369,8 @@ proc testAuthKeyGeneration() {.async, used.} =
             64, 192, 245, 51, 21, 127, 0, 0, 243, 49, 163, 206, 60, 3, 159, 209,
             163, 211, 98, 150, 193, 64, 220, 35, 222, 17, 89, 174, 89, 189, 200,
             137, 202, 90, 157, 153, 120, 247, 73, 149])
+    echo "Executing stage3"
+
     let (gA, b, dhPrime) = await dummyNet.stage3(dhParams, newNonce, pq.nonce,
             pq.server_nonce, @[uint8(172), 106, 48, 55, 223, 49, 127, 9, 41, 40,
                     1, 132, 239, 9, 40, 16, 113, 127, 60, 164, 254, 102, 78,
@@ -447,6 +471,7 @@ proc testAuthKeyGeneration() {.async, used.} =
             123, 249, 89, 217, 86, 133, 12, 233, 41, 133, 31, 13, 129, 21, 246,
             53, 177, 5, 238, 46, 78, 21, 208, 75, 36, 84, 191, 111, 79, 173,
             240, 52, 177, 4, 3, 17, 156, 216, 227, 185, 47, 204, 91]
+    echo "Executing createAuthKeySalt"
     let (authKey, salt) = createAuthKeySalt(gA, b, dhPrime, toBytes(newNonce,
             bigEndian)[0..31], toBytes(dhParams.server_nonce, bigEndian)[
                     0..15])
