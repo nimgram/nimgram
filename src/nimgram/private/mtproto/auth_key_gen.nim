@@ -234,7 +234,6 @@ proc testAuthKeyGeneration() {.async, used.} =
             95, 118, 135, 0, 0, 0, 21, 196, 181, 28, 3, 0, 0, 0, 2, 159, 75,
             161, 109, 16, 146, 150, 33, 107, 232, 108, 2, 43, 180, 195, 3, 38,
             141, 32, 223, 152, 88, 178])
-    
     echo "Executing stage1"
     let pq = await dummyNet.stage1(nonce)
     
