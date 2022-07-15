@@ -17,6 +17,9 @@ import std/sysrand
 
 import ../types
 
+const COMPRESSION_THRESHOLD = when defined(nocompression): 0 else: 512
+
+
 proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8], sessionID: seq[uint8]): CoreMessage =
     doAssert stream.readBytes(8) == authKeyID, "Response authkey id is different from saved one"
     let responseMsgKey = stream.readBytes(16)
@@ -37,10 +40,16 @@ proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8
 proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNon: var int, salts: seq[Salt], sessionID: seq[uint8], messageID: uint64): (seq[uint8], int64, int) =
     seqNon = int(seqNo(if body of MessageContainer or body of Ping or
             body of Msgs_ack: false else: true, seqNon))
-    let body = body.TLEncode()
+    var encoded = body.TLEncode()
+
+    if COMPRESSION_THRESHOLD != 0 and len(encoded) > COMPRESSION_THRESHOLD:
+        let compressed = GZipContent(value: body).setConstructorID().TLEncode()
+        
+        if compressed.len() < encoded.len():
+            encoded = compressed
 
     var payload = salts[salts.high].salt & sessionID & messageID.TLEncode() & uint32(
-            seqNon).TLEncode() & uint32(len(body)).TLEncode() & body
+            seqNon).TLEncode() & uint32(len(encoded)).TLEncode() & encoded
     payload.add(urandom((len(payload) + 12) mod 16 + 12))
     while true:
         if len(payload) mod 16 == 0 and len(payload) mod 4 == 0:

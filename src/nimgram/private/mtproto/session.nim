@@ -27,8 +27,6 @@ const
     ACKS_THRESHOLD = 8
     PING_INTERVAL = 5
     NUM_FUTURE_SALTS = 64
-    COMPRESSION_THESHOLD = when defined(nocompression): 0 else: 512
-
 
 type
     Request = ref object
