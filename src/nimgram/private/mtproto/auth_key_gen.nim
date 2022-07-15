@@ -21,7 +21,7 @@ proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     ## Encode a function and send it in "plain text mode"
 
     let bytes = data.TLEncode()
-    await self.write(TLEncode(int64(0)) & TLEncode(messageID()) & TLEncode(
+    await self.write(TLEncode(int64(0)) & TLEncode(int64(0)) & TLEncode(
             int32(len(bytes))) & bytes)
 
     let data = await self.receive()

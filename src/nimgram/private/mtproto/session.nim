@@ -16,7 +16,7 @@ import network/transports
 import std/[asyncdispatch, options, times, math, sysrand, tables, logging, strformat]
 import pkg/tltypes, pkg/tltypes/[decode, encode], types
 import crypto/proto, network/generator
-import ../utils/[exceptions, event_addons]
+import ../utils/[exceptions, event_addons, message_id]
 import pkg/nimcrypto/[sha, sha2]
 
 const 
@@ -53,7 +53,7 @@ type
 
         # encryption things
         seqNo: int
-        maxMessageID: uint64
+        messageID: MessageID
         salts: seq[Salt]
         authKey: seq[uint8]
         sessionID: seq[uint8]
@@ -66,15 +66,6 @@ proc logPrefix(self: MTProtoSession): string =
 
     return &"[SESSION DC{self.dcID}{media}{test}{cdn}]"
 
-proc messageID(self: MTProtoSession): uint64 =
-    # TODO: Delete this
-
-    result = uint64(now().toTime().toUnix()*2 ^ 32)
-    doAssert result mod 4 == 0, "message id is not divisible by 4, consider syncing your time."
-
-    if result <= self.maxMessageID:
-        result = self.maxMessageID + 4
-    self.maxMessageID = result
 
 proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotificationI) =
     
@@ -100,6 +91,9 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
     # TODO: security check
     
     for message in messages:
+        echo "SEQNO: ", message.seqNo
+        if message.seqNo == 0:
+            self.messageID.updateTime(int64(message.msgID) div (2 ^ 32))
 
         if message.seqNo mod 2 != 0:
             if message.msgID in self.pendingAcks:
@@ -109,10 +103,6 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
         
         var messageID = 0'u64
         var body = message.body
-
-
-        self.seqNo = seqNo(if body of MessageContainer or body of Ping or
-            body of Msgs_ack: false else: true, self.seqNo)
 
         debug(&"{self.logPrefix} Received message with type ", message.body.nameByConstructorID())
 
@@ -186,7 +176,7 @@ proc send*(self: MTProtoSession, body: TL, waitResponse = true, timeout = WAIT_T
     
     debug(&"{self.logPrefix} Sending {body.nameByConstructorID}...")
 
-    let encrypted = encryptMessage(body, self.authKey, self.authKeyID, self.seqNo, self.salts, self.sessionID, self.messageID)
+    let encrypted = encryptMessage(body, self.authKey, self.authKeyID, self.seqNo, self.salts, self.sessionID, uint64(self.messageID.get()))
 
     if waitResponse:
         self.requests[encrypted[1]] = Request(event: newAsyncEvent())
@@ -247,12 +237,11 @@ proc stop*(self: MTProtoSession) {.async.} =
 
     debug(&"{self.logPrefix} Session stopped")
 
-proc createSession*(connectionInfo: ConnectionInfo, authKey: seq[uint8], dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
     
     result = MTProtoSession(
         connectionInfo: connectionInfo,
         seqNo: 1,
-        maxMessageID: 0,
         salts: newSeq[Salt](),
         authKey: authKey,
         sessionID: urandom(8),
@@ -262,7 +251,7 @@ proc createSession*(connectionInfo: ConnectionInfo, authKey: seq[uint8], dcID: i
         isMedia: isMedia,
         isCdn: isCdn,
         dcID: dcID,
-
+        messageID: messageID,
         connected: newAsyncEventSet()
     )
     
@@ -270,7 +259,7 @@ proc createSession*(connectionInfo: ConnectionInfo, authKey: seq[uint8], dcID: i
     
     # adding a fake salt because it is required, ONLY FOR TESTING
     result.salts.add(Salt(validUntil: uint64(now().toTime().toUnix()), salt: urandom(8)))
-    
+     
     debug(&"{result.logPrefix} Connecting to MTProto...")
 
     await result.connection.connect()
