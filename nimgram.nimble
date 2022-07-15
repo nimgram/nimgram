@@ -16,3 +16,4 @@ requires "nimcrypto#a5742a9"
 
 task test, "Runs the test suite":
   selfExec("r -d:release --gc:orc tests/auth_key.nim")
+  selfExec("r tests/message_id.nim")

@@ -91,7 +91,6 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
     # TODO: security check
     
     for message in messages:
-        echo "SEQNO: ", message.seqNo
         if message.seqNo == 0:
             self.messageID.updateTime(int64(message.msgID) div (2 ^ 32))
 

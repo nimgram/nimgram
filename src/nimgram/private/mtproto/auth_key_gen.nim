@@ -12,16 +12,15 @@
 
 ## Module implementing generation of an auth key
 
-import std/[sysrand, asyncdispatch, tables, logging], ../utils/[
-        message_id], network/[transports, dummy], crypto/[pow, ige]
+import std/[sysrand, asyncdispatch, tables, logging], network/[transports, dummy], crypto/[pow, ige]
 import pkg/[tltypes, stint, bigints, nimcrypto/sha], pkg/tltypes/[encode, decode]
-
+import std/math, std/times
 
 proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     ## Encode a function and send it in "plain text mode"
 
     let bytes = data.TLEncode()
-    await self.write(TLEncode(int64(0)) & TLEncode(int64(0)) & TLEncode(
+    await self.write(TLEncode(int64(0)) & TLEncode(int64(pow(float64(now().toTime().toUnix()*2),float64(32)))) & TLEncode(
             int32(len(bytes))) & bytes)
 
     let data = await self.receive()
