@@ -22,14 +22,17 @@ type MessageID* = ref object
 proc createMessageID*(): MessageID = 
     return MessageID(serverTime: 0, referenceMonotime: 0, lastTime: 0, timeOffset: 0)
 
-proc updateTime*(self: MessageID, serverTime: int64) =
-        if self.serverTime == 0:
+proc updateTime*(self: MessageID, serverTime: int64, force = false) =
+        if self.serverTime == 0 or force:
             self.referenceMonotime = float64(ticks(getMonoTime())) / float64(1000000000)
             self.serverTime = serverTime
             debug("[MESSAGEID SYNC] Time has been updated to ", fromUnix(serverTime))
 
+proc getUnix*(self: MessageID): int64 = 
+    return int64((float64(ticks(getMonoTime())) / float64(1000000000)) - self.referenceMonotime + float64(self.serverTime))
+
 proc get*(self: MessageID): int64 = 
-    let currentTime = (float64(ticks(getMonoTime())) / float64(1000000000)) - self.referenceMonotime + float64(self.serverTime)
+    let currentTime = self.getUnix()
     self.timeOffset = self.timeOffset + (if int64(currentTime) == self.lastTime: 4 else: 0)
     result = int64(currentTime) * 2 ^ 32 + self.timeOffset
     self.lastTime = int64(currentTime)

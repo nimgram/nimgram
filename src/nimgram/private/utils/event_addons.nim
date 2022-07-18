@@ -10,7 +10,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import std/asyncdispatch
+import std/asyncdispatch, std/times
 
 type AsyncEventSet* = ref object
     event: AsyncEvent
@@ -18,17 +18,19 @@ type AsyncEventSet* = ref object
 
 proc waitEvent*(ev: AsyncEvent): Future[void] =
     var fut = newFuture[void]("waitEvent")
-    proc cb(fd: AsyncFD): bool = fut.complete(); return true
-    addEvent(ev, cb)
+    
+    addEvent(ev, (proc(fd: AsyncFD): bool = fut.complete(); return true))
     return fut
 
 proc waitEvent*(ev: AsyncEventSet): Future[void] =
     if ev.isSet: return
 
     var fut = newFuture[void]("waitEvent")
-    proc cb(fd: AsyncFD): bool = fut.complete(); return true
-    addEvent(ev.event, cb)
+    addEvent(ev.event, (proc(fd: AsyncFD): bool = fut.complete(); return true))
     return fut
+
+proc unregister*(ev: AsyncEventSet) =
+    unregister(ev.event)
 
 proc clear*(ev: AsyncEventSet) =
     ev.isSet = false

@@ -11,17 +11,7 @@
 # SOFTWARE.
 
 import network/transports
-import std/[asyncdispatch, options, times, math, sysrand, tables]
-import pkg/tltypes, pkg/tltypes/[decode, encode]
-import crypto/ige
-import ../utils/[exceptions]
-import pkg/nimcrypto/[sha, sha2]
-
-
-type Salt* = object
-        validUntil*: uint64
-        salt*: seq[uint8]
-
+import std/options
 
 type ConnectionInfo* = ref object
   apiID*: uint32

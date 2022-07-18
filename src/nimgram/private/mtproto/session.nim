@@ -13,7 +13,7 @@
 ## Module implementing a raw MTProto session
 
 import network/transports
-import std/[asyncdispatch, options, times, math, sysrand, tables, logging, strformat]
+import std/[asyncdispatch, times, math, sysrand, tables, logging, strformat]
 import pkg/tltypes, pkg/tltypes/[decode, encode], types
 import crypto/proto, network/generator
 import ../utils/[exceptions, event_addons, message_id]
@@ -21,12 +21,13 @@ import pkg/nimcrypto/[sha, sha2]
 
 const 
     START_TIMEOUT = 1
-    WAIT_TIMEOUT = 15
+    WAIT_TIMEOUT = 15 
     SLEEP_THRESHOLD = 10
     MAX_RETRIES = 5
     ACKS_THRESHOLD = 8
     PING_INTERVAL = 5
     NUM_FUTURE_SALTS = 64
+    SALT_USE_DELAY = 60
 
 type
     Request = ref object
@@ -36,23 +37,24 @@ type
     MTProtoSession* = ref object
         connectionInfo: ConnectionInfo
         connection: MTProtoNetwork
-        connected: AsyncEventSet     
+        connected: AsyncEventSet 
+        pingStopEvent: AsyncEventSet   
         requests: Table[int64, Request]
 
         isCdn: bool
         isMedia: bool
         isTestMode: bool
         dcID: int
-
+        requestedSalts: bool
         networkTask: Future[void]
-
+        pingTask: Future[void]
         pendingAcks: seq[uint64]
         storedMessageids: seq[int64]
 
         # encryption things
         seqNo: int
         messageID: MessageID
-        salts: seq[Salt]
+        salts: seq[FutureSalt]
         authKey: seq[uint8]
         sessionID: seq[uint8]
         authKeyID: seq[uint8]
@@ -64,12 +66,68 @@ proc logPrefix(self: MTProtoSession): string =
 
     return &"[SESSION DC{self.dcID}{media}{test}{cdn}]"
 
+proc getSalt*(self: MTProtoSession): Future[seq[uint8]] {.async.} 
 
-proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotificationI) =
+proc send*(self: MTProtoSession, body: TL, waitResponse = true, timeout = WAIT_TIMEOUT): Future[TL] {.async.} =
+    
+    debug(&"{self.logPrefix} Sending {body.nameByConstructorID}...")
+
+    let encrypted = encryptMessage(body, self.authKey, self.authKeyID, self.seqNo, await self.getSalt(), self.sessionID, uint64(self.messageID.get()))
+
+    if waitResponse:
+        self.requests[encrypted[1]] = Request(event: newAsyncEvent())
+
+    try:
+        await self.connection.write(encrypted[0])
+    except:
+        self.requests.del(encrypted[1])
+        raise
+    debug(&"{self.logPrefix} Sent {body.nameByConstructorID}")
+
+    if waitResponse:
+        let ok = await withTimeout(waitEvent(self.requests[encrypted[1]].event), timeout * 1000)
+
+        if not ok:
+            raise newException(TimeoutError, &"Request timed out after waiting for {timeout} seconds")
+        
+        if self.requests[encrypted[1]].body == nil:
+            self.requests.del(encrypted[1])
+            raise newException(TimeoutError, &"The connection was closed without a response")
+
+        
+        result = self.requests[encrypted[1]].body
+        self.requests.del(encrypted[1])
+
+        if result of tl.Rpc_error:
+            let error = tl.Rpc_error(result)
+            let excpt = new exceptions.RPCError
+            excpt.msg = error.error_message
+            excpt.errorCode = error.error_code
+            excpt.errorMessage = error.error_message
+            raise excpt
+        if result of Bad_msg_notification:
+            let badMessage = result.Bad_msg_notification
+            let excpt = new BadMessageError
+            excpt.code = badMessage.error_code
+            excpt.msg = &"Bad Message Notification: Error {excpt.code}"
+            raise excpt
+        if result of Bad_server_salt:
+            return await self.send(body, waitResponse, timeout)
+
+
+proc getSalt*(self: MTProtoSession): Future[seq[uint8]] {.async.} = 
+    result = @[0'u8,0,0,0,0,0,0,0]
+    if self.salts.len > 0:
+        return TLEncode(self.salts[self.salts.high].salt)
+            # TODO: Find a proper implementation, i can't get this to work 
+
+
+proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotificationI, msgID: int64) =
     
     if badNotification of Bad_server_salt:
-        discard
-        # TODO: Fix salt
+        self.salts.setLen(0)
+        self.salts.add(FutureSalt(validUntil: high(uint32), validSince: 0, salt: badNotification.Bad_server_salt.new_server_salt))
+        #TODO: Update storage
 
     elif badNotification of Bad_msg_notification:        
         let code = badNotification.Bad_msg_notification.error_code
@@ -78,9 +136,16 @@ proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotific
             self.seqNo += 64
         of 33:
             self.seqNo -= 32
-        else:
+        of 16:
+            self.messageID.updateTime(msgID div (2 ^ 32), true)
+        of 17:
+            self.messageID.updateTime(msgID div (2 ^ 32), true)
+        else: 
             debug(&"{self.logPrefix} Got unknown bad_msg_notification code {code}")
             discard
+
+proc processFutureSalts(self: MTProtoSession, futureSalts: FutureSalts) =
+    self.salts = futureSalts.salts
 
 proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
     let data = decryptMessage(data, self.authKey, self.authKeyID, self.sessionID)
@@ -119,14 +184,15 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             
         
         of "Bad_msg_notification":
-            self.processBadNotification(message.body.BadMsgNotificationI)
+            self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
             messageID = message.body.Bad_msg_notification.bad_msg_id
         of "Bad_server_salt":
-            self.processBadNotification(message.body.BadMsgNotificationI)
+            self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
             messageID = message.body.Bad_server_salt.bad_msg_id
 
-        of "Future_salts":
-            messageID = message.body.Future_salts.req_msg_id
+        of "FutureSalts":
+            messageID = message.body.FutureSalts.req_msg_id
+            self.processFutureSalts(message.body.FutureSalts)
 
         of "Rpc_result":
             messageID = message.body.Rpc_result.req_msg_id
@@ -143,8 +209,24 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             self.requests[cast[int64](messageID)].event.trigger()
         
         if self.pendingAcks.len >= ACKS_THRESHOLD:
-            # TODO: send MsgsAck
-            discard
+            discard await self.send(Msgs_ack(msg_ids: self.pendingAcks), false)
+            self.pendingAcks.setLen(0)
+
+
+proc pingWorker(self: MTProtoSession) {.async.} =
+    debug(&"{self.logPrefix} Starting pingWorker...")
+
+    while true:
+        let close = await withTimeout(waitEvent(self.pingStopEvent), PING_INTERVAL*1000)
+        self.pingStopEvent.unregister()
+        if close:
+            break
+        
+        debug(&"{self.logPrefix} Sending ping")
+        discard await self.send(Ping_delay_disconnect(ping_id: 0, disconnect_delay: WAIT_TIMEOUT + 10).setConstructorID, false)
+
+    debug(&"{self.logPrefix} pingWorker exited from loop")
+
 
 proc networkWorker(self: MTProtoSession) {.async.} =
     debug(&"{self.logPrefix} Starting networkWorker...")
@@ -169,55 +251,6 @@ proc networkWorker(self: MTProtoSession) {.async.} =
     debug(&"{self.logPrefix} networkWorker exited from loop")
 
 
-proc send*(self: MTProtoSession, body: TL, waitResponse = true, timeout = WAIT_TIMEOUT): Future[TL] {.async.} =
-    
-    debug(&"{self.logPrefix} Sending {body.nameByConstructorID}...")
-
-    let encrypted = encryptMessage(body, self.authKey, self.authKeyID, self.seqNo, self.salts, self.sessionID, uint64(self.messageID.get()))
-
-    if waitResponse:
-        self.requests[encrypted[1]] = Request(event: newAsyncEvent())
-
-    try:
-        await self.connection.write(encrypted[0])
-    except:
-        self.requests.del(encrypted[1])
-        raise
-    debug(&"{self.logPrefix} Sent {body.nameByConstructorID}, waiting for response...")
-
-    if waitResponse:
-        let ok = await withTimeout(waitEvent(self.requests[encrypted[1]].event), timeout * 1000)
-
-        if not ok:
-            raise newException(TimeoutError, &"Request timed out after waiting for {timeout} seconds")
-        
-        if self.requests[encrypted[1]].body == nil:
-            self.requests.del(encrypted[1])
-            raise newException(TimeoutError, &"The connection was closed without a response")
-
-        
-        result = self.requests[encrypted[1]].body
-        self.requests.del(encrypted[1])
-
-        if result of tl.Rpc_error:
-            let error = tl.Rpc_error(result)
-            let excpt = new exceptions.RPCError
-            excpt.msg = error.error_message
-            excpt.errorCode = error.error_code
-            excpt.errorMessage = error.error_message
-            raise excpt
-        if result of Bad_msg_notification:
-            let badMessage = result.Bad_msg_notification
-            let excpt = new BadMessageError
-            excpt.code = badMessage.error_code
-            excpt.msg = &"Bad Message Notification: Error {excpt.code}"
-            raise excpt
-        if result of Bad_server_salt:
-            # TODO: Find a better solution
-            self.salts.setLen(0)
-            self.salts.add(Salt(validUntil: 0, salt: TLEncode(result.Bad_server_salt.new_server_salt)))
-            return await self.send(body, waitResponse, timeout)
-
 proc stop*(self: MTProtoSession) {.async.} =
     debug(&"{self.logPrefix} Stopping session...")
 
@@ -225,21 +258,25 @@ proc stop*(self: MTProtoSession) {.async.} =
 
     await self.connection.close()
     
+    self.pingStopEvent.set()
+    debug(&"{self.logPrefix} Waiting for pingWorker to exit...")
+    await self.pingTask
+    self.pingStopEvent.clear()
+
     debug(&"{self.logPrefix} Waiting for networkWorker to exit...")
-
     await self.networkTask
-    debug(&"{self.logPrefix} Triggering requests...")
 
+    debug(&"{self.logPrefix} Triggering requests...")
     for _, request in self.requests: request.event.trigger()
 
     debug(&"{self.logPrefix} Session stopped")
 
-proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: seq[uint8], dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
     
     result = MTProtoSession(
         connectionInfo: connectionInfo,
         seqNo: 1,
-        salts: newSeq[Salt](),
+        salts: newSeq[FutureSalt](),
         authKey: authKey,
         sessionID: urandom(8),
         authKeyID: sha1.digest(authKey).data[12..19],
@@ -249,13 +286,13 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
         isCdn: isCdn,
         dcID: dcID,
         messageID: messageID,
-        connected: newAsyncEventSet()
+        connected: newAsyncEventSet(),
+        pingStopEvent: newAsyncEventSet()
     )
     
     result.connection = createConnection(connectionInfo.connectionType, dcID, connectionInfo.ipv6, isTestMode, isMedia)
     
-    # adding a fake salt because it is required, ONLY FOR TESTING
-    result.salts.add(Salt(validUntil: uint64(now().toTime().toUnix()), salt: urandom(8)))
+    result.salts.add(FutureSalt(validSince: 0, validUntil: high(uint32), salt: cast[uint64](firstSalt)))
      
     debug(&"{result.logPrefix} Connecting to MTProto...")
 
@@ -273,6 +310,8 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
             query: HelpGetAppConfig().setConstructorID()).setConstructorID).setConstructorID,
         timeout=START_TIMEOUT)
 
+    result.pingTask = result.pingWorker()
+    asyncCheck result.pingTask
 
     debug(&"{result.logPrefix} Connected to MTProto")
 

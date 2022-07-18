@@ -15,7 +15,7 @@ import pkg/nimcrypto/[sha, sha2]
 
 import std/sysrand
 
-import ../types
+import ../../utils/content_related
 
 const COMPRESSION_THRESHOLD = when defined(nocompression): 0 else: 512
 
@@ -37,9 +37,8 @@ proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8
     return plaintextStream.TLDecodeCoreMessage()
 
 
-proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNon: var int, salts: seq[Salt], sessionID: seq[uint8], messageID: uint64): (seq[uint8], int64, int) =
-    seqNon = int(seqNo(if body of MessageContainer or body of Ping or
-            body of Msgs_ack: false else: true, seqNon))
+proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNon: var int, salt: seq[uint8], sessionID: seq[uint8], messageID: uint64): (seq[uint8], int64, int) =
+    seqNon = int(seqNo(if body.nameByConstructorID() in NOT_RELATED_TYPES: false else: true, seqNon))
     var encoded = body.TLEncode()
 
     if COMPRESSION_THRESHOLD != 0 and len(encoded) > COMPRESSION_THRESHOLD:
@@ -48,7 +47,7 @@ proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNo
         if compressed.len() < encoded.len():
             encoded = compressed
 
-    var payload = salts[salts.high].salt & sessionID & messageID.TLEncode() & uint32(
+    var payload = salt & sessionID & messageID.TLEncode() & uint32(
             seqNon).TLEncode() & uint32(len(encoded)).TLEncode() & encoded
     payload.add(urandom((len(payload) + 12) mod 16 + 12))
     while true:
