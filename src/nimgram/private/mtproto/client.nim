@@ -15,6 +15,25 @@
 import std/options
 import types
 
+import network/transports
+
 
 type MTProtoClient* = ref object
   connectionInfo: ConnectionInfo
+
+
+proc CreateClient*(apiID: int, apiHash, deviceModel, systemVersion, appVersion, langCode, systemLangCode: string, connectionType: ConnectionType, useIpv6: bool): MTProtoClient = 
+  return MTProtoClient(
+    connectionInfo: ConnectionInfo(
+      apiID: uint32(apiID),
+      apiHash: apiHash,
+      deviceModel: deviceModel,
+      systemVersion: systemVersion,
+      appVersion: appVersion,
+      systemLangCode: systemLangCode,
+      langPack: "",
+      langCode: langCode,
+      connectionType: connectionType,
+      ipv6: useIpv6
+    )
+  )

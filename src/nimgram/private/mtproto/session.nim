@@ -28,6 +28,7 @@ const
     PING_INTERVAL = 5
     NUM_FUTURE_SALTS = 64
     SALT_USE_DELAY = 60
+    STORED_MSG_IDS_MAX_SIZE = 1000 * 2
 
 type
     Request = ref object
@@ -49,7 +50,7 @@ type
         networkTask: Future[void]
         pingTask: Future[void]
         pendingAcks: seq[uint64]
-        storedMessageids: seq[int64]
+        storedMessageIds: seq[int64]
 
         # encryption things
         seqNo: int
@@ -150,8 +151,21 @@ proc processFutureSalts(self: MTProtoSession, futureSalts: FutureSalts) =
 proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
     let data = decryptMessage(data, self.authKey, self.authKeyID, self.sessionID)
     
+    if len(self.storedMessageIds) > STORED_MSG_IDS_MAX_SIZE:
+        self.storedMessageIds = self.storedMessageIds[STORED_MSG_IDS_MAX_SIZE div 2 .. ^1]
+    
+    if len(self.storedMessageIds) > 0:
+        securityCheck cast[int64](data.msgID) > self.storedMessageIds[0], "msgID is lower than all of the stored values"
+
+        securityCheck not(cast[int64](data.msgID) in self.storedMessageIds), "msgID is equal to any of the stored values"
+        
+        let timeDiff = (cast[int64](data.msgID) - self.messageID.get()) div 2 ^ 32
+
+        securityCheck timeDiff <= 30, "msgID belongs over 30 seconds in the future"
+
+        securityCheck timeDiff > -300, "msgID belongs over 300 seconds in the past"
+
     let messages = if data.body of MessageContainer: data.body.MessageContainer.messages else: @[data]
-    # TODO: security check
     
     for message in messages:
         if message.seqNo == 0:
@@ -177,8 +191,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             continue
         
         of "Ping":
-            discard
-            # TODO: Reply with Pong
+            discard await self.send(Pong(ping_id: message.body.Ping.ping_id, msg_id: message.msgID), false)
         of "Pong":
             messageID = message.body.Pong.msg_id
             
@@ -218,7 +231,7 @@ proc pingWorker(self: MTProtoSession) {.async.} =
 
     while true:
         let close = await withTimeout(waitEvent(self.pingStopEvent), PING_INTERVAL*1000)
-        self.pingStopEvent.unregister()
+        try: self.pingStopEvent.unregister() except: discard
         if close:
             break
         
@@ -271,7 +284,7 @@ proc stop*(self: MTProtoSession) {.async.} =
 
     debug(&"{self.logPrefix} Session stopped")
 
-proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: seq[uint8], dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: uint64, dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
     
     result = MTProtoSession(
         connectionInfo: connectionInfo,
@@ -280,7 +293,7 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
         authKey: authKey,
         sessionID: urandom(8),
         authKeyID: sha1.digest(authKey).data[12..19],
-        storedMessageids: newSeq[int64](),
+        storedMessageIds: newSeq[int64](),
         isTestMode: isTestMode,
         isMedia: isMedia,
         isCdn: isCdn,
@@ -292,7 +305,7 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
     
     result.connection = createConnection(connectionInfo.connectionType, dcID, connectionInfo.ipv6, isTestMode, isMedia)
     
-    result.salts.add(FutureSalt(validSince: 0, validUntil: high(uint32), salt: cast[uint64](firstSalt)))
+    result.salts.add(FutureSalt(validSince: 0, validUntil: high(uint32), salt: firstSalt))
      
     debug(&"{result.logPrefix} Connecting to MTProto...")
 

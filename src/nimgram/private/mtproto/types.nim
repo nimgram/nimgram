@@ -15,6 +15,7 @@ import std/options
 
 type ConnectionInfo* = ref object
   apiID*: uint32
+  apiHash*: string
   deviceModel*: string
   systemVersion*: string
   appVersion*: string

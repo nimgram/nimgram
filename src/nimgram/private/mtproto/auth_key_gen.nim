@@ -20,7 +20,7 @@ proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     ## Encode a function and send it in "plain text mode"
 
     let bytes = data.TLEncode()
-    await self.write(TLEncode(int64(0)) & TLEncode(int64(pow(float64(now().toTime().toUnix()*2),float64(32)))) & TLEncode(
+    await self.write(@[0'u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128] & TLEncode(
             int32(len(bytes))) & bytes)
 
     let data = await self.receive()
@@ -294,7 +294,8 @@ proc testAuthKeyGeneration() {.async, used.} =
     echo "Executing stage2"
 
     let dhParams = await dummyNet.stage2(pq, newNonce)
-    doAssert dummyNet.receiveServerDummy() == @[uint8(0), 0, 0, 0, 0, 0, 0, 0,
+
+    doAssert dummyNet.receiveServerDummy()  == @[uint8(0), 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 128, 64, 1, 0, 0, 190, 228, 18, 215, 16, 0, 0,
             0, 0, 0, 0, 0, 64, 192, 245, 51, 21, 127, 0, 0, 243, 49, 163, 206,
             60, 3, 159, 209, 163, 211, 98, 150, 193, 64, 220, 35, 4, 61, 143,

@@ -24,3 +24,11 @@ type RPCError* = object of NimgramError
 type TimeoutError* = object of NimgramError
   ## Raised when too much time has elapsed from the request
 
+type SecurityError* = object of NimgramError
+  ## Raised when a security check assertion fails
+
+template securityCheck*(check: untyped, description: string) =
+  try:
+    doAssert check
+  except:
+    raise newException(SecurityError, description)

@@ -15,13 +15,13 @@ import pkg/nimcrypto/[sha, sha2]
 
 import std/sysrand
 
-import ../../utils/content_related
+import ../../utils/[content_related, exceptions]
 
-const COMPRESSION_THRESHOLD = when defined(nocompression): 0 else: 512
-
+const 
+    COMPRESSION_THRESHOLD = when defined(nocompression): 0 else: 512
 
 proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8], sessionID: seq[uint8]): CoreMessage =
-    doAssert stream.readBytes(8) == authKeyID, "Response authkey id is different from saved one"
+    securityCheck stream.readBytes(8) == authKeyID, "Response authkey id is different from saved one"
     let responseMsgKey = stream.readBytes(16)
     let a = sha256.digest(responseMsgKey & authKey[8..43]).data
     let b = sha256.digest(authKey[48..83] & responseMsgKey).data
@@ -29,12 +29,18 @@ proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8
     let aesIv = b[0..7] & a[8..23] & b[24..31]
     let plaintext = aesIGE(aesKey, aesIv, stream.readAll(), false)
     let msgKey = sha256.digest(authKey[96..127] & plaintext).data[8..23]
-    doAssert msgKey == responseMsgKey, "Computed MsgKey is different from response"
+    securityCheck msgKey == responseMsgKey, "Computed MsgKey is different from response"
     let plaintextStream = newTLStream(plaintext)
 
     let responseSessionID = plaintextStream.readBytes(16)[8..15]
-    doAssert responseSessionID == sessionID, "Local session id is different from response"
-    return plaintextStream.TLDecodeCoreMessage()
+    securityCheck responseSessionID == sessionID, "Local session id is different from response"
+    
+    result = plaintextStream.TLDecodeCoreMessage()
+
+    let padding = plaintextStream.readAll()
+    securityCheck len(padding) >= 12 and len(padding) <= 1024, "Got an invalid padding"
+
+    securityCheck len(plaintext) mod 4 == 0, "Lenght of plaintext is not divisible by 4"
 
 
 proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNon: var int, salt: seq[uint8], sessionID: seq[uint8], messageID: uint64): (seq[uint8], int64, int) =
