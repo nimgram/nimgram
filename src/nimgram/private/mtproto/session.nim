@@ -133,13 +133,13 @@ proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotific
     elif badNotification of Bad_msg_notification:        
         let code = badNotification.Bad_msg_notification.error_code
         case code:
-        of 32:
+        of 32: # seqno is too low, increase it
             self.seqNo += 64
-        of 33:
+        of 33: # seqno is too high, decrease it
             self.seqNo -= 32
-        of 16:
+        of 16: # message id is too low, update it
             self.messageID.updateTime(msgID div (2 ^ 32), true)
-        of 17:
+        of 17: # message id is too high, update it
             self.messageID.updateTime(msgID div (2 ^ 32), true)
         else: 
             debug(&"{self.logPrefix} Got unknown bad_msg_notification code {code}")
@@ -149,8 +149,11 @@ proc processFutureSalts(self: MTProtoSession, futureSalts: FutureSalts) =
     self.salts = futureSalts.salts
 
 proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
+    # Decrypt the message as a CoreMessage
     let data = decryptMessage(data, self.authKey, self.authKeyID, self.sessionID)
     
+    # Security checks 
+
     if len(self.storedMessageIds) > STORED_MSG_IDS_MAX_SIZE:
         self.storedMessageIds = self.storedMessageIds[STORED_MSG_IDS_MAX_SIZE div 2 .. ^1]
     
@@ -165,9 +168,13 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
 
         securityCheck timeDiff > -300, "msgID belongs over 300 seconds in the past"
 
+    # If the message is a MessageContainer, take it, otherwise make a sequence with "data"
+
     let messages = if data.body of MessageContainer: data.body.MessageContainer.messages else: @[data]
     
     for message in messages:
+
+        # When we first initialize the session, we don't have the time synchronized yet
         if message.seqNo == 0:
             self.messageID.updateTime(int64(message.msgID) div (2 ^ 32))
 
@@ -183,6 +190,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
         debug(&"{self.logPrefix} Received message with type ", message.body.nameByConstructorID())
 
         case message.body.nameByConstructorID():
+        # We need to ack these messages at some point
         of "Msg_detailed_info":
             self.pendingAcks.add(message.body.Msg_detailed_info.answer_msg_id)
             continue
@@ -190,6 +198,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             self.pendingAcks.add(message.body.Msg_new_detailed_info.answer_msg_id)
             continue
         
+        # Ping may be sent from Telegram, we need to answer with Pong
         of "Ping":
             discard await self.send(Pong(ping_id: message.body.Ping.ping_id, msg_id: message.msgID), false)
         of "Pong":
@@ -206,7 +215,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
         of "FutureSalts":
             messageID = message.body.FutureSalts.req_msg_id
             self.processFutureSalts(message.body.FutureSalts)
-
+        # This is the actual object response of a rpc call
         of "Rpc_result":
             messageID = message.body.Rpc_result.req_msg_id
             body = message.body.Rpc_result.result
@@ -217,7 +226,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             body = body.GZipContent.value
 
         if cast[int64](messageID) in self.requests:
-            debug(&"{self.logPrefix} Got result for message &{messageID}")
+            debug(&"{self.logPrefix} Got result for message {messageID}")
             self.requests[cast[int64](messageID)].body = body
             self.requests[cast[int64](messageID)].event.trigger()
         
@@ -240,31 +249,11 @@ proc pingWorker(self: MTProtoSession) {.async.} =
 
     debug(&"{self.logPrefix} pingWorker exited from loop")
 
-
-proc networkWorker(self: MTProtoSession) {.async.} =
-    debug(&"{self.logPrefix} Starting networkWorker...")
-    while true:
-        var data: seq[uint8] = @[]
-        try:
-            data = await self.connection.receive()
-        except: discard
-
-        if data.len < 5:
-            if data.len == 4:
-                let data = decode.TLDecode[int32](newTLStream(data))
-                warn(&"{self.logPrefix} Received {data} from Telegram")
-     
-            if self.connected.isSet():
-                debug(&"{self.logPrefix} placeholder: should restart session")
-                discard # TODO: RESTART THE SESSION
-            break
-        
-        asyncCheck self.processMessage(newTLStream(data))
-
-    debug(&"{self.logPrefix} networkWorker exited from loop")
-
+proc networkWorker(self: MTProtoSession) {.async.} 
 
 proc stop*(self: MTProtoSession) {.async.} =
+    ## Stop the session
+
     debug(&"{self.logPrefix} Stopping session...")
 
     self.connected.clear()
@@ -284,8 +273,83 @@ proc stop*(self: MTProtoSession) {.async.} =
 
     debug(&"{self.logPrefix} Session stopped")
 
-proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: uint64, dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+
+proc start*(self: MTProtoSession) {.async.} =
+    ## Start the session
+    while true:
+        var ok = false
+        try:
+            self.seqNo = 1
+            self.sessionID = urandom(8)
+            self.connected = newAsyncEventSet()
+            self.pingStopEvent = newAsyncEventSet()
+
+            self.connection = createConnection(self.connectionInfo.connectionType, self.dcID, self.connectionInfo.ipv6, self.isTestMode, self.isMedia)
+                
+            debug(&"{self.logPrefix} Connecting to MTProto...")
+
+            await self.connection.connect()
+
+            self.networkTask = self.networkWorker()
+            asyncCheck self.networkTask
+
+            discard await self.send(Ping(ping_id: 0).setConstructorID, timeout=START_TIMEOUT)
+
+            if not self.isCdn:
+                discard await self.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(api_id: self.connectionInfo.apiID, device_model: self.connectionInfo.deviceModel, system_version: self.connectionInfo.systemVersion,
+                    app_version: self.connectionInfo.appVersion, system_lang_code: self.connectionInfo.systemLangCode,
+                    lang_pack: self.connectionInfo.langPack, lang_code: self.connectionInfo.langCode, 
+                    query: HelpGetAppConfig().setConstructorID()).setConstructorID).setConstructorID,
+                timeout=START_TIMEOUT)
+
+            self.pingTask = self.pingWorker()
+            asyncCheck self.pingTask
+            ok = true
+        except TimeoutError, exceptions.RPCError:
+            await self.stop()
+        except Exception:
+            await self.stop()
+            raise getCurrentException()
+        finally:
+            if ok: break
+        
+    debug(&"{self.logPrefix} Connected to MTProto")
+
+    self.connected.set()
+
+
+proc restart*(self: MTProtoSession) {.async.} = 
+    ## Restart the session
     
+    await self.stop()
+    await self.start()
+
+proc networkWorker(self: MTProtoSession) {.async.} =
+    debug(&"{self.logPrefix} Starting networkWorker...")
+    while true:
+        var data: seq[uint8] = @[]
+        try:
+            data = await self.connection.receive()
+        except: discard
+
+        if data.len < 5:
+            if data.len == 4:
+                let data = decode.TLDecode[int32](newTLStream(data))
+                warn(&"{self.logPrefix} Received {data} from Telegram")
+     
+            if self.connected.isSet():
+                debug(&"{self.logPrefix} Restarting the session...")
+                asyncCheck self.restart()
+            break
+        
+        asyncCheck self.processMessage(newTLStream(data))
+
+    debug(&"{self.logPrefix} networkWorker exited from loop")
+
+
+proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: uint64, dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+    ## Create a new session
+
     result = MTProtoSession(
         connectionInfo: connectionInfo,
         seqNo: 1,
@@ -303,29 +367,4 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
         pingStopEvent: newAsyncEventSet()
     )
     
-    result.connection = createConnection(connectionInfo.connectionType, dcID, connectionInfo.ipv6, isTestMode, isMedia)
-    
     result.salts.add(FutureSalt(validSince: 0, validUntil: high(uint32), salt: firstSalt))
-     
-    debug(&"{result.logPrefix} Connecting to MTProto...")
-
-    await result.connection.connect()
-
-    result.networkTask = result.networkWorker()
-    asyncCheck result.networkTask
-
-    discard await result.send(Ping(ping_id: 0).setConstructorID, timeout=START_TIMEOUT)
-
-    if not result.isCdn:
-        discard await result.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(api_id: result.connectionInfo.apiID, device_model: result.connectionInfo.deviceModel, system_version: result.connectionInfo.systemVersion,
-            app_version: result.connectionInfo.appVersion, system_lang_code: result.connectionInfo.systemLangCode,
-            lang_pack: result.connectionInfo.langPack, lang_code: result.connectionInfo.langCode, 
-            query: HelpGetAppConfig().setConstructorID()).setConstructorID).setConstructorID,
-        timeout=START_TIMEOUT)
-
-    result.pingTask = result.pingWorker()
-    asyncCheck result.pingTask
-
-    debug(&"{result.logPrefix} Connected to MTProto")
-
-    result.connected.set()

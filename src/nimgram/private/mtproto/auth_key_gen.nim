@@ -13,7 +13,7 @@
 ## Module implementing generation of an auth key
 
 import std/[sysrand, asyncdispatch, tables, logging], network/[transports, dummy], crypto/[pow, ige]
-import pkg/[tltypes, stint, bigints, nimcrypto/sha], pkg/tltypes/[encode, decode]
+import pkg/[tltypes, stint, bigints, nimcrypto/sha], pkg/tltypes/[encode, decode], ../utils/exceptions
 import std/math, std/times
 
 proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
@@ -26,7 +26,7 @@ proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
     let data = await self.receive()
 
     if data.len == 4:
-        raise newException(IndexDefect, "Unexpected result: " & $TLDecode[
+        raise newException(SecurityError, "Unexpected result: " & $TLDecode[
                 int32](newTLStream(data)))
     result = tl.TLDecode(newTLStream(data[20..(data.len-1)]))
 
@@ -34,6 +34,7 @@ type Key = object
     e: string
     n: string
 
+# TODO: Load RSA Keys from ASN string
 
 const KEYCHAIN = {847625836280919973'i64: Key(n: "aeec36c8ffc109cb099624685b97815415657bd76d8c9c3e398103d7ad16c9bba6f525ed0412d7ae2c2de2b44e77d72cbf4b7438709a4e646a05c43427c7f184debf72947519680e651500890c6832796dd11f772c25ff8f576755afe055b0a3752c696eb7d8da0d8be1faf38c9bdd97ce0a77d3916230c4032167100edd0f9e7a3a9b602d04367b689536af0d64b613ccba7962939d3b57682beb6dae5b608130b2e52aca78ba023cf6ce806b1dc49c72cf928a7199d22e3d7ac84e47bc9427d0236945d10dbd15177bab413fbf0edfda09f014c7a7da088dde9759702ca760af2b8e4e97cc055c617bd74c3d97008635b98dc4d621b4891da9fb0473047927", e: "65537"),
                 1562291298945373506'i64: Key(

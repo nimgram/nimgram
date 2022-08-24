@@ -9,3 +9,4 @@ htmldocs/
 nimgram-session.bin
 tests/test
 devshit
+nimgram-database.db

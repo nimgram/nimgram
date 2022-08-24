@@ -22,7 +22,7 @@ type MTProtoClient* = ref object
   connectionInfo: ConnectionInfo
 
 
-proc CreateClient*(apiID: int, apiHash, deviceModel, systemVersion, appVersion, langCode, systemLangCode: string, connectionType: ConnectionType, useIpv6: bool): MTProtoClient = 
+proc createClient*(apiID: int, apiHash, deviceModel, systemVersion, appVersion, langCode, systemLangCode: string, useIpv6 = false, connectionType: ConnectionType = TCPAbridged): MTProtoClient = 
   return MTProtoClient(
     connectionInfo: ConnectionInfo(
       apiID: uint32(apiID),

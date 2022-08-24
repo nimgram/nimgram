@@ -13,7 +13,9 @@ requires "crc32 >= 0.5.0"
 requires "stint"
 requires "https://github.com/dadadani/bigints#master"
 requires "nimcrypto#a5742a9"
+requires "norm >= 2.5.1"
 
 task test, "Runs the test suite":
   selfExec("r -d:release --gc:orc tests/auth_key.nim")
   selfExec("r tests/message_id.nim")
+  selfExec("r -d:normDebug tests/storage.nim")
