@@ -1,0 +1,26 @@
+name: Test Project
+on:
+  - push
+  - pull_request
+jobs:
+  before:
+    runs-on: ubuntu-latest
+    if: "! contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - run: echo "commit message doesn't contain '[skip ci]'"
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nim-version:
+          - '1.6.0'
+          - '1.6.6'
+          - 'devel'
+    needs: before
+    steps:
+      - uses: actions/checkout@v1
+      - uses: jiro4989/setup-nim-action@v1
+        with:
+          nim-version: ${{ matrix.nim-version }}
+      - run: nimble install --depsOnly --accept 
+      - run: nimble test
