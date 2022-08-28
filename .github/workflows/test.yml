@@ -24,3 +24,4 @@ jobs:
           nim-version: ${{ matrix.nim-version }}
       - run: nimble install --depsOnly --accept 
       - run: nimble test
+      - run: nimble checkExamples

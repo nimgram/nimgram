@@ -10,3 +10,6 @@ nimgram-session.bin
 tests/test
 devshit
 nimgram-database.db
+nimgram-sessions.db
+examples/nimgram-sessions.db
+examples/raw_client

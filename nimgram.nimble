@@ -15,7 +15,16 @@ requires "https://github.com/dadadani/bigints#master"
 requires "nimcrypto#a5742a9"
 requires "norm >= 2.5.1"
 
-task test, "Runs the test suite":
+task test, "Test Nimgram":
+  echo "Running auth_key generation test"
   selfExec("r -d:release --gc:orc tests/auth_key.nim")
+  echo "Running message id test"
   selfExec("r tests/message_id.nim")
+  echo "Running storage test"
   selfExec("r -d:normDebug tests/storage.nim")
+
+task checkExamples, "Check examples":
+  echo "Checking examples"
+  for example in listFiles("examples"):
+    if example.endsWith(".nim"):
+      exec "nim check --hints:off " & example

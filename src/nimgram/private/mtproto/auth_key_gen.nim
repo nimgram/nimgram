@@ -69,11 +69,11 @@ proc stage1(self: MTProtoNetwork, nonce: UInt128): Future[ResPQ] {.async.} =
     ## Execute the first stage of the authkey generation
     
     let rsp = await self.send(setConstructorID(Req_pq_multi(nonce: nonce)))
-    doAssert rsp of ResPQ, "Expecting ResPQ as response to Req_pq_multi, got a different type"
+    securityCheck rsp of ResPQ, "Expecting ResPQ as response to Req_pq_multi, got a different type"
 
     result = rsp.ResPQ
 
-    doAssert result.nonce == nonce, "Generated nonce does not correspond to the one in the response"
+    securityCheck result.nonce == nonce, "Generated nonce does not correspond to the one in the response"
 
 proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
         Server_DH_params_ok] {.async.} =
@@ -101,7 +101,7 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
 
     let innerDataPadded = sha1.digest(innerData).data[0..19] & innerData &
              newSeq[uint8]((255 - 20 - len(innerData)))
-    doAssert innerDataPadded.len == 255
+    securityCheck innerDataPadded.len == 255
     let cipherData = computeRSA(innerDataPadded, n, e)
     let dhParams = setConstructorID(Req_DH_params(p: cast[string](toBytesBE(
             p)), q: cast[string](toBytesBE(q)), nonce: pq.nonce,
@@ -110,21 +110,21 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, newNonce: UInt256): Future[
     debug("[AUTHKEY] Sending Req_DH_params...")
     let sentDh = await self.send(dhParams)
 
-    doAssert not(sentDh of Server_DH_params_fail), "Got Server_DH_params_fail, this is not expected"
+    securityCheck not(sentDh of Server_DH_params_fail), "Got Server_DH_params_fail, this is not expected"
 
-    doAssert sentDh of Server_DH_params_ok, "Got a different response from Server_DH_params_ok"
+    securityCheck sentDh of Server_DH_params_ok, "Got a different response from Server_DH_params_ok"
     return sentDh.Server_DH_params_ok
 
 template rangeCheck(val: BigInt, min: BigInt, max: BigInt) =
-    doAssert min < val and val < max
+    securityCheck min < val and val < max
 
 proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
         newNonce: UInt256, nonce: UInt128, serverNonce: UInt128, b: seq[
                 uint8]): Future[(BigInt, BigInt, BigInt)] {.async.} =
     ## Execute the third stage of the authkey generation
     
-    doAssert dhParams.nonce == nonce
-    doAssert dhParams.server_nonce == serverNonce
+    securityCheck dhParams.nonce == nonce
+    securityCheck dhParams.server_nonce == serverNonce
 
     let serverNonceBytes = TLEncode(serverNonce)
     let newNonceBytes = TLEncode(newNonce)
@@ -140,11 +140,11 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     let decryptedStream = newTLStream(decrypted[20..(decrypted.high)])
     let decryptedTL = tl.TLDecode(decryptedStream)
 
-    doAssert decryptedTL of Server_DH_inner_data, "Expecting decrypted data to be of type Server_DH_inner_data, got a different type"
+    securityCheck decryptedTL of Server_DH_inner_data, "Expecting decrypted data to be of type Server_DH_inner_data, got a different type"
 
     let serverDH = decryptedTL.Server_DH_inner_data
-    doAssert serverDH.nonce == nonce
-    doAssert serverDH.server_nonce == serverNonce
+    securityCheck serverDH.nonce == nonce
+    securityCheck serverDH.server_nonce == serverNonce
     
     debug("[AUTHKEY] Computing dhPrime, gA, b and gB...")
     let dhPrime = fromBytesBE(cast[seq[uint8]](serverDH.dh_prime))
@@ -179,11 +179,11 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
                 server_nonce: serverDH.server_nonce,
                 encrypted_data: cast[string](data)
     ).setConstructorID())
-    doAssert dhGenResponse of Dh_gen_ok, "Expecting response to be of type Dh_gen_ok, got a different type"
+    securityCheck dhGenResponse of Dh_gen_ok, "Expecting response to be of type Dh_gen_ok, got a different type"
     let dhGenOk = dhGenResponse.Dh_gen_ok
 
-    doAssert dhGenOk.nonce == nonce
-    doAssert dhGenOk.server_nonce == server_nonce
+    securityCheck dhGenOk.nonce == nonce
+    securityCheck dhGenOk.server_nonce == server_nonce
 
     return (gA, b, dhPrime)
 
@@ -194,11 +194,10 @@ proc createAuthKeySalt(gA: BigInt, b: BigInt, dhPrime: BigInt, newNonce: seq[
     debug("[AUTHKEY] Computing AuthKey...")
     result[0] = powmod(gA, b, dhPrime)
     debug("[AUTHKEY] Computing first salt...")
-    result[1] = fromBytes(uint64, newNonce[0..7], bigEndian) xor fromBytes(
-            uint64, serverNonce[0..7], bigEndian)
+    result[1] = fromBytes(uint64, newNonce[0..7], cpuEndian) xor fromBytes(
+            uint64, serverNonce[0..7], cpuEndian)
 
-proc executeAuthKeyGeneration*(self: MTProtoNetwork): Future[(seq[uint8], array[
-        0..7, byte])] {.async.} =
+proc executeAuthKeyGeneration*(self: MTProtoNetwork): Future[(seq[uint8], int64)] {.async.} =
     ## Execute auth key generation on the specified connection
     
     debug("[AUTHKEY] Generating a new auth key")
@@ -216,10 +215,10 @@ proc executeAuthKeyGeneration*(self: MTProtoNetwork): Future[(seq[uint8], array[
    
     debug("[AUTHKEY] Finalizing AuthKey creation...")
     let (authKey, salt) = createAuthKeySalt(gA, b, dhPrime, toBytes(newNonce,
-            bigEndian)[0..31], toBytes(dhParams.server_nonce, bigEndian)[0..15])
+            cpuEndian)[0..31], toBytes(dhParams.server_nonce, cpuEndian)[0..15])
     
     debug("[AUTHKEY] AuthKey generated successfully")
-    return (authKey.toBytesBE(), salt.toBytes(bigEndian))
+    return (authKey.toBytesBE(), cast[int64](salt))
 
 
 proc testAuthKeyGeneration() {.async, used.} =
@@ -477,4 +476,4 @@ proc testAuthKeyGeneration() {.async, used.} =
                     0..15])
     doAssert authKey == initBigInt("2815072920265221215882709835248151631682472534789976772388277679770177862385418168731432744522139506560243308041886140630035819126881983161557638770301359017434694499620036871886650720736931523175823582419192444712067366905607712739212847597775924373487930810937972572450459850821262770867188326152389248611382640422730581075745705696876265497573813798615306160916813001738259893767679667551326140681164865411809082666029229577199547603680503783969463069943293649575953057673651404273395448384306291837895652018782324116734174298952666881957733543450978340239228399167980601230138182763849873790030745942634916827032",
             10)
-    doAssert salt == uint64(2584010468747571531)
+    doAssert salt == uint64(5472320661206588451)

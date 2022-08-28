@@ -16,6 +16,7 @@ import network/transports
 import std/[asyncdispatch, times, math, sysrand, tables, logging, strformat]
 import pkg/tltypes, pkg/tltypes/[decode, encode], types
 import crypto/proto, network/generator
+import ../storage/storage_interfaces
 import ../utils/[exceptions, event_addons, message_id]
 import pkg/nimcrypto/[sha, sha2]
 
@@ -39,6 +40,7 @@ type
         connectionInfo: ConnectionInfo
         connection: MTProtoNetwork
         connected: AsyncEventSet 
+        storage: NimgramStorage
         pingStopEvent: AsyncEventSet   
         requests: Table[int64, Request]
 
@@ -56,7 +58,7 @@ type
         seqNo: int
         messageID: MessageID
         salts: seq[FutureSalt]
-        authKey: seq[uint8]
+        authKey*: seq[uint8]
         sessionID: seq[uint8]
         authKeyID: seq[uint8]
 
@@ -123,12 +125,12 @@ proc getSalt*(self: MTProtoSession): Future[seq[uint8]] {.async.} =
             # TODO: Find a proper implementation, i can't get this to work 
 
 
-proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotificationI, msgID: int64) =
+proc processBadNotification(self: MTProtoSession, badNotification: BadMsgNotificationI, msgID: int64) {.async.} =
     
     if badNotification of Bad_server_salt:
         self.salts.setLen(0)
         self.salts.add(FutureSalt(validUntil: high(uint32), validSince: 0, salt: badNotification.Bad_server_salt.new_server_salt))
-        #TODO: Update storage
+        await self.storage.addOrEditSession(self.dcID, self.isTestMode, self.isMedia, self.authKey, cast[int64](badNotification.Bad_server_salt.new_server_salt))
 
     elif badNotification of Bad_msg_notification:        
         let code = badNotification.Bad_msg_notification.error_code
@@ -206,10 +208,10 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             
         
         of "Bad_msg_notification":
-            self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
+            await self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
             messageID = message.body.Bad_msg_notification.bad_msg_id
         of "Bad_server_salt":
-            self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
+            await self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
             messageID = message.body.Bad_server_salt.bad_msg_id
 
         of "FutureSalts":
@@ -231,7 +233,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             self.requests[cast[int64](messageID)].event.trigger()
         
         if self.pendingAcks.len >= ACKS_THRESHOLD:
-            discard await self.send(Msgs_ack(msg_ids: self.pendingAcks), false)
+            discard await self.send(Msgs_ack(msg_ids: self.pendingAcks).setConstructorID(), false)
             self.pendingAcks.setLen(0)
 
 
@@ -240,12 +242,16 @@ proc pingWorker(self: MTProtoSession) {.async.} =
 
     while true:
         let close = await withTimeout(waitEvent(self.pingStopEvent), PING_INTERVAL*1000)
-        try: self.pingStopEvent.unregister() except: discard
-        if close:
+        if close or self.pingStopEvent.isSet():
             break
-        
+        try: self.pingStopEvent.unregister() except: discard
+
         debug(&"{self.logPrefix} Sending ping")
-        discard await self.send(Ping_delay_disconnect(ping_id: 0, disconnect_delay: WAIT_TIMEOUT + 10).setConstructorID, false)
+
+        try:
+            discard await self.send(Ping_delay_disconnect(ping_id: 0, disconnect_delay: WAIT_TIMEOUT + 10).setConstructorID, false)
+        except ValueError, TimeoutError, exceptions.RPCError:
+            discard
 
     debug(&"{self.logPrefix} pingWorker exited from loop")
 
@@ -258,15 +264,14 @@ proc stop*(self: MTProtoSession) {.async.} =
 
     self.connected.clear()
 
-    await self.connection.close()
+    try: await self.connection.close() except: discard
     
     self.pingStopEvent.set()
     debug(&"{self.logPrefix} Waiting for pingWorker to exit...")
-    await self.pingTask
-    self.pingStopEvent.clear()
+    try: await self.pingTask except: discard
 
     debug(&"{self.logPrefix} Waiting for networkWorker to exit...")
-    await self.networkTask
+    try: await self.networkTask except: discard
 
     debug(&"{self.logPrefix} Triggering requests...")
     for _, request in self.requests: request.event.trigger()
@@ -285,31 +290,38 @@ proc start*(self: MTProtoSession) {.async.} =
             self.pingStopEvent = newAsyncEventSet()
 
             self.connection = createConnection(self.connectionInfo.connectionType, self.dcID, self.connectionInfo.ipv6, self.isTestMode, self.isMedia)
-                
+
             debug(&"{self.logPrefix} Connecting to MTProto...")
 
             await self.connection.connect()
 
             self.networkTask = self.networkWorker()
             asyncCheck self.networkTask
-
-            discard await self.send(Ping(ping_id: 0).setConstructorID, timeout=START_TIMEOUT)
+            
+            try:
+                discard await self.send(Ping(ping_id: 0).setConstructorID, timeout=START_TIMEOUT)
+            except BadMessageError as bm:
+                if bm.code == 16 or bm.code == 17:
+                    discard await self.send(Ping(ping_id: 0).setConstructorID, timeout=START_TIMEOUT)
+                else:
+                    raise
 
             if not self.isCdn:
                 discard await self.send(InvokeWithLayer(layer: LAYER_VERSION, query: InitConnection(api_id: self.connectionInfo.apiID, device_model: self.connectionInfo.deviceModel, system_version: self.connectionInfo.systemVersion,
                     app_version: self.connectionInfo.appVersion, system_lang_code: self.connectionInfo.systemLangCode,
                     lang_pack: self.connectionInfo.langPack, lang_code: self.connectionInfo.langCode, 
-                    query: HelpGetAppConfig().setConstructorID()).setConstructorID).setConstructorID,
+                    query: HelpGetConfig().setConstructorID()).setConstructorID).setConstructorID,
                 timeout=START_TIMEOUT)
 
             self.pingTask = self.pingWorker()
             asyncCheck self.pingTask
             ok = true
-        except TimeoutError, exceptions.RPCError:
-            await self.stop()
-        except Exception:
-            await self.stop()
-            raise getCurrentException()
+        except TimeoutError, BadMessageError:
+            warn(&"{self.logPrefix} An error occured while starting session, retrying. ", getCurrentExceptionMsg())
+            try: await self.stop() except: discard
+        except Exception as ex:
+            try: await self.stop() except: discard
+            raise ex
         finally:
             if ok: break
         
@@ -347,7 +359,7 @@ proc networkWorker(self: MTProtoSession) {.async.} =
     debug(&"{self.logPrefix} networkWorker exited from loop")
 
 
-proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKey: seq[uint8], firstSalt: uint64, dcID: int, isTestMode = false, isMedia = false, isCdn = false): Future[MTProtoSession] {.async.} =
+proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, storage: NimgramStorage, authKey: seq[uint8], firstSalt: uint64, dcID: int, isTestMode = false, isMedia = false, isCdn = false): MTProtoSession =
     ## Create a new session
 
     result = MTProtoSession(
@@ -364,7 +376,8 @@ proc createSession*(connectionInfo: ConnectionInfo, messageID: MessageID, authKe
         dcID: dcID,
         messageID: messageID,
         connected: newAsyncEventSet(),
-        pingStopEvent: newAsyncEventSet()
+        pingStopEvent: newAsyncEventSet(),
+        storage: storage
     )
     
     result.salts.add(FutureSalt(validSince: 0, validUntil: high(uint32), salt: firstSalt))

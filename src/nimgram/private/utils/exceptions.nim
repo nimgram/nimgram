@@ -27,8 +27,6 @@ type TimeoutError* = object of NimgramError
 type SecurityError* = object of NimgramError
   ## Raised when a security check assertion fails
 
-template securityCheck*(check: untyped, description: string) =
-  try:
-    doAssert check
-  except:
+template securityCheck*(check: untyped, description: string = "") =
+  if not (check):
     raise newException(SecurityError, description)

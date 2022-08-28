@@ -20,10 +20,10 @@ type MessageID* = ref object
     timeOffset: int64
 
 proc createMessageID*(): MessageID = 
-    return MessageID(serverTime: 0, referenceMonotime: 0, lastTime: 0, timeOffset: 0)
+    return MessageID(serverTime: 2, referenceMonotime: 0, lastTime: 0, timeOffset: 0)
 
 proc updateTime*(self: MessageID, serverTime: int64, force = false) =
-        if self.serverTime == 0 or force:
+        if self.serverTime == 2 or force:
             self.referenceMonotime = float64(ticks(getMonoTime())) / float64(1000000000)
             self.serverTime = serverTime
             debug("[MESSAGEID SYNC] Time has been updated to ", fromUnix(serverTime))

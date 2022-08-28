@@ -21,7 +21,7 @@ type
   SessionDataSqlite {.tableName: "sessions".} = ref object of Model
     dcId* {.uniqueGroup.}: int
     authKey*: string
-    salt*: string
+    salt*: int64
     isMedia* {.uniqueGroup.}: bool
     isTestMode* {.uniqueGroup.}: bool
     isDefault* {.uniqueGroup.}: bool
@@ -35,29 +35,30 @@ type
     database: DbConn
 
 
-proc addOrEditSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: seq[uint8], default: bool) {.async.} =
+proc addOrEditSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: int64, default: Option[bool]) {.async.} =
     if self.SqliteStorage.database.exists(SessionDataSqlite, "dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, isMedia, isTestMode):
-
-       self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ?, isDefault = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), encode(salt), default, dcId, isMedia, isTestMode)
+       if isSome(default):
+            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ?, isDefault = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt, default.get, dcId, isMedia, isTestMode)
+       else:
+            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt, dcId, isMedia, isTestMode)
     else:
-        var session = SessionDataSqlite(dcId: dcId, isMedia: isMedia, isTestMode: isTestMode, authKey: encode(authKey), salt: encode(salt), isDefault: default)
+        var session = SessionDataSqlite(dcId: dcId, isMedia: isMedia, isTestMode: isTestMode, authKey: encode(authKey), salt: salt, isDefault: if default.isSome: default.get else: false)
         self.SqliteStorage.database.insert(session)
 
-proc getSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], seq[uint8])] {.async.} = 
+proc getSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], int64)] {.async.} = 
     var session = SessionDataSqlite()
     self.SqliteStorage.database.select(session, "dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, isMedia, isTestMode)
     result[0] = cast[seq[uint8]](decode(session.authKey))
-    result[1] = cast[seq[uint8]](decode(session.salt))
+    result[1] = session.salt
 
-proc getDefaultSessionS(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], seq[uint8])] {.async.} = 
+proc getDefaultSessionS(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], int64)] {.async.} = 
     var session = SessionDataSqlite()
     self.SqliteStorage.database.select(session, "isDefault = ?", true)
     result[0] = session.dcId
     result[1] = session.isTestMode
     result[2] = session.isMedia
     result[3] = cast[seq[uint8]](decode(session.authKey))
-    result[4] = cast[seq[uint8]](decode(session.salt))
-
+    result[4] = session.salt
 
 proc addOrEditPeerS(self: NimgramStorage, peerID: int64, accessHash: int64, username = "") {.async.} =
     if self.SqliteStorage.database.exists(StoragePeerSqlite, "peerID = ?", peerID):
@@ -100,11 +101,3 @@ proc newSqliteStorage*(filename: string): SqliteStorage =
     result.database.createTables(SessionDataSqlite())
     result.database.createTables(StoragePeerSqlite())
 
-when isMainModule:
-    var consoleLog = newConsoleLogger()
-    addHandler(consoleLog)  
-    let storage = newSqliteStorage("nimgram-session.db")
-    waitFor storage.addOrEditSession(4, true, true, @[200'u8], @[0'u8, 0,0,0,0,0,0,0])
-    waitFor storage.addOrEditPeer(397112340, 46585, "cagatemi")
-    echo waitFor storage.getPeer(397112340)
-    echo waitFor storage.getSession(4, true, true)

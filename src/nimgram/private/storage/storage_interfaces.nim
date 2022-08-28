@@ -15,9 +15,9 @@ import std/options
 
 type
   StorageInterface* = object
-    addOrEditSession*: proc(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: seq[uint8], default: bool): Future[void] {.async.}
-    getSession*: proc(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], seq[uint8])] {.async.}
-    getDefaultSession*: proc(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], seq[uint8])] {.async.}
+    addOrEditSession*: proc(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: int64, default: Option[bool]): Future[void] {.async.}
+    getSession*: proc(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], int64)] {.async.}
+    getDefaultSession*: proc(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], int64)] {.async.}
     clearCache*: proc(self: NimgramStorage) {.async.} 
     addOrEditPeer*: proc(self: NimgramStorage, peerId: int64, accessHash: int64, username: string) {.async.}
     getPeer*: proc(self: NimgramStorage, id: int64): Future[(int64, Option[string])] {.async.}
@@ -26,13 +26,13 @@ type
   NimgramStorage* = ref object of RootObj
     procs*: StorageInterface
 
-proc addOrEditSession*(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: seq[uint8], default = false): Future[void] {.async.} =
+proc addOrEditSession*(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: int64, default: Option[bool] = none(bool)): Future[void] {.async.} =
   await self.procs.addOrEditSession(self, dcId, isTestMode, isMedia, authKey, salt, default)
 
-proc getSession*(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], seq[uint8])] {.async.} =
+proc getSession*(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], int64)] {.async.} =
   return await self.procs.getSession(self, dcId, isTestMode, isMedia)
 
-proc getDefaultSession*(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], seq[uint8])] {.async.} =
+proc getDefaultSession*(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], int64)] {.async.} =
   return await self.procs.getDefaultSession(self)
 
 proc clearCache*(self: NimgramStorage) {.async.} =
