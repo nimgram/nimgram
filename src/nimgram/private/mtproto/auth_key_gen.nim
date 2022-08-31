@@ -135,8 +135,8 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
             sha1.digest(newNonceBytes & newNonceBytes).data[0..19] &
                     newNonceBytes[0..3]
     debug("[AUTHKEY] Decrypting dhParams.encrypted_answer...")
-    let decrypted = aesIGE(tempAesKey, tempAesIV,
-            cast[seq[uint8]](dhParams.encrypted_answer), false)
+    var encryptedAnswer = newTLStream(cast[seq[uint8]](dhParams.encrypted_answer))
+    let decrypted = aesIGE(tempAesKey, tempAesIV, encryptedAnswer, false)
     let decryptedStream = newTLStream(decrypted[20..(decrypted.high)])
     let decryptedTL = tl.TLDecode(decryptedStream)
 
@@ -163,21 +163,26 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     rangeCheck gB, safeRange, (dh_prime - safeRange)
     
     debug("[AUTHKEY] Preparing Client_DH_inner_data...")
-    var data = setConstructorID(Client_DH_inner_data(
-        nonce: serverDH.nonce,
-        server_nonce: serverDH.server_nonce,
-        retry_id: 0,
-        g_b: cast[string](gB.toBytesBE())
-    )).TLEncode()
-    data = sha1.digest(data).data[0..19] & data
-    while len(data) mod 16 != 0: data.add(0)
-    data = aesIGE(tempAesKey, tempAesIV, data, true)
+    
+    var innerData: TLStream
+
+    block:
+        var data = setConstructorID(Client_DH_inner_data(
+                nonce: serverDH.nonce,
+                server_nonce: serverDH.server_nonce,
+                retry_id: 0,
+                g_b: cast[string](gB.toBytesBE())
+        )).TLEncode()
+        data = sha1.digest(data).data[0..19] & data
+        while len(data) mod 16 != 0: data.add(0)
+        innerData = newTLStream(data)
+    
     
     debug("[AUTHKEY] Sending Set_client_DH_params...")
     let dhGenResponse = await self.send(Set_client_DH_params(
                 nonce: serverDH.nonce,
                 server_nonce: serverDH.server_nonce,
-                encrypted_data: cast[string](data)
+                encrypted_data: cast[string](aesIGE(tempAesKey, tempAesIV, innerData, true))
     ).setConstructorID())
     securityCheck dhGenResponse of Dh_gen_ok, "Expecting response to be of type Dh_gen_ok, got a different type"
     let dhGenOk = dhGenResponse.Dh_gen_ok

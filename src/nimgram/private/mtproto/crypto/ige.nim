@@ -14,57 +14,39 @@
 
 import pkg/nimcrypto/rijndael
 
-proc xorBlock(destination: array[16, uint8], source: array[16, uint8]): array[
-        16, uint8] =
-    var i = 0
-    for _ in destination:
-        result[i] = source[i] xor destination[i]
-        inc(i)
-
-proc blockAsArray(data: seq[uint8]): array[16, uint8] =
-    for i in countup(0, 15):
-        result[i] = data[i]
+import tltypes/decode
 
 
-proc aesIGE*(key, iv, message: seq[uint8], doEncrypt: bool): seq[uint8] =
-    if key.len != 32:
-        raise newException(CatchableError, "key must be 32 bytes long")
+proc aesIGE*(key: seq[uint8], iv: seq[uint8], message: TLStream, doEncrypt: bool): seq[uint8] =
 
-    if iv.len != 32:
-        raise newException(CatchableError, "iv must be 32 bytes long")
+    doAssert key.len == 32, "key must be 32 bytes long"
+    doAssert iv.len == 32, "iv must be 32 bytes long"
 
-    var cipher: aes256
+    var cipher: aes256 
     cipher.init(key)
 
-    if message.len mod 16 != 0:
-        raise newException(CatchableError,
-                "data lenght must be a multiple of 16 bytes, instead is " & $message.len)
+    doAssert message.len mod 16 == 0, "data lenght must be a multiple of 16 bytes"
 
-    var ivp = iv[0..15].blockAsArray()
-    var ivp2 = iv[16..31].blockAsArray()
-    var ciphered: seq[uint8]
+    var cryptedXored = (if not doEncrypt: iv[16..31] else: iv[0..15])
+    var ivp = (if not doEncrypt: iv[0..15] else: iv[16..31])
+    var chunk = newSeq[uint8](16)
+    while message.len > 0:
+        
+        chunk = message.readBytes(16)
 
-    var i = 0
-    while i < message.len:
-        if not doEncrypt:
-            var xored = xorBlock(message[i..i+15].blockAsArray(), ivp2)
-            var decryptedXored: array[16, uint8]
-            cipher.decrypt(xored, decryptedXored)
-
-            var outdata = xorBlock(decryptedXored, ivp)
-            ivp = message[i..i+15].blockAsArray()
-            ivp2 = outdata
-            ciphered.add(outdata)
+        for i2 in countup(0, 15):
+            cryptedXored[i2] = cryptedXored[i2] xor chunk[i2]
+        if doEncrypt:
+            cipher.encrypt(cryptedXored, cryptedXored)
         else:
-            var xored = xorBlock(message[i..i+15].blockAsArray(), ivp)
-            var encryptedXored: array[16, uint8]
-            cipher.encrypt(xored, encryptedXored)
+            cipher.decrypt(cryptedXored, cryptedXored)
 
-            var outdata = xorBlock(encryptedXored, ivp2)
-            ivp = outdata
-            ivp2 = message[i..i+15].blockAsArray()
-            ciphered.add(outdata)
+        for i2 in countup(0, 15):
+            cryptedXored[i2] = ivp[i2] xor cryptedXored[i2]
 
-        i += 16
+        ivp = chunk
+        result.add(cryptedXored)
 
-    return ciphered
+        
+
+
