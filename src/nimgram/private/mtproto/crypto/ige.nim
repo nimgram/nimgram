@@ -25,7 +25,7 @@ proc aesIGE*(key: seq[uint8], iv: seq[uint8], message: TLStream, doEncrypt: bool
     var cipher: aes256 
     cipher.init(key)
 
-    doAssert message.len mod 16 == 0, "data lenght must be a multiple of 16 bytes"
+    doAssert message.len mod 16 == 0, "data length must be a multiple of 16 bytes"
 
     var cryptedXored = (if not doEncrypt: iv[16..31] else: iv[0..15])
     var ivp = (if not doEncrypt: iv[0..15] else: iv[16..31])

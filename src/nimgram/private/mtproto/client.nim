@@ -19,7 +19,7 @@ import auth_key_gen, session
 import pkg/tltypes/decode, pkg/tltypes
 
 type MTProtoClient* = ref object
-  connectionInfo: ConnectionInfo
+  connectionInfo*: ConnectionInfo
   storage: NimgramStorage
   testMode: bool
   session: MTProtoSession
@@ -113,3 +113,8 @@ proc switchDc*(self: MTProtoClient, newDcId: int) {.async.} =
     await self.session.start()
     
     notice(&"[MTPROTOCLIENT] Switched to dc{newDcId}")
+
+proc stop*(self: MTProtoClient) {.async.} =
+    ## Stop the current session
+    await self.session.stop()
+    await self.storage.close()

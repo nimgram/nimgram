@@ -32,7 +32,7 @@ proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8
         let aesKey = a[0..7] & b[8..23] & a[24..31]
         let aesIv = b[0..7] & a[8..23] & b[24..31]
         let plaintext = aesIGE(aesKey, aesIv, stream, false)
-        securityCheck plaintext.len mod 4 == 0, "Lenght of plaintext is not divisible by 4"
+        securityCheck plaintext.len mod 4 == 0, "length of plaintext is not divisible by 4"
 
         let msgKey = sha256.digest(authKey[96..127] & plaintext).data[8..23]
         securityCheck msgKey == responseMsgKey, "Computed MsgKey is different from response"

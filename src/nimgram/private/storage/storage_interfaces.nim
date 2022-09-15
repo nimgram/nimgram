@@ -22,7 +22,7 @@ type
     addOrEditPeer*: proc(self: NimgramStorage, peerId: int64, accessHash: int64, username: string) {.async.}
     getPeer*: proc(self: NimgramStorage, id: int64): Future[(int64, Option[string])] {.async.}
     getPeerByUsername*: proc(self: NimgramStorage, username: string): Future[(int64, int64)] {.async.}
-    
+    close*: proc(self: NimgramStorage) {.async.}
   NimgramStorage* = ref object of RootObj
     procs*: StorageInterface
 
@@ -46,3 +46,6 @@ proc getPeer*(self: NimgramStorage, id: int64): Future[(int64, Option[string])] 
 
 proc getPeer*(self: NimgramStorage, username: string): Future[(int64, int64)] {.async.} =
   return await self.procs.getPeerByUsername(self, username)
+
+proc close*(self: NimgramStorage) {.async.} =
+  await self.procs.close(self)

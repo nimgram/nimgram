@@ -87,6 +87,9 @@ proc clearCacheS(self: NimgramStorage) {.async.} =
     # TODO: IMPLEMENT CACHE
     discard
 
+proc closeS(self: NimgramStorage) {.async.} =
+    self.SqliteStorage.database.close()
+
 proc newSqliteStorage*(filename: string): SqliteStorage =
     result = SqliteStorage(database: open(filename, "", "", ""),
     procs: StorageInterface(
@@ -96,7 +99,8 @@ proc newSqliteStorage*(filename: string): SqliteStorage =
         getPeer: getPeerS,
         getPeerByUsername: getPeerByUsernameS,
         getDefaultSession: getDefaultSessionS,
-        clearCache: clearCacheS
+        clearCache: clearCacheS,
+        close: closeS
     ))
     result.database.createTables(SessionDataSqlite())
     result.database.createTables(StoragePeerSqlite())

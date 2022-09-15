@@ -10,5 +10,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import nimgram/private/api/api
-export api
+import error, ok
+export error, ok
