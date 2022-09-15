@@ -6,7 +6,7 @@ license = "MIT"
 srcDir = "src"
 
 # Dependencies
-requires "nim >= 1.6.0"
+requires "nim >= 1.6.6"
 requires "https://github.com/nimgram/tl-parser#v0.2.0"
 requires "https://github.com/nimgram/tl-types#v0.2.0"
 requires "crc32#c8ccad9"
