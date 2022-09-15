@@ -25,3 +25,5 @@ jobs:
       - run: nimble install --depsOnly --accept 
       - run: nimble test
       - run: nimble checkExamples
+      - run: nimble install https://github.com/nimgram/tl-parser-api --accept 
+      - run: nimble buildDll

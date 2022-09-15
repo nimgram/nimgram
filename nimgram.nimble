@@ -48,8 +48,6 @@ task test, "Test Nimgram":
   selfExec("r tests/message_id.nim")
   echo "Running storage test"
   selfExec("r -d:normDebug tests/storage.nim")
-  echo "Trying to build Nimgram as a dynamic library..."
-  buildDll()
 
 task checkExamples, "Check examples":
   echo "Checking examples"
