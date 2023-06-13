@@ -7,13 +7,13 @@ srcDir = "src"
 
 # Dependencies
 requires "nim >= 1.6.6"
-requires "https://github.com/nimgram/tl-parser#v0.2.0"
-requires "https://github.com/nimgram/tl-types#v0.2.0"
+requires "https://github.com/nimgram/tl-parser#master"
+requires "https://github.com/nimgram/tl-types#master"
 requires "crc32#c8ccad9"
 requires "stint#d1acb42"
-requires "https://github.com/dadadani/bigints#646d857"
 requires "nimcrypto#a5742a9"
 requires "norm#2.5.2"
+requires "https://github.com/dadadani/nim-tommath"
 
 proc buildJson = 
   echo "Generating json encoder/decoder..."

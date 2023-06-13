@@ -1,5 +1,5 @@
 # Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -60,7 +60,7 @@ proc startClient*(self: MTProtoClient) {.async.} =
             try:
                 let authNetwork = createConnection(self.connectionInfo.connectionType, 2, self.connectionInfo.ipv6, self.testMode, false)
                 await authNetwork.connect()
-                (defaultSession[3], defaultSession[4]) = await authNetwork.executeAuthKeyGeneration()
+                (defaultSession[3], defaultSession[4]) = await authNetwork.executeAuthKeyGeneration(2, self.testMode, false)
                 await authNetwork.close()
                 break
             except SecurityError:
@@ -97,7 +97,7 @@ proc switchDc*(self: MTProtoClient, newDcId: int) {.async.} =
             try:
                 let authNetwork = createConnection(self.connectionInfo.connectionType, newDcId, self.connectionInfo.ipv6, self.testMode, false)
                 await authNetwork.connect()
-                newSession = await authNetwork.executeAuthKeyGeneration()
+                newSession = await authNetwork.executeAuthKeyGeneration(newDcId, self.testMode, false)
                 await authNetwork.close()
                 break
             except SecurityError:

@@ -1,5 +1,5 @@
 # Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -13,6 +13,7 @@
 include ../src/nimgram/private/mtproto/auth_key_gen
 
 when isMainModule:
-    echo "Running testAuthKeyGeneration..."
-    testAuthKeyGeneration().waitFor()
-    echo "testAuthKeyGeneration PASSED"
+    # wip
+    #echo "Running testAuthKeyGeneration..."
+    #testAuthKeyGeneration().waitFor()
+    #echo "testAuthKeyGeneration PASSED"

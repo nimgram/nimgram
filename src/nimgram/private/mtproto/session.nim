@@ -1,5 +1,5 @@
 # Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -218,7 +218,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             messageID = message.body.FutureSalts.req_msg_id
             self.processFutureSalts(message.body.FutureSalts)
         # This is the actual object response of a rpc call
-        of "Rpc_result":
+        of "RPCResult":
             messageID = message.body.Rpc_result.req_msg_id
             body = message.body.Rpc_result.result
         else: 

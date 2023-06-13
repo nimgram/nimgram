@@ -1,5 +1,5 @@
 # Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -21,7 +21,7 @@ import pkg/tltypes
 const
     API_ID = 94575 # for real world usage, please replace the api id and hash with your own
     API_HASH = "a3406de8d171bb422bb6ddf3bbd800e2"
-    BOT_TOKEN = "id:token"
+    BOT_TOKEN = "958470745:AAHb3e11Cx30o_2mYYuEopmoGV7xUFgb3oc"
     USER_ID = 397112340
     TEST_MODE = false
 

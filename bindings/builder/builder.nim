@@ -1,5 +1,5 @@
 # Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -11,7 +11,7 @@
 # SOFTWARE.
 
 const COPYRIGHT_CODE = """# Nimgram
-# Copyright (C) 2020-2022 Daniele Cortesi <https://github.com/dadadani>
+# Copyright (C) 2020-2023 Daniele Cortesi <https://github.com/dadadani>
 # This file is part of Nimgram, under the MIT License
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
