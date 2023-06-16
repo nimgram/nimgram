@@ -12,7 +12,6 @@ requires "https://github.com/nimgram/tl-types#master"
 requires "crc32#c8ccad9"
 requires "stint#d1acb42"
 requires "nimcrypto#a5742a9"
-requires "norm#2.5.2"
 requires "https://github.com/dadadani/nim-tommath"
 
 proc buildJson = 
@@ -47,7 +46,7 @@ task test, "Test Nimgram":
   echo "Running message id test"
   selfExec("r tests/message_id.nim")
   echo "Running storage test"
-  selfExec("r -d:normDebug tests/storage.nim")
+  selfExec("r tests/storage.nim")
 
 task checkExamples, "Check examples":
   echo "Checking examples"

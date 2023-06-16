@@ -16,3 +16,4 @@ examples/raw_client
 bindings/types.nim
 bindings/functions.nim
 bindings/lib
+nimgram-session.db

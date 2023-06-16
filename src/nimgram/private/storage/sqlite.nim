@@ -13,75 +13,72 @@
 ## An sqlite interface to StorageInterface
 
 import storage_interfaces
-import std/[options, logging, base64, asyncdispatch]
-import norm/[model, sqlite, pragmas]
-import logging
+import std/[options, base64, asyncdispatch]
+import std/strutils
 
-type
-  SessionDataSqlite {.tableName: "sessions".} = ref object of Model
-    dcId* {.uniqueGroup.}: int
-    authKey*: string
-    salt*: int64
-    isMedia* {.uniqueGroup.}: bool
-    isTestMode* {.uniqueGroup.}: bool
-    isDefault* {.uniqueGroup.}: bool
+import std/db_sqlite
 
-  StoragePeerSqlite {.tableName: "peers".} = ref object of Model
-    peerID {.unique.}: int64
-    accessHash: int64
-    username {.unique.}: Option[string]
-
-  SqliteStorage* = ref object of NimgramStorage
+type SqliteStorage* = ref object of NimgramStorage
     database: DbConn
 
 
 proc addOrEditSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool, authKey: seq[uint8], salt: int64, default: Option[bool]) {.async.} =
-    if self.SqliteStorage.database.exists(SessionDataSqlite, "dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, isMedia, isTestMode):
-       if isSome(default):
-            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ?, isDefault = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt, default.get, dcId, isMedia, isTestMode)
-       else:
-            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt, dcId, isMedia, isTestMode)
+    if self.SqliteStorage.database.getRow(sql"SELECT 1 FROM sessions WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, if isMedia: "1" else: "0", if isTestMode: "1" else: "0")[0] == "1":
+        if default.isSome:
+            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ?, isDefault = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt, if default.get: "1" else: "0", dcId, if isMedia: "1" else: "0", if isTestMode: "1" else: "0")
+        else:
+            self.SqliteStorage.database.exec(sql"UPDATE sessions SET authKey = ?, salt = ? WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", encode(authKey), salt,dcId, if isMedia: "1" else: "0", if isTestMode: "1" else: "0")
     else:
-        var session = SessionDataSqlite(dcId: dcId, isMedia: isMedia, isTestMode: isTestMode, authKey: encode(authKey), salt: salt, isDefault: if default.isSome: default.get else: false)
-        self.SqliteStorage.database.insert(session)
+        self.SqliteStorage.database.exec(sql"INSERT INTO sessions (dcId, authKey, salt, isMedia, isTestMode, isDefault) VALUES (?, ?, ?, ?, ?, ?)", dcId, encode(authKey), salt, if isMedia: "1" else: "0", if isTestMode: "1" else: "0", if default.isSome and default.get: "1" else: "0")
 
 proc getSessionS(self: NimgramStorage, dcId: int, isTestMode: bool, isMedia: bool): Future[(seq[uint8], int64)] {.async.} = 
-    var session = SessionDataSqlite()
-    self.SqliteStorage.database.select(session, "dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, isMedia, isTestMode)
-    result[0] = cast[seq[uint8]](decode(session.authKey))
-    result[1] = session.salt
+    let row = self.SqliteStorage.database.getRow(sql"SELECT authKey, salt from sessions WHERE dcId = ? AND isMedia = ? AND isTestMode = ?", dcId, if isMedia: "1" else: "0", if isTestMode: "1" else: "0") 
+
+    if row.len > 0 and row[0] != "": 
+        result[0] = cast[seq[uint8]](decode(row[0]))
+        result[1] = parseBiggestInt(row[1])
+    else:
+        raise newException(DbError, "Unable to find session")
 
 proc getDefaultSessionS(self: NimgramStorage): Future[(int, bool, bool, seq[uint8], int64)] {.async.} = 
-    var session = SessionDataSqlite()
-    self.SqliteStorage.database.select(session, "isDefault = ?", true)
-    result[0] = session.dcId
-    result[1] = session.isTestMode
-    result[2] = session.isMedia
-    result[3] = cast[seq[uint8]](decode(session.authKey))
-    result[4] = session.salt
+    let row = self.SqliteStorage.database.getRow(sql"SELECT dcId, authKey, salt, isMedia, isTestMode from sessions WHERE isDefault > 0")
+    if row.len > 0 and row[0] != "":
+        result[0] = parseInt(row[0])
+        result[1] = if parseInt(row[4]) > 0: true else: false
+        result[2] = if parseInt(row[3]) > 0: true else: false
+        result[3] = cast[seq[uint8]](decode(row[1]))
+        result[4] = parseBiggestInt(row[2])
+    else:
+        raise newException(DbError, "Unable to find session")
 
 proc addOrEditPeerS(self: NimgramStorage, peerID: int64, accessHash: int64, username = "") {.async.} =
-    if self.SqliteStorage.database.exists(StoragePeerSqlite, "peerID = ?", peerID):
-       if username.len > 1:
-          self.SqliteStorage.database.exec(sql"UPDATE peers SET accessHash = ?, username = ? WHERE peerID = ?", accessHash, if username == "rm": "" else: username, peerID)
-       else:
-          self.SqliteStorage.database.exec(sql"UPDATE peers SET accessHash = ? WHERE peerID = ?", accessHash, peerID)
-
+    if self.SqliteStorage.database.getRow(sql"SELECT 1 FROM peers WHERE peerId = ?", peerId)[0] == "1":
+        if username.len > 1:
+            self.SqliteStorage.database.exec(sql"UPDATE peers SET accessHash = ?, username = ? WHERE peerID = ?", accessHash, if username == "rm": "" else: username, peerID)
+        else:
+            self.SqliteStorage.database.exec(sql"UPDATE peers SET accessHash = ? WHERE peerID = ?", accessHash, peerID)
     else:
-        var session = StoragePeerSqlite(peerID: peerID, accessHash: accessHash, username: (if username.len > 2: some(username) else: none(string)))
-        self.SqliteStorage.database.insert(session)
+        if username.len > 1:
+            self.SqliteStorage.database.exec(sql"INSERT INTO peers (peerID, accessHash, username) VALUES (?, ?, ?)", peerID, accessHash, username)
+        else:
+            self.SqliteStorage.database.exec(sql"INSERT INTO peers (peerID, accessHash) VALUES (?, ?)", peerID, accessHash)            
 
 proc getPeerS(self: NimgramStorage, peerID: int64): Future[(int64, Option[string])] {.async.} = 
-    var peer = StoragePeerSqlite()
-    self.SqliteStorage.database.select(peer, "peerID = ?", peerID)
-    result[0] = peer.accessHash
-    result[1] = peer.username
+    let row = self.SqliteStorage.database.getRow(sql"SELECT accessHash, username FROM peers WHERE peerID = ?", peerID)
+    if row.len >= 1 and row[0] != "":
+        result[0] = parseBiggestInt(row[0])
+        if row.len >= 2 and row[1] != "":
+            result[1] = some(row[1])
+    else:
+        raise newException(DbError, "Unable to find user")
 
 proc getPeerByUsernameS(self: NimgramStorage, username: string): Future[(int64, int64)] {.async.} = 
-    var peer = StoragePeerSqlite()
-    self.SqliteStorage.database.select(peer, "username = ?", username)
-    result[0] = peer.peerID
-    result[1] = peer.accessHash
+    let row = self.SqliteStorage.database.getRow(sql"SELECT peerID, accessHash FROM peers WHERE username = ?", username)
+    if row.len == 2 and row[0] != "":
+        result[0] = parseBiggestInt(row[0])
+        result[1] = parseBiggestInt(row[1])
+    else:
+        raise newException(DbError, "Unable to find user")
 
 proc clearCacheS(self: NimgramStorage) {.async.} =
     # TODO: IMPLEMENT CACHE
@@ -101,7 +98,9 @@ proc newSqliteStorage*(filename: string): SqliteStorage =
         getDefaultSession: getDefaultSessionS,
         clearCache: clearCacheS,
         close: closeS
-    ))
-    result.database.createTables(SessionDataSqlite())
-    result.database.createTables(StoragePeerSqlite())
+    ))  
+    result.database.exec(sql"CREATE TABLE IF NOT EXISTS sessions(id INTEGER NOT NULL PRIMARY KEY, dcId INTEGER NOT NULL, authKey TEXT NOT NULL, salt INTEGER NOT NULL, isMedia INTEGER NOT NULL, isTestMode INTEGER NOT NULL, isDefault INTEGER NOT NULL, UNIQUE(dcId, isMedia, isTestMode))")
+    result.database.exec(sql"CREATE TABLE IF NOT EXISTS peers(peerID INTEGER NOT NULL PRIMARY KEY, accessHash INTEGER NOT NULL, username TEXT UNIQUE)")
+    #result.database.createTables(SessionDataSqlite())
+    #result.database.createTables(StoragePeerSqlite())
 

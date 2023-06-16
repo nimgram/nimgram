@@ -13,6 +13,7 @@
 include ../src/nimgram/private/mtproto/auth_key_gen
 
 when isMainModule:
+    discard
     # wip
     #echo "Running testAuthKeyGeneration..."
     #testAuthKeyGeneration().waitFor()

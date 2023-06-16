@@ -17,7 +17,7 @@ import pkg/nimcrypto/rijndael
 import tltypes/decode
 
 
-proc aesIGE*(key: seq[uint8], iv: seq[uint8], message: TLStream, doEncrypt: bool): seq[uint8] =
+proc aesIGE*(key: seq[uint8], iv: seq[uint8], message: TLStream, doEncrypt: static(bool)): seq[uint8] =
 
     doAssert key.len == 32, "key must be 32 bytes long"
     doAssert iv.len == 32, "iv must be 32 bytes long"
@@ -36,7 +36,7 @@ proc aesIGE*(key: seq[uint8], iv: seq[uint8], message: TLStream, doEncrypt: bool
 
         for i2 in countup(0, 15):
             cryptedXored[i2] = cryptedXored[i2] xor chunk[i2]
-        if doEncrypt:
+        when doEncrypt:
             cipher.encrypt(cryptedXored, cryptedXored)
         else:
             cipher.decrypt(cryptedXored, cryptedXored)
