@@ -7,9 +7,7 @@ srcDir = "src"
 
 # Dependencies
 requires "nim >= 1.6.6"
-requires "https://github.com/nimgram/tl-parser#master"
 requires "https://github.com/nimgram/tl-types#master"
-requires "crc32#c8ccad9"
 requires "stint#d1acb42"
 requires "nimcrypto#a5742a9"
 requires "https://github.com/dadadani/nim-tommath"
@@ -21,7 +19,7 @@ proc buildJson =
 
 proc buildInterface(libName: string, args: string) =
   selfExec("c " & args & " -d:strip --threads:on -d:release --gc:orc --out:" & libName & " --outdir:bindings/lib bindings/interface.nim")
-
+#[
 proc buildDll =
   buildJson()
   echo "Building Nimgram..."
@@ -39,7 +37,7 @@ proc buildDll =
 
 task buildDll, "Build Nimgram as a dynamic library":
   buildDll()
-
+]#
 task test, "Test Nimgram":
   echo "Running auth_key generation test"
   selfExec("r -d:release --gc:orc tests/auth_key.nim")
