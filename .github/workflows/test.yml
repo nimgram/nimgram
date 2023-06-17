@@ -14,6 +14,7 @@ jobs:
       matrix:
         nim-version:
           - '1.6.6'
+          - '1.6.12'
           - 'devel'
     needs: before
     steps:
@@ -25,5 +26,3 @@ jobs:
       - run: nimble install --depsOnly --accept 
       - run: nimble test
       - run: nimble checkExamples
-      - run: nimble install https://github.com/nimgram/tl-parser-api --accept 
-      - run: nimble buildDll
