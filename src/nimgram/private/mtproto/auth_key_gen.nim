@@ -34,9 +34,6 @@ proc send(self: MTProtoNetwork, data: TLFunction): Future[TL] {.async.} =
                 int32](newTLStream(data))))
     result = tl.TLDecode(newTLStream(data[20..(data.len-1)]))
 
-type Key = object
-    e: string
-    n: string
 
 # TODO: Load RSA Keys from ASN string
 #[

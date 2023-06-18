@@ -14,148 +14,154 @@ import std/asyncdispatch, std/strutils, std/options
 import ../mtproto/[client, types], pkg/tltypes, ../utils/exceptions
 import authorization_state, updates
 
-type NimgramClient* = ref object
-    mtprotoClient: MTProtoClient
-    init: bool
-    sentFirstAuthorizationState: bool
-    updateProc: Option[proc(client: NimgramClient, update: Update) {.async.}]
-    authenticated: bool
-    closed: bool
-    starting: bool
-    loggingOut: bool
-    closing: bool
+import macros, std/macros as nimmacros
 
+import client_types
+export NimgramClient
 
-proc send*(self: NimgramClient, body: TLFunction): Future[TL] {.async.} = 
+proc send*(self: NimgramClient, body: TLFunction): Future[TL] {.async.} =
     ## Send a low level TL Function
     ## import `pkg/tltypes` to access the correct types
-    if self.closed:
+    if self.private.closed:
         raise newException(CatchableError, "The client was closed, create a new instance to continue")
-    if not self.init:
+    if not self.private.init:
         raise newException(CatchableError, "The client has not been started yet")
-    return await self.mtprotoClient.send(body)
+    return await self.private.mtprotoClient.send(body)
 
 proc startClient(self: NimgramClient) {.async.} =
     ## (Internal) start the low-level client and check if user is authorized
     try:
-        await self.mtprotoClient.startClient()
-    except:
-        self.starting = false
+        await self.private.mtprotoClient.startClient()
+    except CatchableError:
+        self.private.starting = false
         raise
-    self.init = true            
-    self.starting = false
+    self.private.init = true
+    self.private.starting = false
     try:
-        discard await self.mtprotoClient.send(UsersGetFullUser(id: InputUserSelf().setConstructorID).setConstructorID)
-        self.authenticated = true  
-        if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateReady()))
+        discard await self.private.mtprotoClient.send(UsersGetFullUser(
+                id: InputUserSelf().setConstructorID).setConstructorID)
+        self.private.authenticated = true
+        #if self.private.updateProc.isSome: await self.private.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateReady()))
     except exceptions.RPCError as ex:
         if ex.errorMessage == "AUTH_KEY_UNREGISTERED":
-            if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateWaitAuthentication()))
+            discard
+            #if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateWaitAuthentication()))
         else:
             raise
 
-proc setUpdateCallback*(self: NimgramClient, updateProc: (proc(client: NimgramClient, update: Update) {.async.})) = 
-    ## Set the procedure to be called when an update is sent
-    
-    self.updateProc = some(updateProc)
-
 proc logOut*(self: NimgramClient) {.async.} =
     ## Logout from the current user session
-    if self.closed:
+    if self.private.closed:
         raise newException(CatchableError, "The client was closed, create a new instance to continue")
-    if not self.init:
+    if not self.private.init:
         raise newException(CatchableError, "The client has not been started yet")
-    
-    self.authenticated = false
-    self.loggingOut = true        
-    if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateLoggingOut()))
+
+    self.private.authenticated = false
+    self.private.loggingOut = true
+    #if self.private.updateProc.isSome: await self.private.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateLoggingOut()))
     try:
         doAssert (await self.send(AuthLogOut().setConstructorID)) of AuthLoggedOut
-        if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateWaitAuthentication()))
-    except:
-        self.loggingOut = false
+    # if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateWaitAuthentication()))
+    except CatchableError:
+        self.private.loggingOut = false
         raise
 
-proc initializeNimgram*(client: NimgramClient, apiId: int, apiHash: string, databaseFilename: string, useTestDc = false, systemLanguageCode: string, deviceModel: string, systemVersion: string, applicationVersion: string) {.async.} = 
+proc initializeNimgram*(client: NimgramClient, apiId: int, apiHash: string,
+        databaseFilename: string, useTestDc = false, systemLanguageCode: string,
+        deviceModel: string, systemVersion: string,
+        applicationVersion: string) {.async.} =
     ## Initialize Nimgram with the specified parameters
-    if client.closed:
+    if client.private.closed:
         raise newException(CatchableError, "The client was closed, create a new instance to continue")
-    if client.starting or client.init:
+    if client.private.starting or client.private.init:
         return
-    client.starting = true
-    client.mtprotoClient = newClient(apiId, apiHash, deviceModel, systemVersion,
-            applicationVersion, systemLanguageCode, systemLanguageCode, useTestMode = useTestDc, storageFileName = databaseFilename)
+    client.private.starting = true
+    client.private.mtprotoClient = newClient(apiId, apiHash, deviceModel,
+            systemVersion, applicationVersion, systemLanguageCode,
+                    systemLanguageCode, useTestMode = useTestDc,
+                    storageFileName = databaseFilename)
     asyncCheck client.startClient()
 
-proc initializeNimgram*(apiId: int, apiHash: string, databaseFilename: string, useTestDc = false, systemLanguageCode: string, deviceModel: string, systemVersion: string, applicationVersion: string): NimgramClient = 
+proc initializeNimgram*(apiId: int, apiHash: string, databaseFilename: string,
+        useTestDc = false, systemLanguageCode: string, deviceModel: string,
+        systemVersion: string, applicationVersion: string): NimgramClient =
     ## Initialize Nimgram with the specified parameters
-    
-    result = new NimgramClient
-    waitFor result.initializeNimgram(apiId, apiHash, databaseFilename, useTestDc, systemLanguageCode, deviceModel, systemVersion, applicationVersion)
 
-proc startNimgram*(apiId: int, apiHash: string, useTestDc = false, databaseFilename = "nimgram-sessions.db", langCode = "en", systemLanguageCode = "en", deviceModel = "Unknown", systemVersion = "Unknown", applicationVersion = "devel", ipv6 = false): Future[NimgramClient] {.async.} =
+    result = new NimgramClient
+    waitFor result.initializeNimgram(apiId, apiHash, databaseFilename,
+            useTestDc, systemLanguageCode, deviceModel, systemVersion, applicationVersion)
+
+proc startNimgram*(apiId: int, apiHash: string, useTestDc = false,
+        databaseFilename = "nimgram-sessions.db", langCode = "en",
+        systemLanguageCode = "en", deviceModel = "Unknown",
+        systemVersion = "Unknown", applicationVersion = "devel",
+        ipv6 = false): Future[NimgramClient] {.async.} =
     ## Start Nimgram with the specified parameters.
     ## This function is different from initializeNimgram because it will wait the client to be initialized
-    
+
     result = new NimgramClient
-    result.starting = true
-    result.mtprotoClient = newClient(apiId, apiHash, deviceModel, systemVersion,
-            applicationVersion, langCode, systemLanguageCode, useTestMode = useTestDc, storageFileName = databaseFilename, useIpv6 = ipv6)
+    result.private.starting = true
+    result.private.mtprotoClient = newClient(apiId, apiHash, deviceModel,
+            systemVersion, applicationVersion, langCode, systemLanguageCode,
+                    useTestMode = useTestDc, storageFileName = databaseFilename,
+                    useIpv6 = ipv6)
     await result.startClient()
 
-proc botLogin*(self: NimgramClient, token: string) {.async.} =
-    ## Login as a bot. 
+proc botLogin*(self: NimgramClient, token: string) {.NimgramApi, async.} =
+    ## Login as a bot.
     ## Works only when the current authorization state is authorizationStateWaitPhoneNumber.
-    
-    if self.authenticated:
+
+    if self.private.authenticated:
         return
-    if not self.init:
+    if not self.private.init:
         raise newException(CatchableError, "The client has not been started yet")
     while true:
         try:
-            discard await self.mtprotoClient.send(AuthImportBotAuthorization(
-                api_id: self.mtprotoClient.connectionInfo.apiID, api_hash: self.mtprotoClient.connectionInfo.apiHash,
+            discard await self.private.mtprotoClient.send(AuthImportBotAuthorization(
+                api_id: self.private.mtprotoClient.connectionInfo.apiID,
+                api_hash: self.private.mtprotoClient.connectionInfo.apiHash,
                 bot_auth_token: token).setConstructorID)
-            self.authenticated = true
-            if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateReady()))
+            self.private.authenticated = true
+            #if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateReady()))
             break
         except exceptions.RPCError as ex:
             if ex.errorMessage.startsWith("USER_MIGRATE_"):
                 let migrateDC = parseInt(ex.errorMessage.split("_")[2])
-                await self.mtprotoClient.switchDc(migrateDC)
+                await self.private.mtprotoClient.switchDc(migrateDC)
             else:
                 raise
 
 proc close*(self: NimgramClient) {.async.} =
-    self.closing = true
-    if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateClosing()))
+    self.private.closing = true
+    #if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateClosing()))
 
     try:
-        await self.mtprotoClient.stop()
+        await self.private.mtprotoClient.stop()
     except:
-        self.closing = false
-        self.closed = true
-        self.init = false
+        self.private.closing = false
+        self.private.closed = true
+        self.private.init = false
         raise
-    self.closing = false
-    self.closed = true
-    self.init = false
+    self.private.closing = false
+    self.private.closed = true
+    self.private.init = false
 
-proc getAuthorizationState*(self: NimgramClient): Future[AuthorizationState] {.async.} = 
+proc getAuthorizationState*(self: NimgramClient): Future[
+        AuthorizationState] {.async.} =
     ## Get the current authorization state
-    
-    if self.init:
-        if self.authenticated:
+
+    if self.private.init:
+        if self.private.authenticated:
             return AuthorizationStateReady()
-        elif self.loggingOut:
+        elif self.private.loggingOut:
             return AuthorizationStateLoggingOut()
-        elif self.closing:
+        elif self.private.closing:
             return AuthorizationStateClosing()
         return AuthorizationStateWaitAuthentication()
-    elif self.closed:
+    elif self.private.closed:
         return AuthorizationStateClosed()
     else:
-        if not self.sentFirstAuthorizationState:
-            self.sentFirstAuthorizationState = true
-            if self.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateUninitialized()))
+        if not self.private.sentFirstAuthorizationState:
+            self.private.sentFirstAuthorizationState = true
+            #if self.private.updateProc.isSome: await self.updateProc.get()(self, UpdateAuthorizationState(authorizationState: AuthorizationStateUninitialized()))
         return AuthorizationStateUninitialized()

@@ -207,7 +207,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
             messageID = message.body.Pong.msg_id
             
         
-        of "Bad_msg_notification":
+        of "BadMsgNotification":
             await self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
             messageID = message.body.Bad_msg_notification.bad_msg_id
         of "Bad_server_salt":
