@@ -13,8 +13,7 @@ jobs:
     strategy:
       matrix:
         nim-version:
-          - '1.6.6'
-          - '1.6.12'
+          - '2.0.0'
           - 'devel'
     needs: before
     steps:

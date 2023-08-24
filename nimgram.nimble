@@ -6,11 +6,12 @@ license = "MIT"
 srcDir = "src"
 
 # Dependencies
-requires "nim >= 1.6.6"
+requires "nim >= 2.0.0"
 requires "https://github.com/nimgram/tl-types#master"
 requires "stint#d1acb42"
 requires "nimcrypto#a5742a9"
 requires "https://github.com/dadadani/nim-tommath"
+requires "db_connector"
 
 proc buildJson = 
   echo "Generating json encoder/decoder..."
