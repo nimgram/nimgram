@@ -14,8 +14,6 @@ import std/asyncdispatch, std/strutils, std/options
 import ../mtproto/[client, types], pkg/tltypes, ../utils/exceptions
 import authorization_state, updates
 
-import macros, std/macros as nimmacros
-
 import client_types
 export NimgramClient
 
@@ -69,7 +67,7 @@ proc logOut*(self: NimgramClient) {.async.} =
 proc initializeNimgram*(client: NimgramClient, apiId: int, apiHash: string,
         databaseFilename: string, useTestDc = false, systemLanguageCode: string,
         deviceModel: string, systemVersion: string,
-        applicationVersion: string) {.NimgramExportFunction, async.} =
+        applicationVersion: string) {.async.} =
     ## Initialize Nimgram with the specified parameters
     if client.private.closed:
         raise newException(CatchableError, "The client was closed, create a new instance to continue")
@@ -107,7 +105,7 @@ proc startNimgram*(apiId: int, apiHash: string, useTestDc = false,
                     useIpv6 = ipv6)
     await result.startClient()
 
-proc botLogin*(self: NimgramClient, token: string) {.NimgramApi, async.} =
+proc botLogin*(self: NimgramClient, token: string) {.async.} =
     ## Login as a bot.
     ## Works only when the current authorization state is authorizationStateWaitPhoneNumber.
 

@@ -10,9 +10,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import ../macros
-
-type Error* {.NimgramExportObject.} = ref object
+type Error*  = ref object
     ## An object of this type can be returned on every function call, in case of an error
     code*: int32 ## Error code
     message*: string ## Error message

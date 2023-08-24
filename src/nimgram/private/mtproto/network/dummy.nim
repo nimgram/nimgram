@@ -23,7 +23,7 @@ type MTProtoDummy* = ref object of MTProtoNetwork
 proc connectDummy(self: MTProtoNetwork) {.async.} = discard
 
 
-proc writeServerDummy*(self: MTProtoDummy, data: seq[uint8]) =
+proc writeServerDummy*(self: MTProtoDummy, data: sink seq[uint8]) =
   ## Write specified data to the socket
   self.incomingBuffer.add(data)
 
@@ -32,7 +32,7 @@ proc receiveServerDummy*(self: MTProtoDummy): seq[uint8] =
   result = self.outgoingBuffer
   self.outgoingBuffer.setLen(0)
 
-proc writeDummy(self: MTProtoNetwork, data: seq[uint8]) {.async.} =
+proc writeDummy(self: MTProtoNetwork, data: sink seq[uint8]) {.async.} =
   ## Write specified data to the socket
   self.MTProtoDummy.outgoingBuffer.add(data)
 

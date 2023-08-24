@@ -10,8 +10,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import ../macros
-
-type Ok* {.NimgramExportObject.} = object
+type Ok* = object
     ## Type returned on the json api when a function call is completed
 
