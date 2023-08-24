@@ -69,7 +69,7 @@ proc logOut*(self: NimgramClient) {.async.} =
 proc initializeNimgram*(client: NimgramClient, apiId: int, apiHash: string,
         databaseFilename: string, useTestDc = false, systemLanguageCode: string,
         deviceModel: string, systemVersion: string,
-        applicationVersion: string) {.async.} =
+        applicationVersion: string) {.NimgramExportFunction, async.} =
     ## Initialize Nimgram with the specified parameters
     if client.private.closed:
         raise newException(CatchableError, "The client was closed, create a new instance to continue")

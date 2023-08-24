@@ -20,7 +20,7 @@ import ../../utils/[content_related, exceptions]
 const 
     COMPRESSION_THRESHOLD = when defined(nocompression): 0 else: 512
 
-proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8], sessionID: seq[uint8]): CoreMessage =
+proc decryptMessage*(stream: sink TLStream, authKey: seq[uint8], authKeyID: seq[uint8], sessionID: seq[uint8]): CoreMessage =
     securityCheck stream.readBytes(8) == authKeyID, "Response authkey id is different from saved one"
 
     var plaintextStream: TLStream
@@ -31,7 +31,7 @@ proc decryptMessage*(stream: TLStream, authKey: seq[uint8], authKeyID: seq[uint8
         let b = sha256.digest(authKey[48..83] & responseMsgKey).data
         let aesKey = a[0..7] & b[8..23] & a[24..31]
         let aesIv = b[0..7] & a[8..23] & b[24..31]
-        let plaintext = aesIGE(aesKey, aesIv, stream, false)
+        let plaintext = aesIGE(aesKey, aesIv, move(stream), false)
         securityCheck plaintext.len mod 4 == 0, "length of plaintext is not divisible by 4"
 
         let msgKey = sha256.digest(authKey[96..127] & plaintext).data[8..23]
@@ -63,20 +63,20 @@ proc encryptMessage*(body: TL, authKey: seq[uint8], authKeyID: seq[uint8], seqNo
 
     block:
         var payload = salt & sessionID & messageID.TLEncode() & uint32(
-                seqNon).TLEncode() & uint32(len(encoded)).TLEncode() & encoded
+                seqNon).TLEncode() & uint32(len(encoded)).TLEncode() & move(encoded)
         payload.add(urandom((len(payload) + 12) mod 16 + 12))
         while true:
             if len(payload) mod 16 == 0 and len(payload) mod 4 == 0:
                 break
             payload.add(1)
         messageKey = sha256.digest(authKey[88..119] & payload).data[8..23]
-        payloadStream = newTLStream(payload)
-
+        payloadStream = newTLStream(move(payload))
+    
     let a = sha256.digest(messageKey & authKey[0..35]).data
     let b = sha256.digest(authKey[40..75] & messageKey).data
 
     let aesKey = a[0..7] & b[8..23] & a[24..31]
     let aesIV = b[0..7] & a[8..23] & b[24..31]
 
-    return ((authKeyID & messageKey & aesIGE(aesKey,
-            aesIV, payloadStream, true)), cast[int64](messageID), seqNon)
+    return ((authKeyID & move(messageKey) & aesIGE(aesKey,
+            aesIV, move(payloadStream), true)), cast[int64](messageID), seqNon)

@@ -32,7 +32,7 @@ const
     STORED_MSG_IDS_MAX_SIZE = 1000 * 2
 
 type
-    Request = ref object
+    Request = object
         body: TL
         event: AsyncEvent
 
@@ -187,45 +187,45 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
                 self.pendingAcks.add(message.msgID)
         
         var messageID = 0'u64
-        var body = message.body
+        var body = move message.body
 
-        debug(&"{self.logPrefix} Received message with type ", message.body.nameByConstructorID())
+        debug(&"{self.logPrefix} Received message with type ", body.nameByConstructorID())
 
-        case message.body.nameByConstructorID():
+        case body.nameByConstructorID():
         # We need to ack these messages at some point
         of "Msg_detailed_info":
-            self.pendingAcks.add(message.body.Msg_detailed_info.answer_msg_id)
+            self.pendingAcks.add(body.Msg_detailed_info.answer_msg_id)
             continue
         of "Msg_new_detailed_info":
-            self.pendingAcks.add(message.body.Msg_new_detailed_info.answer_msg_id)
+            self.pendingAcks.add(body.Msg_new_detailed_info.answer_msg_id)
             continue
         
         # Ping may be sent from Telegram, we need to answer with Pong
         of "Ping":
-            discard await self.send(Pong(ping_id: message.body.Ping.ping_id, msg_id: message.msgID), false)
+            discard await self.send(Pong(ping_id: body.Ping.ping_id, msg_id: message.msgID).setConstructorID, false)
         of "Pong":
-            messageID = message.body.Pong.msg_id
+            messageID = body.Pong.msg_id
             
         
         of "BadMsgNotification":
-            await self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
-            messageID = message.body.Bad_msg_notification.bad_msg_id
+            await self.processBadNotification(body.BadMsgNotificationI, int64(message.msgID))
+            messageID = body.Bad_msg_notification.bad_msg_id
         of "Bad_server_salt":
-            await self.processBadNotification(message.body.BadMsgNotificationI, int64(message.msgID))
-            messageID = message.body.Bad_server_salt.bad_msg_id
+            await self.processBadNotification(body.BadMsgNotificationI, int64(message.msgID))
+            messageID = body.Bad_server_salt.bad_msg_id
 
         of "FutureSalts":
-            messageID = message.body.FutureSalts.req_msg_id
-            self.processFutureSalts(message.body.FutureSalts)
+            messageID = body.FutureSalts.req_msg_id
+            self.processFutureSalts(body.FutureSalts)
         # This is the actual object response of a rpc call
         of "RPCResult":
-            messageID = message.body.Rpc_result.req_msg_id
-            body = message.body.Rpc_result.result
+            messageID = body.Rpc_result.req_msg_id
+            body = move body.Rpc_result.result
         else: 
-            debug(&"{self.logPrefix} Got unhandled type: ", message.body.nameByConstructorID())
+            debug(&"{self.logPrefix} Got unhandled type: ", body.nameByConstructorID())
        
         if body of GZipContent:
-            body = body.GZipContent.value
+            body = move body.GZipContent.value
 
         if cast[int64](messageID) in self.requests:
             debug(&"{self.logPrefix} Got result for message {messageID}")

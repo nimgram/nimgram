@@ -12,7 +12,7 @@
 
 ## Module implementing a low-level client object
 
-import std/options, std/strformat, std/asyncdispatch, std/db_common, std/logging
+import std/options, std/strformat, std/asyncdispatch, std/logging
 import types, ../utils/[message_id, exceptions]
 import network/[transports, generator], ../storage/[storage_interfaces], ../storage/generator as generatorNetwork
 import auth_key_gen, session
@@ -53,7 +53,7 @@ proc startClient*(self: MTProtoClient) {.async.} =
 
     try: 
         defaultSession = await self.storage.getDefaultSession()
-    except DbError:
+    except CatchableError:
         notice("[MTPROTOCLIENT] No default session found, generating a new session")
         
         while true:
@@ -90,7 +90,7 @@ proc switchDc*(self: MTProtoClient, newDcId: int) {.async.} =
 
     try: 
         newSession = await self.storage.getSession(newDcId, self.testMode, false)
-    except DbError:
+    except CatchableError:
         notice(&"[MTPROTOCLIENT] No default session found for dc{newDcId}, generating a new session")
         
         while true:

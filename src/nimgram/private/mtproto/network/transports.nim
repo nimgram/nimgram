@@ -21,7 +21,7 @@ type
   
   NetworkInterface* = object
     connect*: proc(self: MTProtoNetwork) {.async.}
-    write*: proc(self: MTProtoNetwork, data: seq[uint8]) {.async.}
+    write*: proc(self: MTProtoNetwork, data: sink seq[uint8]) {.async.}
     receive*: proc(self: MTProtoNetwork): Future[seq[uint8]] {.async.}
     isClosed*: proc(self: MTProtoNetwork): Future[bool] {.async.}
     close*: proc(self: MTProtoNetwork) {.async.}
@@ -34,7 +34,7 @@ type
 proc connect*(self: MTProtoNetwork) {.async.} =
   await self.procs.connect(self)
 
-proc write*(self: MTProtoNetwork, data: seq[uint8]) {.async.} =
+proc write*(self: MTProtoNetwork, data: sink seq[uint8]) {.async.} =
   await self.procs.write(self, data)
 
 proc receive*(self: MTProtoNetwork): Future[seq[uint8]] {.async.} =

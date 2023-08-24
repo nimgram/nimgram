@@ -31,7 +31,7 @@ proc connectAbridged(self: MTProtoNetwork) {.async.} =
   await self.MTProtoAbridged.socket.send("\xEF")
 
 
-proc writeAbridged(self: MTProtoNetwork, data: seq[uint8]) {.async.} =
+proc writeAbridged(self: MTProtoNetwork, data: sink seq[uint8]) {.async.} =
   ## Write specified data to the socket
   let length: uint32 = uint32(len(data)) div 4
   if length >= 127:

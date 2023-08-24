@@ -31,7 +31,7 @@ proc connectIntermediate(self: MTProtoNetwork) {.async.} =
   await self.MTProtoIntermediate.socket.send("\xEE\xEE\xEE\xEE")
 
 
-proc writeIntermediate(self: MTProtoNetwork, data: seq[uint8]) {.async.} =
+proc writeIntermediate(self: MTProtoNetwork, data: sink seq[uint8]) {.async.} =
   ## Write specified data to the socket
   await self.MTProtoIntermediate.socket.send(cast[string](TLEncode(uint32(len(
       data))) & data))

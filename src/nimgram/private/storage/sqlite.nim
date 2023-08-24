@@ -16,7 +16,7 @@ import storage_interfaces
 import std/[options, base64, asyncdispatch]
 import std/strutils
 
-import std/db_sqlite
+import pkg/db_connector/db_sqlite
 
 type SqliteStorage* = ref object of NimgramStorage
     database: DbConn

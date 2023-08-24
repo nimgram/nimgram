@@ -61,15 +61,14 @@ const KEYCHAIN = {0xd09d1d85de64fd85'u64: (
         "E8BB3305C0B52C6CF2AFDF7637313489E63E05268E5BADB601AF417786472E5F93B85438968E20E6729A301C0AFC121BF7151F834436F7FDA680847A66BF64ACCEC78EE21C0B316F0EDAFE2F41908DA7BD1F4A5107638EEB67040ACE472A14F90D9F7C2B7DEF99688BA3073ADB5750BB02964902A359FE745D8170E36876D4FD8A5D41B2A76CBFF9A13267EB9580B2D06D10357448D20D9DA2191CB5D8C93982961CDFDEDA629E37F1FB09A0722027696032FE61ED663DB7A37F6F263D370F69DB53A0DC0A1748BDAAFF6209D5645485E6E001D1953255757E4B8E42813347B11DA6AB500FD0ACE7E6DFA3736199CCAF9397ED0745A427DCFA6CD67BCB1ACFF3", "010001"), 0xb25898df208d2603'u64: (
        "C8C11D635691FAC091DD9489AEDCED2932AA8A0BCEFEF05FA800892D9B52ED03200865C9E97211CB2EE6C7AE96D3FB0E15AEFFD66019B44A08A240CFDD2868A85E1F54D6FA5DEAA041F6941DDF302690D61DC476385C2FA655142353CB4E4B59F6E5B6584DB76FE8B1370263246C010C93D011014113EBDF987D093F9D37C2BE48352D69A1683F8F6E6C2167983C761E3AB169FDE5DAAA12123FA1BEAB621E4DA5935E9C198F82F35EAE583A99386D8110EA6BD1ABB0F568759F62694419EA5F69847C43462ABEF858B4CB5EDC84E7B9226CD7BD7E183AA974A712C079DDE85B9DC063B8A5C08E8F859C0EE5DCD824C7807F20153361A7F63CFD2A433A1BE7F5", "010001")}.toTable
 
-proc computeRSA(data: seq[uint8], n: BigInt, e: BigInt): seq[uint8] =
-    return toBytes(powmod(fromBytes(data), e, n))
+proc computeRSA(data: sink seq[uint8], n: BigInt, e: BigInt): seq[uint8] =
+    return toBytes(powmod(fromBytes(move(data)), e, n))
 
-proc rsaPad(data: seq[uint8], m: BigInt, e: BigInt): seq[uint8] =
+proc rsaPad(data: var seq[uint8], m: BigInt, e: BigInt): seq[uint8] =
     doAssert data.len <= 144
 
     while result.len < 1:
         let tempKey = urandom(32)
-        var data = data
 
         block:
             if data.len != 192:
@@ -121,8 +120,8 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, nonce: Uint128, dcId: int, testMode
 
     doAssert keyId != 0, "Unable to find a valid RSA key"
 
-    var key = initBigInt(KEYCHAIN[keyID][0], 16)
-    var keyExp = initBigInt(KEYCHAIN[keyID][1], 16)
+    let key = initBigInt(KEYCHAIN[keyID][0], 16)
+    let keyExp = initBigInt(KEYCHAIN[keyID][1], 16)
 
     let serverNonce = pq.server_nonce
     doAssert pq.pq.len == 8, "pq length is not 8"
@@ -137,7 +136,7 @@ proc stage2(self: MTProtoNetwork, pq: ResPQ, nonce: Uint128, dcId: int, testMode
         innerData.dc += 10000
     if media:
         innerData.dc = cast[uint32](-int32(innerData.dc))
-    let innerDataBytes = TLEncode(innerData)
+    var innerDataBytes = TLEncode(innerData)
 
     let rsaEncrypted = rsaPad(innerDataBytes, key, keyExp)
 
@@ -173,7 +172,7 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
             sha1.digest(newNonceBytes & newNonceBytes).data[0..19] &
                     newNonceBytes[0..3]
     debug("[AUTHKEY] Decrypting dhParams.encrypted_answer...")
-    var encryptedAnswer = newTLStream(cast[seq[uint8]](dhParams.encrypted_answer))
+    let encryptedAnswer = newTLStream(cast[seq[uint8]](dhParams.encrypted_answer))
     let decrypted = aesIGE(tempAesKey, tempAesIV, encryptedAnswer, false)
     let decryptedStream = newTLStream(decrypted[20..(decrypted.high)])
     let decryptedTL = tl.TLDecode(decryptedStream)
@@ -202,18 +201,16 @@ proc stage3(self: MTProtoNetwork, dhParams: Server_DH_params_ok,
     
     debug("[AUTHKEY] Preparing Client_DH_inner_data...")
     
-    var innerData: TLStream
 
-    block:
-        var data = setConstructorID(Client_DH_inner_data(
-                nonce: serverDH.nonce,
-                server_nonce: serverDH.server_nonce,
-                retry_id: 0,
-                g_b: cast[string](gB.toBytes())
-        )).TLEncode()
-        data = sha1.digest(data).data[0..19] & data
-        while len(data) mod 16 != 0: data.add(0)
-        innerData = newTLStream(data)
+    var data = setConstructorID(Client_DH_inner_data(
+            nonce: serverDH.nonce,
+            server_nonce: serverDH.server_nonce,
+            retry_id: 0,
+            g_b: cast[string](gB.toBytes())
+    )).TLEncode()
+    data = sha1.digest(data).data[0..19] & move(data)
+    while len(data) mod 16 != 0: data.add(0)
+    let innerData = newTLStream(move(data))
     
     
     debug("[AUTHKEY] Sending Set_client_DH_params...")
@@ -259,15 +256,14 @@ proc executeAuthKeyGeneration*(self: MTProtoNetwork, dcId: int, isTestMode: bool
             pq.server_nonce, urandom(256))
 
     debug("[AUTHKEY] Finalizing AuthKey creation...")
-    var authKey: seq[uint8]
-    var salt: int64
-    block:
-        let (authKeyBig, saltn) = createAuthKeySalt(gA, b, dhPrime, toBytes(newNonce,
-                cpuEndian)[0..<32], toBytes(dhParams.server_nonce, cpuEndian)[0..<16])
-        salt = cast[int64](saltn)
-        authKey = authKeyBig.toBytes()
+
     
-    var newNonceHash1 = sha1.digest(TLEncode(newNonce) & 1'u8 & sha1.digest(authKey).data[0..<8]).data[^16..^1]
+    let (authKeyBig, saltn) = createAuthKeySalt(gA, b, dhPrime, toBytes(newNonce,
+            cpuEndian)[0..<32], toBytes(dhParams.server_nonce, cpuEndian)[0..<16])
+    let salt = cast[int64](saltn)
+    let authKey = authKeyBig.toBytes()
+    
+    let newNonceHash1 = sha1.digest(TLEncode(newNonce) & 1'u8 & sha1.digest(authKey).data[0..<8]).data[^16..^1]
 
     securityCheck newNonceHash1 == TLEncode(serverNewNonceHash1)
 
