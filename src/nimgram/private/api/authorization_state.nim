@@ -11,28 +11,29 @@
 # SOFTWARE.
 
 import updates
+import macros
 
 type 
-    AuthorizationState* = ref object of RootObj
+    AuthorizationState* {.NimgramType.} = object of RootObj
 
-    AuthorizationStateUninitialized* = ref object of AuthorizationState
+    AuthorizationStateUninitialized* {.NimgramType.} = object of AuthorizationState
     ## The client has not been initialized yet with the function initializeNimgram
     
-    AuthorizationStateWaitAuthentication* = ref object of AuthorizationState
+    AuthorizationStateWaitAuthentication* {.NimgramType.} = object of AuthorizationState
     ## The client has been initialized, but not authenticated
     
-    AuthorizationStateReady* = ref object of AuthorizationState
+    AuthorizationStateReady* {.NimgramType.} = object of AuthorizationState
     ## he client has been authenticated and can now send requests
     
-    AuthorizationStateLoggingOut* = ref object of AuthorizationState
+    AuthorizationStateLoggingOut* {.NimgramType.} = object of AuthorizationState
     ## The user is currently logging out
     
-    AuthorizationStateClosing* = ref object of AuthorizationState
+    AuthorizationStateClosing* {.NimgramType.} = object of AuthorizationState
     ## The client is now closing and won't accept any function call after that
     
-    AuthorizationStateClosed* = ref object of AuthorizationState
+    AuthorizationStateClosed* {.NimgramType.} = object of AuthorizationState
     ## The client is closed and will refuse any function call
     
-type UpdateAuthorizationState* = ref object of Update
+type UpdateAuthorizationState* {.NimgramType.} = object of Update
     ## Update containing the new authorization state
     authorizationState*: AuthorizationState

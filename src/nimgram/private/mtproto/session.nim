@@ -193,10 +193,10 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
 
         case body.nameByConstructorID():
         # We need to ack these messages at some point
-        of "Msg_detailed_info":
+        of "MsgDetailedInfo":
             self.pendingAcks.add(body.Msg_detailed_info.answer_msg_id)
             continue
-        of "Msg_new_detailed_info":
+        of "MsgNewDetailedInfo":
             self.pendingAcks.add(body.Msg_new_detailed_info.answer_msg_id)
             continue
         
@@ -210,7 +210,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
         of "BadMsgNotification":
             await self.processBadNotification(body.BadMsgNotificationI, int64(message.msgID))
             messageID = body.Bad_msg_notification.bad_msg_id
-        of "Bad_server_salt":
+        of "BadServerSalt":
             await self.processBadNotification(body.BadMsgNotificationI, int64(message.msgID))
             messageID = body.Bad_server_salt.bad_msg_id
 
@@ -229,7 +229,7 @@ proc processMessage*(self: MTProtoSession, data: TLStream) {.async.} =
 
         if cast[int64](messageID) in self.requests:
             debug(&"{self.logPrefix} Got result for message {messageID}")
-            self.requests[cast[int64](messageID)].body = body
+            self.requests[cast[int64](messageID)].body = move body
             self.requests[cast[int64](messageID)].event.trigger()
         
         if self.pendingAcks.len >= ACKS_THRESHOLD:

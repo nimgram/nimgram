@@ -10,5 +10,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-type Update* = ref object of RootObj
+import macros
+
+type Update* {.NimgramType.} = object of RootObj
     ## Object containing an update about data changes
